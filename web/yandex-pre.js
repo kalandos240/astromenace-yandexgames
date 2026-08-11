@@ -12,8 +12,10 @@
 
   // Keep all executable shell setup in this external Emscripten-generated
   // JavaScript file. The HTML shell intentionally contains no custom inline
-  // script, which keeps it compatible with restrictive platform CSP rules.
+  // script or inline event handlers, which keeps it compatible with
+  // restrictive platform CSP rules.
   Module.canvas = document.getElementById('canvas');
+  Module.canvas?.addEventListener('contextmenu', (event) => event.preventDefault());
   Module.setStatus = (text) => {
     const status = document.getElementById('status');
     const loading = document.getElementById('loading');
