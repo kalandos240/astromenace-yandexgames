@@ -21,8 +21,9 @@ The Yandex Games port now includes:
 - deterministic 1280×720 browser render surface fitted into the Yandex iframe without stretching;
 - Yandex Games SDK initialization;
 - `LoadingAPI.ready()` integration after the game assets and menu are ready;
-- automatic Yandex language detection for the six shipped text translations: English, German, Russian, Polish, Spanish and Turkish;
-- the upstream language-table fallbacks for voice and localized bitmap assets that are not available in every language;
+- Yandex language detection with a web-runtime language set limited to **English and Russian**;
+- unsupported Yandex locales automatically falling back to English;
+- fullscreen interstitial request after every successfully completed mission;
 - pause/resume handling for platform overlays, ads and page visibility changes;
 - local persistent saves with IDBFS;
 - Yandex Player cloud-save synchronization plus an immediate save flush after mission completion;
@@ -68,11 +69,13 @@ web/astromenace.css
 
 Web-specific C++ behaviour is guarded with `__EMSCRIPTEN__` or applied by the CI-only source preparation script, so the checked-in native AstroMenace source stays close to upstream behaviour.
 
+The port requests a fullscreen interstitial after each successfully completed mission. Yandex Games controls whether an individual request is actually shown when ad calls are too frequent, so a suppressed ad never blocks mission progression.
+
 ## Package-size optimization
 
 AstroMenace's native packer converts the upstream game-data sources into a single runtime `gamedata.vfs`. In particular, `gamedata/models/models.pack` must remain available while the VFS is generated because the upstream packer reads model data from it. The raw source tree is not copied separately into the browser distribution: Emscripten preloads only the generated `gamedata.vfs` alongside the WebAssembly/JavaScript shell.
 
-For the temporary browser-build tree, compatible TGA images are converted to AstroMenace's supported lossless RLE representation and PCM WAV files are downsampled for web distribution. The source assets in this repository/upstream project remain unchanged. No gameplay missions, runtime models, textures, sound effects or music tracks are intentionally removed from the packaged game.
+For the temporary browser-build tree, the localization table is reduced to English and Russian, unused localization directories are omitted, compatible TGA images are converted to AstroMenace's supported lossless RLE representation and PCM WAV files are downsampled for web distribution. The source assets in this repository/upstream project remain unchanged. No gameplay missions, runtime models, textures, sound effects or music tracks are intentionally removed from the packaged game.
 
 ## Upstream projects
 
