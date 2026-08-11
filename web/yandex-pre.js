@@ -17,7 +17,10 @@
 
   const languageIndex = (lang) => {
     const short = String(lang || 'en').toLowerCase().split(/[-_]/)[0];
-    return ({ en: 0, de: 1, ru: 2, pl: 3, es: 4, tr: 5 })[short] ?? 0;
+    // AstroMenace's shipped language table is EN/DE/RU/PL. Yandex locales
+    // without a native AstroMenace translation must fall back automatically
+    // to English instead of opening the desktop first-start language dialog.
+    return ({ en: 0, de: 1, ru: 2, pl: 3 })[short] ?? 0;
   };
 
   const trackAudioContexts = () => {
@@ -167,6 +170,10 @@
         console.warn('[Yandex] Player init failed:', error);
       }
 
+      // Yandex emits these events for startup/fullscreen/rewarded ads,
+      // purchase dialogs and page minimization. Synthetic focus events enter
+      // AstroMenace's existing SDL_WINDOWEVENT pause path, which freezes game
+      // time and opens the in-game pause state while audio is suspended.
       ysdk.on?.('game_api_pause', () => {
         pauseAudio();
         window.dispatchEvent(new Event('blur'));
