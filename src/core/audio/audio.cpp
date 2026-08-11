@@ -71,10 +71,12 @@ bool vw_InitAudio()
         return true;
     }
 
+#ifndef __EMSCRIPTEN__
     alutInitWithoutContext(nullptr, nullptr);
     if (!CheckALUTError(__func__)) {
         return false;
     }
+#endif
 
     // open default sound device
     ALCdevice *Device = alcOpenDevice(nullptr);
@@ -104,7 +106,9 @@ bool vw_InitAudio()
     std::cout << "Vendor     : " << alGetString(AL_VENDOR) << "\n";
     std::cout << "Renderer   : " << alGetString(AL_RENDERER) << "\n";
     std::cout << "Version    : " << alGetString(AL_VERSION) << "\n";
+#ifndef __EMSCRIPTEN__
     std::cout << "ALut ver   : " << alutGetMajorVersion() << "." << alutGetMinorVersion() << "\n";
+#endif
 
 #ifndef NDEBUG
     // print all supported OpenAL extensions (one per line)
@@ -161,8 +165,10 @@ void vw_ShutdownAudio()
         }
     }
 
+#ifndef __EMSCRIPTEN__
     alutExit();
     CheckALUTError(__func__);
+#endif
     AlutInitStatus = false;
 }
 
