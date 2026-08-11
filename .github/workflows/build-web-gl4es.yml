@@ -10,13 +10,14 @@ on:
       - 'web/shell.html'
       - 'web/web_glu_compat.cpp'
       - 'scripts/enable_gl4es_web.py'
+      - 'scripts/rle_tga_assets.py'
       - '.github/workflows/build-web-gl4es.yml'
 
 permissions:
   contents: write
 
 concurrency:
-  group: astromenace-web-gl4es-build-v3
+  group: astromenace-web-gl4es-build-v4
   cancel-in-progress: true
 
 jobs:
@@ -49,7 +50,7 @@ jobs:
             git push origin HEAD:main
           fi
 
-      - name: Prepare complete native VFS pack
+      - name: Prepare optimized native VFS pack
         id: native
         continue-on-error: true
         shell: bash
@@ -72,10 +73,13 @@ jobs:
 
             cp -a /tmp/native-astromenace/gamedata /tmp/yandex-gamedata
 
-            # models/models.pack is an INPUT to AstroMenace's VFS builder.
-            # The packer reads models from it and writes the final gamedata.vfs;
-            # the raw models.pack file is not separately shipped in dist/.
+            # models/models.pack is required by the upstream VFS builder.
             test -s /tmp/yandex-gamedata/models/models.pack
+
+            # AstroMenace natively supports RLE type-10 TGA files. Re-encode
+            # type-2 images losslessly and keep the original whenever RLE would
+            # be larger. Pixel values, orientation and dimensions stay intact.
+            python3 scripts/rle_tga_assets.py /tmp/yandex-gamedata
 
             mkdir -p /tmp/yandex-vfs
             /tmp/native-build/astromenace \
@@ -86,9 +90,6 @@ jobs:
             test -s /tmp/yandex-vfs/gamedata.vfs
             vfs_bytes="$(stat -c '%s' /tmp/yandex-vfs/gamedata.vfs)"
             echo "Packed gamedata.vfs: ${vfs_bytes} bytes"
-
-            # A valid AstroMenace VFS is many megabytes. This guard prevents a
-            # header-only/empty package (the broken build was just 16 bytes).
             if (( vfs_bytes < 1048576 )); then
               echo "gamedata.vfs is unexpectedly small: ${vfs_bytes} bytes" >&2
               exit 1
@@ -96,8 +97,10 @@ jobs:
             ls -lh /tmp/yandex-vfs/gamedata.vfs
           } > native-gl4es-build.log 2>&1
           code=$?
-          tail -n 300 native-gl4es-build.log > web/NATIVE_BUILD_LOG_GL4ES.txt || true
+          cp native-gl4es-build.log web/NATIVE_BUILD_LOG_GL4ES.txt || true
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          tga_saved="$(grep -E '^TGA bytes saved:' native-gl4es-build.log | tail -1 | awk '{print $4}')"
+          echo "tga_saved=${tga_saved:-0}" >> "$GITHUB_OUTPUT"
           if [[ $code -eq 0 ]]; then
             vfs_bytes="$(stat -c '%s' /tmp/yandex-vfs/gamedata.vfs)"
             echo "vfs_bytes=$vfs_bytes" >> "$GITHUB_OUTPUT"
@@ -143,7 +146,7 @@ jobs:
           } > "$GITHUB_WORKSPACE/gl4es-build.log" 2>&1
           code=$?
           cd "$GITHUB_WORKSPACE"
-          tail -n 300 gl4es-build.log > web/GL4ES_BUILD_LOG.txt || true
+          cp gl4es-build.log web/GL4ES_BUILD_LOG.txt || true
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
           if [[ $code -eq 0 ]]; then
             echo 'success=true' >> "$GITHUB_OUTPUT"
@@ -164,10 +167,7 @@ jobs:
 
           rm -rf dist
           mkdir -p dist web
-
-          # gl4es must be initialized after SDL creates the browser GL context.
           python3 scripts/enable_gl4es_web.py
-
           mapfile -t SOURCES < <(find src -type f -name '*.cpp' -print | sort)
 
           set +e
@@ -193,7 +193,7 @@ jobs:
           build_code=$?
           set -e
 
-          tail -n 400 web-gl4es-build.log > web/BUILD_LOG_GL4ES.txt || true
+          cp web-gl4es-build.log web/BUILD_LOG_GL4ES.txt || true
           emcc_version="$(em++ --version | head -n 1)"
           echo "emscripten=$emcc_version" >> "$GITHUB_OUTPUT"
           echo "exit_code=$build_code" >> "$GITHUB_OUTPUT"
@@ -207,8 +207,14 @@ jobs:
             echo "data_bytes=$data_bytes" >> "$GITHUB_OUTPUT"
             echo "wasm_bytes=$wasm_bytes" >> "$GITHUB_OUTPUT"
             echo "js_bytes=$js_bytes" >> "$GITHUB_OUTPUT"
+            if (( total_bytes <= 100000000 )); then
+              echo 'size_ok=true' >> "$GITHUB_OUTPUT"
+            else
+              echo 'size_ok=false' >> "$GITHUB_OUTPUT"
+            fi
             echo 'success=true' >> "$GITHUB_OUTPUT"
           else
+            echo 'size_ok=false' >> "$GITHUB_OUTPUT"
             echo 'success=false' >> "$GITHUB_OUTPUT"
           fi
           exit $build_code
@@ -236,8 +242,8 @@ jobs:
               echo
               echo '- Status: **FAILED (gl4es compilation)**'
               echo '- Run ID: `${{ github.run_id }}`'
+              echo '- Lossless TGA bytes saved: **${{ steps.native.outputs.tga_saved }}**'
               echo '- Packed VFS bytes: **${{ steps.native.outputs.vfs_bytes }}**'
-              echo '- gl4es exit code: **${{ steps.gl4es.outputs.exit_code }}**'
               echo '- See `web/GL4ES_BUILD_LOG.txt`.'
             } > web/BUILD_STATUS_GL4ES.md
           elif [[ "${{ steps.webbuild.outputs.success }}" == "true" ]]; then
@@ -247,11 +253,13 @@ jobs:
               echo '- Status: **SUCCESS**'
               echo '- Run ID: `${{ github.run_id }}`'
               echo '- Emscripten: `${{ steps.webbuild.outputs.emscripten }}`'
+              echo '- Lossless TGA bytes saved: **${{ steps.native.outputs.tga_saved }}**'
               echo '- Packed VFS bytes: **${{ steps.native.outputs.vfs_bytes }}**'
               echo '- Uncompressed dist bytes: **${{ steps.webbuild.outputs.total_bytes }}**'
               echo '- Asset data bytes: **${{ steps.webbuild.outputs.data_bytes }}**'
               echo '- WebAssembly bytes: **${{ steps.webbuild.outputs.wasm_bytes }}**'
               echo '- JavaScript bytes: **${{ steps.webbuild.outputs.js_bytes }}**'
+              echo '- Yandex 100,000,000-byte target: **${{ steps.webbuild.outputs.size_ok }}**'
               echo '- Output: GitHub Actions artifact `astromenace-yandexgames-web-gl4es`'
             } > web/BUILD_STATUS_GL4ES.md
           else
@@ -261,8 +269,6 @@ jobs:
               echo '- Status: **FAILED (AstroMenace Emscripten link)**'
               echo '- Run ID: `${{ github.run_id }}`'
               echo '- Packed VFS bytes: **${{ steps.native.outputs.vfs_bytes }}**'
-              echo '- Web exit code: **${{ steps.webbuild.outputs.exit_code }}**'
-              echo '- Emscripten: `${{ steps.webbuild.outputs.emscripten }}`'
               echo '- See `web/BUILD_LOG_GL4ES.txt`.'
             } > web/BUILD_STATUS_GL4ES.md
           fi
@@ -282,9 +288,6 @@ jobs:
         run: |
           set -euo pipefail
           cd "$GITHUB_WORKSPACE"
-
-          # CI patches this source file only for compilation. Do not publish the
-          # generated patch as a separate source change.
           git restore src/core/graphics/gl_main.cpp || true
           touch web/NATIVE_BUILD_LOG_GL4ES.txt web/GL4ES_BUILD_LOG.txt web/BUILD_LOG_GL4ES.txt
 
