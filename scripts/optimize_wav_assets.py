@@ -2,86 +2,150 @@
 """Reduce AstroMenace WAV distribution size for the browser build.
 
 The original game ships uncompressed PCM WAV sound effects and voice clips.
-For the Yandex/WebAssembly package we cap WAV sample rate at 22050 Hz while
-preserving channel count and PCM 16-bit output. Files already at or below the
-cap are left untouched, and a converted file is accepted only when it is
-strictly smaller than the source.
+For the temporary Yandex/WebAssembly build tree we cap WAV sample rate at
+22050 Hz while preserving channel count and sample width. Source assets in the
+repository/upstream project are never modified.
 
-This affects only the generated web build's temporary gamedata tree. The
-original assets remain unchanged in the source repository/upstream project.
+The implementation uses Python's standard-library ``wave`` module and, where
+available, ``audioop.ratecv``. A small pure-Python PCM fallback is included for
+Python versions where audioop has been removed. A converted file is accepted
+only after it can be opened again as PCM WAV and is strictly smaller.
 """
 
 from __future__ import annotations
 
 import argparse
-import json
+from array import array
 import os
 from pathlib import Path
-import subprocess
+import sys
 import tempfile
+import wave
+
+try:
+    import audioop  # Python <= 3.12
+except ImportError:  # pragma: no cover - used on newer runners
+    audioop = None
 
 
-def probe(path: Path) -> dict:
-    result = subprocess.run(
-        [
-            "ffprobe", "-v", "error",
-            "-select_streams", "a:0",
-            "-show_entries", "stream=sample_rate,channels,codec_name,duration",
-            "-of", "json", str(path),
-        ],
-        check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
-    payload = json.loads(result.stdout)
-    streams = payload.get("streams", [])
-    if not streams:
-        raise RuntimeError("no audio stream")
-    return streams[0]
+def read_pcm(path: Path):
+    with wave.open(str(path), "rb") as src:
+        if src.getcomptype() != "NONE":
+            raise ValueError(f"compressed WAV ({src.getcomptype()})")
+        params = src.getparams()
+        frames = src.readframes(src.getnframes())
+    return params, frames
+
+
+def resample_s16le_linear(frames: bytes, channels: int, src_rate: int, dst_rate: int) -> bytes:
+    """Linear PCM16 resampler used only if audioop is unavailable.
+
+    The format used by AstroMenace WAV assets is little-endian PCM. Linear
+    interpolation avoids the very audible aliasing of simply dropping samples
+    while keeping the implementation dependency-free for CI.
+    """
+    samples = array("h")
+    samples.frombytes(frames)
+    if sys.byteorder != "little":
+        samples.byteswap()
+
+    input_frames = len(samples) // channels
+    if input_frames <= 1:
+        return frames
+
+    output_frames = max(1, (input_frames * dst_rate) // src_rate)
+    out = array("h", [0]) * (output_frames * channels)
+    ratio = src_rate / float(dst_rate)
+
+    for out_index in range(output_frames):
+        position = out_index * ratio
+        left = int(position)
+        if left >= input_frames - 1:
+            left = input_frames - 1
+            frac = 0.0
+            right = left
+        else:
+            frac = position - left
+            right = left + 1
+
+        src_left = left * channels
+        src_right = right * channels
+        dst = out_index * channels
+        for channel in range(channels):
+            a = samples[src_left + channel]
+            b = samples[src_right + channel]
+            value = int(round(a + (b - a) * frac))
+            out[dst + channel] = max(-32768, min(32767, value))
+
+    if sys.byteorder != "little":
+        out.byteswap()
+    return out.tobytes()
+
+
+def resample_pcm(frames: bytes, sample_width: int, channels: int, src_rate: int, dst_rate: int) -> bytes:
+    if audioop is not None:
+        converted, _state = audioop.ratecv(
+            frames, sample_width, channels, src_rate, dst_rate, None
+        )
+        return converted
+
+    if sample_width != 2:
+        raise ValueError("audioop unavailable and WAV is not PCM16")
+    return resample_s16le_linear(frames, channels, src_rate, dst_rate)
 
 
 def optimize(path: Path, target_rate: int) -> tuple[int, int, bool, str]:
     before = path.stat().st_size
     try:
-        info = probe(path)
-        sample_rate = int(info.get("sample_rate") or 0)
-    except Exception as exc:
-        return before, before, False, f"probe failed: {exc}"
+        params, frames = read_pcm(path)
+    except (wave.Error, EOFError, ValueError) as exc:
+        return before, before, False, f"unsupported: {exc}"
 
+    sample_rate = params.framerate
     if sample_rate <= 0:
         return before, before, False, "unknown sample rate"
     if sample_rate <= target_rate:
         return before, before, False, f"already <= {target_rate} Hz"
+    if params.sampwidth not in (1, 2, 3, 4):
+        return before, before, False, f"sample width {params.sampwidth}"
 
-    fd, tmp_name = tempfile.mkstemp(prefix=path.stem + ".web-", suffix=".wav", dir=str(path.parent))
+    try:
+        converted = resample_pcm(
+            frames,
+            params.sampwidth,
+            params.nchannels,
+            sample_rate,
+            target_rate,
+        )
+    except (ValueError, OverflowError) as exc:
+        return before, before, False, f"resample failed: {exc}"
+
+    fd, tmp_name = tempfile.mkstemp(
+        prefix=path.stem + ".web-", suffix=".wav", dir=str(path.parent)
+    )
     os.close(fd)
     tmp = Path(tmp_name)
     try:
-        result = subprocess.run(
-            [
-                "ffmpeg", "-nostdin", "-v", "error", "-y",
-                "-i", str(path),
-                "-map_metadata", "-1",
-                "-ar", str(target_rate),
-                "-c:a", "pcm_s16le",
-                str(tmp),
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        if result.returncode != 0 or not tmp.exists():
-            return before, before, False, "ffmpeg failed"
+        with wave.open(str(tmp), "wb") as dst:
+            dst.setnchannels(params.nchannels)
+            dst.setsampwidth(params.sampwidth)
+            dst.setframerate(target_rate)
+            dst.setcomptype("NONE", "not compressed")
+            dst.writeframes(converted)
 
         after = tmp.stat().st_size
         if after >= before:
             return before, before, False, "no saving"
 
-        # Verify that ffprobe can decode the generated WAV before replacing the
-        # source in the temporary CI gamedata tree.
-        converted = probe(tmp)
-        if int(converted.get("sample_rate") or 0) != target_rate:
+        # Verify the generated file before atomically replacing the temporary
+        # web-build source asset.
+        verify, verify_frames = read_pcm(tmp)
+        if (
+            verify.framerate != target_rate
+            or verify.nchannels != params.nchannels
+            or verify.sampwidth != params.sampwidth
+            or not verify_frames
+        ):
             return before, before, False, "verification failed"
 
         os.replace(tmp, path)
@@ -133,7 +197,10 @@ def main() -> int:
 
     print("Largest WAV savings:")
     for saving, path, before, after, reason in sorted(savings, reverse=True)[:25]:
-        print(f"  {saving:10d}  {before:10d} -> {after:10d}  {reason:18s}  {path.relative_to(args.root)}")
+        print(
+            f"  {saving:10d}  {before:10d} -> {after:10d}  "
+            f"{reason:18s}  {path.relative_to(args.root)}"
+        )
 
     return 0
 
