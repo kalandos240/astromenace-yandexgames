@@ -1,0 +1,93 @@
+shared:INFO: (Emscripten: Running sanity checks)
+ports:INFO: retrieving port: zlib from https://github.com/madler/zlib/archive/refs/tags/v1.3.2.tar.gz
+ports:INFO: unpacking port: zlib
+cache:INFO: generating port: sysroot/lib/wasm32-emscripten/lto/libz.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libz.a" for subsequent builds)
+system_libs:INFO: compiled 15 inputs in 1.02s
+cache:INFO:  - ok
+ports:INFO: retrieving port: freetype from https://github.com/freetype/freetype/archive/VER-2-13-3.zip
+ports:INFO: unpacking port: freetype
+cache:INFO: generating port: sysroot/lib/wasm32-emscripten/lto/libfreetype.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libfreetype.a" for subsequent builds)
+system_libs:INFO: compiled 42 inputs in 4.79s
+cache:INFO:  - ok
+ports:INFO: retrieving port: ogg from https://github.com/xiph/ogg/releases/download/v1.3.5/libogg-1.3.5.zip
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/urllib/request.py", line 1344, in do_open
+    h.request(req.get_method(), req.selector, req.data, headers,
+  File "/usr/lib/python3.12/http/client.py", line 1365, in request
+    self._send_request(method, url, body, headers, encode_chunked)
+  File "/usr/lib/python3.12/http/client.py", line 1411, in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+  File "/usr/lib/python3.12/http/client.py", line 1360, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "/usr/lib/python3.12/http/client.py", line 1120, in _send_output
+    self.send(msg)
+  File "/usr/lib/python3.12/http/client.py", line 1064, in send
+    self.connect()
+  File "/usr/lib/python3.12/http/client.py", line 1506, in connect
+    self.sock = self._context.wrap_socket(self.sock,
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/ssl.py", line 455, in wrap_socket
+    return self.sslsocket_class._create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/ssl.py", line 1042, in _create
+    self.do_handshake()
+  File "/usr/lib/python3.12/ssl.py", line 1320, in do_handshake
+    self._sslobj.do_handshake()
+ssl.SSLCertVerificationError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate (_ssl.c:1000)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/tmp/emsdk/upstream/emscripten/em++.py", line 13, in <module>
+    sys.exit(emcc.main(sys.argv))
+             ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/contextlib.py", line 81, in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/tmp/emsdk/upstream/emscripten/emcc.py", line 372, in main
+    linker_args = phase_compile_inputs(state, newargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/contextlib.py", line 81, in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/tmp/emsdk/upstream/emscripten/emcc.py", line 612, in phase_compile_inputs
+    arg.value = compile_source_file(input_file)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/emsdk/upstream/emscripten/emcc.py", line 586, in compile_source_file
+    cmd = get_clang_command()
+          ^^^^^^^^^^^^^^^^^^^
+  File "/tmp/emsdk/upstream/emscripten/emcc.py", line 535, in get_clang_command
+    return compiler + compile.get_cflags(state.orig_args)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/emsdk/upstream/emscripten/tools/compile.py", line 86, in get_cflags
+    ports.add_cflags(cflags, settings)
+  File "/tmp/emsdk/upstream/emscripten/tools/ports/__init__.py", line 674, in add_cflags
+    port.get(Ports, settings, shared)
+  File "/tmp/emsdk/upstream/emscripten/tools/ports/ogg.py", line 18, in get
+    ports.fetch_project('ogg', f'https://github.com/xiph/ogg/releases/download/v{VERSION}/libogg-{VERSION}.zip', sha512hash=HASH)
+  File "/tmp/emsdk/upstream/emscripten/tools/ports/__init__.py", line 421, in fetch_project
+    if not Ports.fetch_port_artifact(name, url, sha512hash):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/emsdk/upstream/emscripten/tools/ports/__init__.py", line 414, in fetch_port_artifact
+    retrieve()
+  File "/tmp/emsdk/upstream/emscripten/tools/ports/__init__.py", line 362, in retrieve
+    f = urlopen(url)
+        ^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 215, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 515, in open
+    response = self._open(req, data)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 532, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 492, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 1392, in https_open
+    return self.do_open(http.client.HTTPSConnection, req,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 1347, in do_open
+    raise URLError(err)
+urllib.error.URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate (_ssl.c:1000)>
