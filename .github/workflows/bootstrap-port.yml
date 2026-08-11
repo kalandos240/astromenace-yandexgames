@@ -1,0 +1,49 @@
+name: Bootstrap AstroMenace Web Port
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/bootstrap-port.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Import existing Emscripten port
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f .astromenace-yandex-bootstrap ]]; then
+            echo "Bootstrap already completed."
+            exit 0
+          fi
+
+          workdir="$(mktemp -d)"
+          git clone --depth 1 --branch emscripten https://github.com/midzer/astromenace.git "$workdir/upstream"
+
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            "$workdir/upstream/" ./
+
+          cat > .astromenace-yandex-bootstrap <<'EOF'
+          Base imported from midzer/astromenace branch emscripten.
+          Original project: viewizard/astromenace.
+          Target platform: Yandex Games / WebAssembly.
+          EOF
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Import AstroMenace Emscripten port"
+          git push origin HEAD:main
