@@ -34,13 +34,13 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   Module.yandexLanguageIndex = 0;
   Module.yandexGameReadySent = false;
   Module.yandexPlatformPaused = false;
+  Module.yandexAdInProgress = false;
 
   const languageIndex = (lang) => {
     const short = String(lang || 'en').toLowerCase().split(/[-_]/)[0];
-    // AstroMenace ships text for EN/DE/RU/PL/ES/TR. Languages without their
-    // own recorded voice or localized bitmap assets already fall back to the
-    // English paths through gamedata/lang/text.csv.
-    return ({ en: 0, de: 1, ru: 2, pl: 3, es: 4, tr: 5 })[short] ?? 0;
+    // The Yandex runtime package contains only English and Russian.
+    // All other platform locales fall back to English automatically.
+    return ({ en: 0, ru: 1 })[short] ?? 0;
   };
 
   const trackAudioContexts = () => {
@@ -155,9 +155,55 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     }
   };
 
-  // Exposed for the CI-only WebAssembly source patch so mission completion can
-  // start an immediate IDBFS/cloud flush instead of waiting for the timer.
+  // Exposed for browser-side persistence hooks.
   Module.yandexSyncSave = syncSave;
+
+  // Called by the successful-mission path. We invoke an interstitial after
+  // every completed mission. Yandex Games itself may suppress a particular
+  // display when calls are too frequent; onClose(false) is handled normally.
+  Module.yandexLevelComplete = async () => {
+    await syncSave(true);
+
+    const showFullscreenAdv = Module.yandexSDK?.adv?.showFullscreenAdv;
+    if (typeof showFullscreenAdv !== 'function' || Module.yandexAdInProgress) {
+      return;
+    }
+
+    Module.yandexAdInProgress = true;
+    let finished = false;
+    const finishAd = () => {
+      if (finished) return;
+      finished = true;
+      Module.yandexAdInProgress = false;
+      if (!Module.yandexPlatformPaused && !document.hidden) {
+        window.dispatchEvent(new Event('focus'));
+        resumeAudio();
+      }
+    };
+
+    try {
+      Module.yandexSDK.adv.showFullscreenAdv({
+        callbacks: {
+          onOpen: () => {
+            pauseAudio();
+            window.dispatchEvent(new Event('blur'));
+            console.info('[Yandex] Level-complete interstitial opened.');
+          },
+          onClose: (wasShown) => {
+            console.info(`[Yandex] Level-complete interstitial ${wasShown ? 'shown' : 'not shown'}.`);
+            finishAd();
+          },
+          onError: (error) => {
+            console.warn('[Yandex] Level-complete interstitial failed:', error);
+            finishAd();
+          }
+        }
+      });
+    } catch (error) {
+      console.warn('[Yandex] Level-complete interstitial call failed:', error);
+      finishAd();
+    }
+  };
 
   const loadYandexSDK = () => new Promise((resolve) => {
     if (typeof YaGames !== 'undefined') {
@@ -270,7 +316,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     if (document.hidden) {
       pauseAudio();
       syncSave(true);
-    } else if (!Module.yandexPlatformPaused) {
+    } else if (!Module.yandexPlatformPaused && !Module.yandexAdInProgress) {
       resumeAudio();
     }
   });
