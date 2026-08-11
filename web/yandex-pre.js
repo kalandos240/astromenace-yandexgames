@@ -37,10 +37,10 @@ var Module = typeof Module !== 'undefined' ? Module : {};
 
   const languageIndex = (lang) => {
     const short = String(lang || 'en').toLowerCase().split(/[-_]/)[0];
-    // AstroMenace's shipped language table is EN/DE/RU/PL. Yandex locales
-    // without a native AstroMenace translation must fall back automatically
-    // to English instead of opening the desktop first-start language dialog.
-    return ({ en: 0, de: 1, ru: 2, pl: 3 })[short] ?? 0;
+    // AstroMenace ships text for EN/DE/RU/PL/ES/TR. Languages without their
+    // own recorded voice or localized bitmap assets already fall back to the
+    // English paths through gamedata/lang/text.csv.
+    return ({ en: 0, de: 1, ru: 2, pl: 3, es: 4, tr: 5 })[short] ?? 0;
   };
 
   const trackAudioContexts = () => {
