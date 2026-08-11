@@ -37,6 +37,8 @@ body {
   align-items: center;
   justify-content: center;
   gap: 14px;
+  padding: 24px;
+  box-sizing: border-box;
   pointer-events: none;
   background: #000;
   z-index: 10;
@@ -44,6 +46,15 @@ body {
 
 #loading.hidden {
   display: none;
+}
+
+#loading.error #spinner {
+  display: none;
+}
+
+#loading.error #status {
+  max-width: min(88vw, 720px);
+  opacity: 1;
 }
 
 #spinner {
@@ -59,6 +70,7 @@ body {
   max-width: min(80vw, 560px);
   text-align: center;
   font-size: 14px;
+  line-height: 1.45;
   opacity: 0.85;
 }
 
