@@ -2,6 +2,8 @@
  * AstroMenace -> Yandex Games bridge.
  * Loaded by Emscripten with --pre-js before the game starts.
  */
+var Module = typeof Module !== 'undefined' ? Module : {};
+
 (() => {
   'use strict';
 
@@ -31,6 +33,7 @@
   Module.yandexPlayer = null;
   Module.yandexLanguageIndex = 0;
   Module.yandexGameReadySent = false;
+  Module.yandexPlatformPaused = false;
 
   const languageIndex = (lang) => {
     const short = String(lang || 'en').toLowerCase().split(/[-_]/)[0];
@@ -152,6 +155,10 @@
     }
   };
 
+  // Exposed for the CI-only WebAssembly source patch so mission completion can
+  // start an immediate IDBFS/cloud flush instead of waiting for the timer.
+  Module.yandexSyncSave = syncSave;
+
   const loadYandexSDK = () => new Promise((resolve) => {
     if (typeof YaGames !== 'undefined') {
       resolve(true);
@@ -192,10 +199,12 @@
       // AstroMenace's existing SDL_WINDOWEVENT pause path, which freezes game
       // time and opens the in-game pause state while audio is suspended.
       ysdk.on?.('game_api_pause', () => {
+        Module.yandexPlatformPaused = true;
         pauseAudio();
         window.dispatchEvent(new Event('blur'));
       });
       ysdk.on?.('game_api_resume', () => {
+        Module.yandexPlatformPaused = false;
         resumeAudio();
         window.dispatchEvent(new Event('focus'));
       });
@@ -212,6 +221,14 @@
       console.info('[Yandex] LoadingAPI.ready sent.');
     } catch (error) {
       console.warn('[Yandex] LoadingAPI.ready failed:', error);
+    }
+
+    // Startup ads can emit game_api_pause before SDL has installed its browser
+    // focus handlers. Re-emit the pause once the game is actually ready so the
+    // first interactive frame cannot run behind an active platform overlay.
+    if (Module.yandexPlatformPaused) {
+      pauseAudio();
+      window.dispatchEvent(new Event('blur'));
     }
   };
 
@@ -253,7 +270,7 @@
     if (document.hidden) {
       pauseAudio();
       syncSave(true);
-    } else {
+    } else if (!Module.yandexPlatformPaused) {
       resumeAudio();
     }
   });
