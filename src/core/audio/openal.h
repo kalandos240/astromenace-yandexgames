@@ -44,7 +44,10 @@ sources, you are free to change or add methods to sound.h header file instead.
 #include "AL/al.h"
 #include "AL/alc.h"
 #endif // defined(__APPLE__) && defined(__MACH__)
+
+#ifndef __EMSCRIPTEN__
 #include "AL/alut.h"
+#endif
 
 namespace viewizard {
 
