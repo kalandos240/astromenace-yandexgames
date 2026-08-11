@@ -6,12 +6,14 @@ var Module = typeof Module !== 'undefined' ? Module : {};
 
   const SAVE_DIR = '/persistent';
   const CLOUD_KEY = 'astromenaceSave';
+  const LOCAL_STORAGE_KEY = 'astromenaceLocalSaveV1';
   const SAVE_INTERVAL_MS = 15000;
   const IDB_STARTUP_TIMEOUT_MS = 1200;
   const SDK_SCRIPT_TIMEOUT_MS = 6000;
   const SDK_INIT_TIMEOUT_MS = 8000;
   const PLAYER_TIMEOUT_MS = 2500;
   const SAVE_CLOCK_TOLERANCE_MS = 1500;
+  const AD_INTERVAL_MS = 120000;
   const RU_FALLBACK_LANGS = new Set(['ru', 'be', 'kk', 'uk', 'uz']);
   const trackedAudioContexts = new Set();
 
@@ -33,22 +35,21 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   Module.yandexCloudResolved = false;
   Module.hadLocalSaveAtStartup = false;
   Module.localSaveUpdatedAtAtStartup = 0;
+  Module.usesIDBFS = false;
+  Module.yandexNextAdAt = 0;
 
   const isRussian = () => Module.yandexLanguageCode === 'ru';
 
   const localizeStatus = (value) => {
-    let text = String(value || '');
-    if (!isRussian()) {
-      return text === 'Running...' ? 'Starting engine...' : text;
-    }
-
+    const text = String(value || '');
+    if (!isRussian()) return text === 'Running...' ? 'Starting engine...' : text;
     const replacements = [
       [/^Running\.\.\.$/, 'Запуск движка...'],
       [/^Starting engine\.\.\.$/, 'Запуск движка...'],
       [/^Connecting to Yandex Games\.\.\.$/, 'Подключение к Яндекс Играм...'],
       [/^Decoding game data\.\.\./, 'Подготовка данных игры...'],
       [/^Unpacking game data\.\.\./, 'Распаковка данных игры...'],
-      [/^Installing game data\.\.\./, 'Подготовка файлов игры...'],
+      [/^Installing game data\.\.\./, 'Проверка данных игры...'],
       [/^Loading saved progress\.\.\./, 'Загрузка сохранения...'],
       [/^Preparing game\.\.\./, 'Подготовка игры...'],
       [/^Initializing SDL\.\.\./, 'Инициализация игры...'],
@@ -87,9 +88,9 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   Module.yandexSetStatus = setStatus;
   Module.setStatus = setStatus;
   Module.monitorRunDependencies = (left) => {
-    if (left > 0 && !String(statusElement()?.textContent || '').includes('Распаковка данных игры')) {
-      setStatus(`Preparing game... (${left})`);
-    }
+    if (left <= 0) return;
+    const current = String(statusElement()?.textContent || '');
+    if (/Распаковка данных игры|Unpacking game data|Проверка данных игры|Installing game data/i.test(current)) return;
   };
 
   const isExpectedFirstLaunchMessage = (text) =>
@@ -105,11 +106,8 @@ var Module = typeof Module !== 'undefined' ? Module : {};
       console.debug('[AstroMenace] Expected web fallback:', text);
       return;
     }
-
     console.error(text);
-    if (!Module.yandexGameReadySent && /(abort|failed|error|corrupt|not found|unable)/i.test(text)) {
-      showFatal(text);
-    }
+    if (!Module.yandexGameReadySent && /(abort|failed|error|corrupt|not found|unable)/i.test(text)) showFatal(text);
   };
   Module.onAbort = (reason) => showFatal(reason || 'WebAssembly aborted');
   Module.onExit = (status) => {
@@ -134,7 +132,6 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     document.documentElement.lang = gameLang;
     return { sdkLang, gameLang };
   };
-
   const applyLocalLanguageFallback = () => setGameLanguage(navigator.language || 'en');
 
   const trackAudioContexts = () => {
@@ -152,23 +149,16 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     if (window.webkitAudioContext === NativeAudioContext) window.webkitAudioContext = WrappedAudioContext;
   };
 
-  const pauseAudio = () => {
-    trackedAudioContexts.forEach((ctx) => {
-      if (ctx?.state === 'running') ctx.suspend().catch(() => {});
-    });
-  };
-
-  const resumeAudio = () => {
-    trackedAudioContexts.forEach((ctx) => {
-      if (ctx?.state === 'suspended') ctx.resume().catch(() => {});
-    });
-  };
+  const pauseAudio = () => trackedAudioContexts.forEach((ctx) => {
+    if (ctx?.state === 'running') ctx.suspend().catch(() => {});
+  });
+  const resumeAudio = () => trackedAudioContexts.forEach((ctx) => {
+    if (ctx?.state === 'suspended') ctx.resume().catch(() => {});
+  });
 
   const releasePointerLock = () => {
     if (document.pointerLockElement === Module.canvas) {
-      try {
-        document.exitPointerLock?.();
-      } catch (_) {}
+      try { document.exitPointerLock?.(); } catch (_) {}
     }
   };
 
@@ -186,11 +176,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     if (Module.yandexGameplayApiRunning === shouldRun) return;
     const api = Module.yandexSDK?.features?.GameplayAPI;
     try {
-      if (shouldRun) {
-        api?.start?.();
-      } else {
-        api?.stop?.();
-      }
+      if (shouldRun) api?.start?.(); else api?.stop?.();
       Module.yandexGameplayApiRunning = shouldRun;
       if (Module.yandexSDK) console.info(`[Yandex] GameplayAPI.${shouldRun ? 'start' : 'stop'} sent.`);
     } catch (error) {
@@ -198,102 +184,172 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     }
   };
 
+  const adIsDue = () => Module.yandexNextAdAt > 0 && Date.now() >= Module.yandexNextAdAt;
+  const armAdClock = () => { Module.yandexNextAdAt = Date.now() + AD_INTERVAL_MS; };
+
+  const showScheduledInterstitial = (reason) => {
+    if (!Module.yandexGameReadySent || !adIsDue()) return false;
+    if (Module.yandexGameplayRequested || Module.yandexPlatformPaused || Module.yandexAdInProgress || document.hidden) return false;
+    if (typeof Module.yandexSDK?.adv?.showFullscreenAdv !== 'function') {
+      armAdClock();
+      return false;
+    }
+
+    Module.yandexAdInProgress = true;
+    armAdClock();
+    setGameplayApiRunning(false);
+    releasePointerLock();
+    pauseAudio();
+    window.dispatchEvent(new Event('blur'));
+    console.info(`[Yandex] Scheduled interstitial requested at safe point: ${reason}.`);
+
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      Module.yandexAdInProgress = false;
+      if (!Module.yandexPlatformPaused && !document.hidden) {
+        window.dispatchEvent(new Event('focus'));
+        resumeAudio();
+        if (Module.yandexGameplayRequested) setGameplayApiRunning(true);
+      }
+    };
+
+    try {
+      Module.yandexSDK.adv.showFullscreenAdv({
+        callbacks: {
+          onOpen: () => {
+            setGameplayApiRunning(false);
+            releasePointerLock();
+            pauseAudio();
+          },
+          onClose: finish,
+          onError: (error) => {
+            console.warn('[Yandex] Interstitial failed:', error);
+            finish();
+          }
+        }
+      });
+    } catch (error) {
+      console.warn('[Yandex] Interstitial call failed:', error);
+      finish();
+    }
+    return true;
+  };
+  Module.yandexMaybeShowAd = showScheduledInterstitial;
+
   Module.yandexGameplayStart = () => {
     Module.yandexGameplayRequested = true;
     setGameplayApiRunning(true);
     tryPointerLock();
   };
-
   Module.yandexGameplayStop = () => {
     Module.yandexGameplayRequested = false;
     setGameplayApiRunning(false);
     releasePointerLock();
+    setTimeout(() => showScheduledInterstitial('gameplay-pause-or-menu'), 0);
   };
 
   Module.canvas?.addEventListener('pointerdown', () => {
     if (Module.yandexGameplayRequested) tryPointerLock();
-  });
-
-  const syncFs = (populate, timeoutMs = 1500) => new Promise((resolve) => {
-    let done = false;
-    const finish = (error) => {
-      if (done) return;
-      done = true;
-      resolve(!error);
-    };
-    const timer = setTimeout(() => finish(null), timeoutMs);
-    try {
-      FS.syncfs(Boolean(populate), (error) => {
-        clearTimeout(timer);
-        if (error) console.warn('[Storage] IDBFS sync failed:', error);
-        finish(error || null);
-      });
-    } catch (error) {
-      clearTimeout(timer);
-      console.warn('[Storage] IDBFS unavailable; continuing:', error);
-      finish(error);
-    }
+    else showScheduledInterstitial('menu-interaction');
   });
 
   const decodeEmbeddedGzip = async () => {
     const chunks = globalThis.ASTROMENACE_GAMEDATA_GZIP_B64_CHUNKS;
     const gzipSize = Number(globalThis.ASTROMENACE_GAMEDATA_GZIP_SIZE || 0);
     const rawSize = Number(globalThis.ASTROMENACE_GAMEDATA_RAW_SIZE || 0);
+    if (!Array.isArray(chunks) || chunks.length === 0 || !gzipSize || !rawSize) throw new Error('embedded gamedata is missing');
+    if (typeof DecompressionStream !== 'function' || typeof ReadableStream !== 'function') throw new Error('browser gzip streaming is unavailable');
 
-    if (!Array.isArray(chunks) || chunks.length === 0 || !gzipSize || !rawSize) {
-      throw new Error('embedded gamedata is missing');
-    }
-    if (typeof DecompressionStream !== 'function') {
-      throw new Error('this browser does not support gzip DecompressionStream');
-    }
+    let chunkIndex = 0;
+    let compressedRead = 0;
+    setStatus('Decoding game data... 0%');
 
-    setStatus('Decoding game data...');
-    let compressed = new Uint8Array(gzipSize);
-    let offset = 0;
+    const compressedStream = new ReadableStream({
+      async pull(controller) {
+        if (chunkIndex >= chunks.length) {
+          if (compressedRead !== gzipSize) {
+            controller.error(new Error(`embedded gamedata is truncated (${compressedRead}/${gzipSize})`));
+            return;
+          }
+          controller.close();
+          return;
+        }
 
-    for (let index = 0; index < chunks.length; index++) {
-      const binary = atob(chunks[index]);
-      if (offset + binary.length > compressed.length) {
-        throw new Error('embedded gamedata size is invalid');
-      }
-      for (let i = 0; i < binary.length; i++) compressed[offset + i] = binary.charCodeAt(i);
-      offset += binary.length;
-
-      if ((index & 7) === 7 || index === chunks.length - 1) {
-        const percent = Math.min(99, Math.floor((100 * offset) / gzipSize));
+        const encoded = chunks[chunkIndex];
+        chunks[chunkIndex] = null;
+        chunkIndex += 1;
+        const binary = atob(encoded);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        compressedRead += bytes.length;
+        if (compressedRead > gzipSize) {
+          controller.error(new Error('embedded gamedata size is invalid'));
+          return;
+        }
+        controller.enqueue(bytes);
+        const percent = Math.min(99, Math.floor((100 * compressedRead) / gzipSize));
         setStatus(`Decoding game data... ${percent}%`);
         await nextBrowserTurn();
       }
+    });
+
+    setStatus('Unpacking game data... 0%');
+    const reader = compressedStream.pipeThrough(new DecompressionStream('gzip')).getReader();
+    let file = null;
+    let rawWritten = 0;
+    let lastPercent = -1;
+
+    try {
+      try { FS.unlink('/gamedata.vfs'); } catch (_) {}
+      file = FS.open('/gamedata.vfs', 'w');
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        if (!value || !value.length) continue;
+        if (rawWritten + value.length > rawSize) throw new Error('unpacked gamedata exceeds expected size');
+
+        /* IMPORTANT: an explicit file position is required. Passing null makes
+           Emscripten treat the position as zero on some FS implementations and
+           overwrites the VFS header on every decompressed chunk. */
+        const written = FS.write(file, value, 0, value.length, rawWritten);
+        if (written !== value.length) throw new Error(`short VFS write (${written}/${value.length})`);
+        rawWritten += written;
+
+        const percent = Math.min(99, Math.floor((100 * rawWritten) / rawSize));
+        if (percent !== lastPercent) {
+          lastPercent = percent;
+          setStatus(`Unpacking game data... ${percent}%`);
+          await nextBrowserTurn();
+        }
+      }
+    } finally {
+      if (file) FS.close(file);
+      globalThis.ASTROMENACE_GAMEDATA_GZIP_B64_CHUNKS = null;
     }
 
-    if (offset !== gzipSize) {
-      throw new Error(`embedded gamedata is truncated (${offset}/${gzipSize})`);
+    if (rawWritten !== rawSize) throw new Error(`unpacked gamedata size mismatch (${rawWritten}/${rawSize})`);
+    const stat = FS.stat('/gamedata.vfs');
+    if (Number(stat?.size || 0) !== rawSize) throw new Error(`installed gamedata size mismatch (${stat?.size}/${rawSize})`);
+
+    const header = FS.readFile('/gamedata.vfs').subarray(0, 8);
+    const expectedHeader = [0x56, 0x46, 0x53, 0x5f, 0x76, 0x31, 0x2e, 0x36]; // VFS_v1.6
+    for (let i = 0; i < expectedHeader.length; i++) {
+      if (header[i] !== expectedHeader[i]) throw new Error('installed gamedata VFS header is invalid');
     }
 
-    globalThis.ASTROMENACE_GAMEDATA_GZIP_B64_CHUNKS = null;
-    setStatus('Unpacking game data...');
-    const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream('gzip'));
-    const rawBuffer = await new Response(stream).arrayBuffer();
-    compressed = null;
-
-    if (rawBuffer.byteLength !== rawSize) {
-      throw new Error(`unpacked gamedata size mismatch (${rawBuffer.byteLength}/${rawSize})`);
-    }
-
-    setStatus('Installing game data...');
-    FS.writeFile('/gamedata.vfs', new Uint8Array(rawBuffer));
+    setStatus('Installing game data... 100%');
+    console.info(`[Startup] Valid VFS installed: ${rawWritten} bytes, header VFS_v1.6.`);
     await nextBrowserTurn();
   };
 
   const encodeBytes = (bytes) => {
     let binary = '';
     const chunk = 0x8000;
-    for (let i = 0; i < bytes.length; i += chunk) {
-      binary += String.fromCharCode(...bytes.subarray(i, Math.min(i + chunk, bytes.length)));
-    }
+    for (let i = 0; i < bytes.length; i += chunk) binary += String.fromCharCode(...bytes.subarray(i, Math.min(i + chunk, bytes.length)));
     return btoa(binary);
   };
-
   const decodeBytes = (value) => {
     const binary = atob(value);
     const bytes = new Uint8Array(binary.length);
@@ -302,13 +358,8 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   };
 
   const saveFileNames = () => {
-    try {
-      return FS.readdir(SAVE_DIR).filter((name) => name !== '.' && name !== '..');
-    } catch (_) {
-      return [];
-    }
+    try { return FS.readdir(SAVE_DIR).filter((name) => name !== '.' && name !== '..'); } catch (_) { return []; }
   };
-
   const collectSaveFiles = () => {
     const files = {};
     for (const name of saveFileNames()) {
@@ -318,9 +369,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
         const stat = FS.stat(path);
         if (!FS.isFile(stat.mode)) continue;
         files[name] = encodeBytes(FS.readFile(path, { encoding: 'binary' }));
-      } catch (error) {
-        console.warn('[Storage] Could not collect save file:', name, error);
-      }
+      } catch (error) { console.warn('[Storage] Could not collect save file:', name, error); }
     }
     return files;
   };
@@ -332,7 +381,6 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     if (!Number.isFinite(numeric) || numeric <= 0) return 0;
     return numeric < 1e12 ? numeric * 1000 : numeric;
   };
-
   const localSaveUpdatedAt = () => {
     let newest = 0;
     for (const name of saveFileNames()) {
@@ -345,6 +393,65 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     return newest;
   };
 
+  const restoreLocalStorage = () => {
+    try {
+      const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (!raw) return true;
+      const snapshot = JSON.parse(raw);
+      const files = snapshot?.files && typeof snapshot.files === 'object' ? snapshot.files : {};
+      const stamp = Number(snapshot?.updatedAt || 0);
+      for (const [name, encoded] of Object.entries(files)) {
+        if (!/^[A-Za-z0-9_.-]+$/.test(name) || typeof encoded !== 'string') continue;
+        const path = `${SAVE_DIR}/${name}`;
+        FS.writeFile(path, decodeBytes(encoded));
+        if (stamp > 0 && typeof FS.utime === 'function') {
+          try { FS.utime(path, stamp, stamp); } catch (_) {}
+        }
+      }
+      return true;
+    } catch (error) {
+      console.warn('[Storage] localStorage restore skipped:', error);
+      return false;
+    }
+  };
+
+  const persistLocalStorage = () => {
+    try {
+      const files = collectSaveFiles();
+      const updatedAt = Math.max(localSaveUpdatedAt(), Date.now());
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ version: 1, updatedAt, files }));
+      return true;
+    } catch (error) {
+      console.warn('[Storage] localStorage save skipped:', error);
+      return false;
+    }
+  };
+
+  const syncFs = (populate, timeoutMs = 1500) => {
+    if (!Module.usesIDBFS) return Promise.resolve(populate ? restoreLocalStorage() : persistLocalStorage());
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = (error) => {
+        if (done) return;
+        done = true;
+        resolve(!error);
+      };
+      const timer = setTimeout(() => finish(null), timeoutMs);
+      try {
+        FS.syncfs(Boolean(populate), (error) => {
+          clearTimeout(timer);
+          if (error) console.warn('[Storage] IDBFS sync failed:', error);
+          finish(error || null);
+        });
+      } catch (error) {
+        clearTimeout(timer);
+        console.warn('[Storage] IDBFS sync unavailable; switching to localStorage:', error);
+        Module.usesIDBFS = false;
+        finish(error);
+      }
+    });
+  };
+
   const fingerprintFiles = (files) => {
     const names = Object.keys(files || {}).sort();
     let hash = 2166136261;
@@ -355,10 +462,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
       }
     };
     for (const name of names) {
-      feed(name);
-      feed('\0');
-      feed(String(files[name] || ''));
-      feed('\0');
+      feed(name); feed('\0'); feed(String(files[name] || '')); feed('\0');
     }
     return `${names.length}:${hash.toString(16)}`;
   };
@@ -369,11 +473,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     if (!Object.keys(files).length) return;
     const updatedAt = Math.max(Number(updatedAtOverride || 0), localSaveUpdatedAt(), 1);
     await timeout(Module.yandexPlayer.setData({
-      [CLOUD_KEY]: {
-        version: 3,
-        updatedAt,
-        files
-      }
+      [CLOUD_KEY]: { version: 3, updatedAt, files }
     }, Boolean(flushCloud)), PLAYER_TIMEOUT_MS, 'player.setData');
   };
 
@@ -381,11 +481,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     if (typeof FS === 'undefined') return;
     await syncFs(false);
     if (!Module.yandexPlayer || !Module.yandexCloudResolved) return;
-    try {
-      await writeCloudPayload(flushCloud);
-    } catch (error) {
-      console.warn('[Yandex] Cloud save write skipped:', error);
-    }
+    try { await writeCloudPayload(flushCloud); } catch (error) { console.warn('[Yandex] Cloud save write skipped:', error); }
   };
   Module.yandexSyncSave = syncSave;
 
@@ -410,14 +506,9 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   const ensureSdkScript = async () => {
     if (location.protocol === 'file:') return false;
     if (typeof YaGames !== 'undefined') return true;
-
     await new Promise((resolve) => {
       let settled = false;
-      const finish = () => {
-        if (settled) return;
-        settled = true;
-        resolve();
-      };
+      const finish = () => { if (!settled) { settled = true; resolve(); } };
       const script = document.createElement('script');
       script.src = '/sdk.js';
       script.async = true;
@@ -434,40 +525,37 @@ var Module = typeof Module !== 'undefined' ? Module : {};
       applyLocalLanguageFallback();
       return;
     }
-
     setStatus('Connecting to Yandex Games...');
     if (!(await ensureSdkScript())) throw new Error('Yandex Games SDK did not load');
-
     const ysdk = await timeout(YaGames.init(), SDK_INIT_TIMEOUT_MS, 'YaGames.init');
     Module.yandexSDK = ysdk;
-
     const resolved = setGameLanguage(ysdk.environment?.i18n?.lang);
     registerPlatformEvents(ysdk);
     console.info(`[Yandex] SDK initialized before main; language ${resolved.sdkLang || 'unknown'} -> ${resolved.gameLang}.`);
   };
 
-  const restoreCloudFiles = async (cloudFiles) => {
-    const allowedCloudNames = new Set(Object.keys(cloudFiles || {}).filter((name) => /^[A-Za-z0-9_.-]+$/.test(name)));
+  const restoreCloudFiles = async (cloudFiles, cloudUpdatedAt = 0) => {
+    const allowed = new Set(Object.keys(cloudFiles || {}).filter((name) => /^[A-Za-z0-9_.-]+$/.test(name)));
     for (const name of saveFileNames()) {
-      if (!/^[A-Za-z0-9_.-]+$/.test(name) || allowedCloudNames.has(name)) continue;
-      try {
-        FS.unlink(`${SAVE_DIR}/${name}`);
-      } catch (_) {}
+      if (!/^[A-Za-z0-9_.-]+$/.test(name) || allowed.has(name)) continue;
+      try { FS.unlink(`${SAVE_DIR}/${name}`); } catch (_) {}
     }
     for (const [name, encoded] of Object.entries(cloudFiles || {})) {
       if (!/^[A-Za-z0-9_.-]+$/.test(name) || typeof encoded !== 'string') continue;
-      FS.writeFile(`${SAVE_DIR}/${name}`, decodeBytes(encoded));
+      const path = `${SAVE_DIR}/${name}`;
+      FS.writeFile(path, decodeBytes(encoded));
+      if (cloudUpdatedAt > 0 && typeof FS.utime === 'function') {
+        try { FS.utime(path, cloudUpdatedAt, cloudUpdatedAt); } catch (_) {}
+      }
     }
     await syncFs(false);
   };
 
   const resolveNewestSave = async () => {
     if (!Module.yandexPlayer) return false;
-
     const localFiles = collectSaveFiles();
     const localHasSave = Object.keys(localFiles).length > 0;
     const localTimestamp = Number(Module.localSaveUpdatedAtAtStartup || localSaveUpdatedAt() || 0);
-
     const data = await timeout(Module.yandexPlayer.getData([CLOUD_KEY]), PLAYER_TIMEOUT_MS, 'player.getData');
     const cloud = data?.[CLOUD_KEY];
     const cloudFiles = cloud?.files && typeof cloud.files === 'object' ? cloud.files : {};
@@ -480,11 +568,10 @@ var Module = typeof Module !== 'undefined' ? Module : {};
       console.info('[Yandex] Save merge: local save selected (cloud empty).');
       return false;
     }
-
     if (!Module.hadLocalSaveAtStartup) {
-      await restoreCloudFiles(cloudFiles);
+      await restoreCloudFiles(cloudFiles, cloudTimestamp);
       Module.yandexCloudResolved = true;
-      console.info('[Yandex] Save merge: cloud save selected (no local save existed at startup).');
+      console.info('[Yandex] Save merge: cloud save selected (no local save at startup).');
       return true;
     }
 
@@ -495,9 +582,8 @@ var Module = typeof Module !== 'undefined' ? Module : {};
       console.info('[Yandex] Save merge: local and cloud progress are identical.');
       return false;
     }
-
     if (cloudTimestamp > localTimestamp + SAVE_CLOCK_TOLERANCE_MS) {
-      await restoreCloudFiles(cloudFiles);
+      await restoreCloudFiles(cloudFiles, cloudTimestamp);
       Module.yandexCloudResolved = true;
       console.info(`[Yandex] Save merge: newer cloud save selected (${cloudTimestamp} > ${localTimestamp}).`);
       return true;
@@ -511,14 +597,22 @@ var Module = typeof Module !== 'undefined' ? Module : {};
 
   const initPlayerAfterGameReady = async () => {
     const ysdk = Module.yandexSDK;
-    if (!ysdk) return;
+    if (!ysdk) {
+      Module.yandexCloudResolved = true;
+      return;
+    }
     try {
       Module.yandexPlayer = await timeout(ysdk.getPlayer(), PLAYER_TIMEOUT_MS, 'ysdk.getPlayer');
       const restoredCloud = await resolveNewestSave();
       if (restoredCloud) {
-        const stamp = String(Date.now());
-        sessionStorage.setItem('astromenace-cloud-restored', stamp);
-        location.reload();
+        if (!sessionStorage.getItem('astromenace-cloud-restore-reload')) {
+          sessionStorage.setItem('astromenace-cloud-restore-reload', '1');
+          location.reload();
+        } else {
+          console.warn('[Yandex] Cloud save restored but reload was already attempted; continuing without another reload.');
+        }
+      } else {
+        sessionStorage.removeItem('astromenace-cloud-restore-reload');
       }
     } catch (error) {
       Module.yandexCloudResolved = true;
@@ -529,44 +623,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   Module.yandexLevelComplete = async () => {
     Module.yandexGameplayStop();
     await syncSave(true);
-    const showFullscreenAdv = Module.yandexSDK?.adv?.showFullscreenAdv;
-    if (typeof showFullscreenAdv !== 'function' || Module.yandexAdInProgress) return;
-
-    Module.yandexAdInProgress = true;
-    setGameplayApiRunning(false);
-    releasePointerLock();
-    let finished = false;
-    const finish = () => {
-      if (finished) return;
-      finished = true;
-      Module.yandexAdInProgress = false;
-      if (!Module.yandexPlatformPaused && !document.hidden) {
-        window.dispatchEvent(new Event('focus'));
-        resumeAudio();
-        if (Module.yandexGameplayRequested) setGameplayApiRunning(true);
-      }
-    };
-
-    try {
-      Module.yandexSDK.adv.showFullscreenAdv({
-        callbacks: {
-          onOpen: () => {
-            setGameplayApiRunning(false);
-            releasePointerLock();
-            pauseAudio();
-            window.dispatchEvent(new Event('blur'));
-          },
-          onClose: finish,
-          onError: (error) => {
-            console.warn('[Yandex] Interstitial failed:', error);
-            finish();
-          }
-        }
-      });
-    } catch (error) {
-      console.warn('[Yandex] Interstitial call failed:', error);
-      finish();
-    }
+    showScheduledInterstitial('level-complete');
   };
 
   Module.yandexGameReady = () => {
@@ -574,33 +631,27 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     Module.yandexGameReadySent = true;
     const loading = loadingElement();
     if (loading) loading.classList.add('hidden');
-
     try {
       Module.yandexSDK?.features?.LoadingAPI?.ready();
       if (Module.yandexSDK) console.info('[Yandex] LoadingAPI.ready sent.');
-    } catch (error) {
-      console.warn('[Yandex] LoadingAPI.ready failed:', error);
-    }
+    } catch (error) { console.warn('[Yandex] LoadingAPI.ready failed:', error); }
     setGameplayApiRunning(false);
+    armAdClock();
     initPlayerAfterGameReady();
   };
 
   trackAudioContexts();
   applyLocalLanguageFallback();
-
   Module.preRun = Module.preRun || [];
 
   Module.preRun.push(() => {
     addRunDependency('astromenace-yandex-sdk');
     (async () => {
-      try {
-        await initYandexForStartup();
-      } catch (error) {
+      try { await initYandexForStartup(); }
+      catch (error) {
         console.warn('[Yandex] SDK startup initialization failed; continuing with local fallback:', error);
         applyLocalLanguageFallback();
-      } finally {
-        removeRunDependency('astromenace-yandex-sdk');
-      }
+      } finally { removeRunDependency('astromenace-yandex-sdk'); }
     })();
   });
 
@@ -609,12 +660,11 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     (async () => {
       try {
         await decodeEmbeddedGzip();
+        removeRunDependency('astromenace-embedded-gamedata');
       } catch (error) {
         console.error('[Startup] Could not install game data:', error);
         showFatal(error?.message || String(error));
-        return;
       }
-      removeRunDependency('astromenace-embedded-gamedata');
     })();
   });
 
@@ -624,17 +674,22 @@ var Module = typeof Module !== 'undefined' ? Module : {};
       try {
         setStatus('Loading saved progress...');
         FS.mkdirTree(SAVE_DIR);
-        try {
-          FS.mount(IDBFS, {}, SAVE_DIR);
-        } catch (error) {
-          console.warn('[Storage] IDBFS mount warning:', error);
+        if (typeof IDBFS !== 'undefined') {
+          try {
+            FS.mount(IDBFS, {}, SAVE_DIR);
+            Module.usesIDBFS = true;
+            console.info('[Storage] IDBFS enabled.');
+          } catch (error) {
+            Module.usesIDBFS = false;
+            console.warn('[Storage] IDBFS mount failed; using localStorage:', error);
+          }
+        } else {
+          console.info('[Storage] IDBFS is not linked; using localStorage fallback.');
         }
         await syncFs(true, IDB_STARTUP_TIMEOUT_MS);
         Module.hadLocalSaveAtStartup = saveFileNames().length > 0;
         Module.localSaveUpdatedAtAtStartup = localSaveUpdatedAt();
-      } finally {
-        removeRunDependency('astromenace-local-save');
-      }
+      } finally { removeRunDependency('astromenace-local-save'); }
     })();
   });
 
@@ -653,6 +708,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
       if (Module.yandexGameplayRequested) setGameplayApiRunning(true);
     }
   });
+
   window.addEventListener('pagehide', () => {
     setGameplayApiRunning(false);
     releasePointerLock();
