@@ -75,12 +75,17 @@ void ResetALError()
  */
 ALboolean CheckALUTError(const char *FunctionName)
 {
+#ifdef __EMSCRIPTEN__
+    (void)FunctionName;
+    return AL_TRUE;
+#else
     ALenum ErrCode;
     if ((ErrCode = alutGetError()) != ALUT_ERROR_NO_ERROR) {
         std::cerr << FunctionName << "(): " << "OpenAL alut error: " << alutGetErrorString(ErrCode) << "\n";
         return AL_FALSE;
     }
     return AL_TRUE;
+#endif
 }
 
 /*
