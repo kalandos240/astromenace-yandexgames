@@ -1,10 +1,3 @@
-sfx/weaponfire14.wav file added to VFS.
-sfx/weaponfire13.wav file added to VFS.
-sfx/weaponfire16.wav file added to VFS.
-sfx/weaponfire17.wav file added to VFS.
-sfx/explosion4.wav file added to VFS.
-sfx/weapon3probl.wav file added to VFS.
-sfx/plasmahit.wav file added to VFS.
 sfx/weaponfire19.wav file added to VFS.
 sfx/menu_nclick.wav file added to VFS.
 sfx/drag_onslot.wav file added to VFS.
@@ -297,4 +290,11 @@ models/normalmap/buildings_nm.tga file added to VFS.
 lang/pl/menu/button_weaponry_in.tga file added to VFS.
 lang/pl/menu/button_weaponry_out.tga file added to VFS.
 VFS file was created /tmp/native-build/gamedata.vfs
--rw-r--r-- 1 runner runner 111M Aug 11 11:12 /tmp/native-build/gamedata.vfs
+AstroMenace 1.4.2
+VFS version 221114
+
+Compiled against SDL version 2.30.0
+Linking against SDL version 2.30.0
+vw_OpenVFS(): Can't find VFS file /tmp/yandex-gamedata/models/models.pack
+vw_CreateVFS(): /tmp/yandex-gamedata/models/models.pack file not found or corrupted.
+-rw-r--r-- 1 runner runner 16 Aug 11 11:22 /tmp/yandex-vfs/gamedata.vfs
