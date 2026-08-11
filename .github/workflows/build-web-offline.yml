@@ -1,0 +1,236 @@
+name: Build AstroMenace Fast Offline WebAssembly
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/enable_gl4es_offline.py'
+      - 'web/yandex-offline-pre.js'
+      - 'web/offline-shell.html'
+      - '.github/workflows/build-web-offline.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: astromenace-fast-offline-build
+  cancel-in-progress: true
+
+jobs:
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout port repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Publish running marker
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p web
+          cat > web/OFFLINE_BUILD_STATUS.md <<EOF
+          # Fast offline web build
+
+          - Status: **RUNNING**
+          - Run ID: `${{ github.run_id }}`
+          - Commit: `${{ github.sha }}`
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add web/OFFLINE_BUILD_STATUS.md
+          if ! git diff --cached --quiet; then
+            git commit -m 'Mark fast offline WebAssembly build running [skip ci]'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+
+      - name: Prepare optimized RU EN game data
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake ninja-build git \
+            libsdl2-dev libogg-dev libvorbis-dev \
+            libopenal-dev libalut-dev libfreetype6-dev libglu1-mesa-dev
+
+          rm -rf /tmp/native-astromenace /tmp/native-build /tmp/yandex-gamedata /tmp/yandex-vfs
+          git clone --depth 1 https://github.com/midzer/astromenace.git /tmp/native-astromenace
+          cmake -S /tmp/native-astromenace -B /tmp/native-build \
+            -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/native-build --target astromenace
+
+          cp -a /tmp/native-astromenace/gamedata /tmp/yandex-gamedata
+          test -s /tmp/yandex-gamedata/models/models.pack
+          python3 scripts/rle_tga_assets.py /tmp/yandex-gamedata | tee web/OFFLINE_ASSET_OPTIMIZATION.txt
+
+          mkdir -p /tmp/yandex-vfs
+          /tmp/native-build/astromenace \
+            --pack \
+            --rawdata=/tmp/yandex-gamedata \
+            --dir=/tmp/yandex-vfs
+          test -s /tmp/yandex-vfs/gamedata.vfs
+          stat -c 'Fast web VFS bytes: %s' /tmp/yandex-vfs/gamedata.vfs
+
+      - name: Build gl4es for Emscripten
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/emsdk /tmp/gl4es /tmp/gl4es-build
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git /tmp/emsdk
+          cd /tmp/emsdk
+          ./emsdk install latest
+          ./emsdk activate latest
+          source ./emsdk_env.sh
+
+          git init /tmp/gl4es
+          git -C /tmp/gl4es remote add origin https://github.com/ptitSeb/gl4es.git
+          git -C /tmp/gl4es fetch --depth 1 origin 81547d986798e876de8b434193920b606a72363f
+          git -C /tmp/gl4es checkout --detach FETCH_HEAD
+
+          emcmake cmake -S /tmp/gl4es -B /tmp/gl4es-build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DNOX11=ON \
+            -DNOEGL=ON \
+            -DSTATICLIB=ON \
+            -DDEFAULT_ES=2
+          cmake --build /tmp/gl4es-build --target GL -j2
+          test -s /tmp/gl4es/lib/libGL.a
+
+      - name: Build self-contained fast WebAssembly package
+        id: build
+        shell: bash
+        run: |
+          set -euo pipefail
+          source /tmp/emsdk/emsdk_env.sh
+          cd "$GITHUB_WORKSPACE"
+          rm -rf dist
+          mkdir -p dist
+
+          python3 scripts/enable_gl4es_offline.py
+          mapfile -t SOURCES < <(find src -type f -name '*.cpp' -print | sort)
+
+          em++ "${SOURCES[@]}" web/web_glu_compat.cpp \
+            -std=c++11 -O3 -flto -fno-exceptions -fno-rtti \
+            -DASTROMENACE_WEB_ASYNC_STARTUP=1 \
+            -I/tmp/gl4es/include -I. -Isrc \
+            /tmp/gl4es/lib/libGL.a \
+            -sUSE_SDL=2 \
+            -sUSE_FREETYPE=1 \
+            -sUSE_OGG=1 \
+            -sUSE_VORBIS=1 \
+            -lopenal \
+            -sALLOW_MEMORY_GROWTH=1 \
+            -sFULL_ES2=1 \
+            -sGL_ENABLE_GET_PROC_ADDRESS=1 \
+            -sFORCE_FILESYSTEM=1 \
+            -sENVIRONMENT=web \
+            -sASYNCIFY=1 \
+            -sASYNCIFY_STACK_SIZE=65536 \
+            -sSINGLE_FILE=1 \
+            -sSINGLE_FILE_BINARY_ENCODE=1 \
+            --embed-file /tmp/yandex-vfs/gamedata.vfs@/gamedata.vfs \
+            --pre-js web/yandex-offline-pre.js \
+            -o dist/index.js \
+            2>&1 | tee web/OFFLINE_BUILD_LOG.txt
+
+          cp web/offline-shell.html dist/index.html
+          cp web/astromenace.css dist/astromenace.css
+
+          mkdir -p dist/licenses
+          cp LICENSE.md dist/LICENSE.md
+          cp AUTHORS.md dist/AUTHORS.md
+          cp licenses/GPL-3.0.txt dist/licenses/GPL-3.0.txt
+          cp licenses/CC-BY-SA-4.0.txt dist/licenses/CC-BY-SA-4.0.txt
+          cp licenses/OFL-1.1.txt dist/licenses/OFL-1.1.txt
+
+          gl4es_license="$(find /tmp/gl4es -maxdepth 1 -type f \( -iname 'LICENSE' -o -iname 'LICENSE.*' -o -iname 'COPYING*' \) | head -n 1)"
+          emscripten_license="$(find /tmp/emsdk/upstream/emscripten -maxdepth 1 -type f \( -iname 'LICENSE' -o -iname 'LICENSE.*' \) | head -n 1)"
+          test -n "$gl4es_license"
+          test -n "$emscripten_license"
+          cp "$gl4es_license" dist/licenses/GL4ES-LICENSE.txt
+          cp "$emscripten_license" dist/licenses/EMSCRIPTEN-LICENSE.txt
+
+          cat > dist/SOURCE_CODE.txt <<EOF
+          AstroMenace Yandex Games fast offline WebAssembly port
+          ------------------------------------------------------
+          Corresponding source:
+          https://github.com/kalandos240/astromenace-yandexgames/tree/${{ github.sha }}
+
+          Upstream AstroMenace:
+          https://github.com/viewizard/astromenace
+
+          gl4es revision:
+          https://github.com/ptitSeb/gl4es/commit/81547d986798e876de8b434193920b606a72363f
+          EOF
+
+          test -s dist/index.html
+          test -s dist/index.js
+          test ! -e dist/index.data
+          test ! -e dist/index.wasm
+          grep -q 'index.js' dist/index.html
+
+          total_bytes="$(find dist -type f -printf '%s\n' | awk '{s+=$1} END {print s+0}')"
+          js_bytes="$(stat -c '%s' dist/index.js)"
+          echo "total_bytes=$total_bytes" >> "$GITHUB_OUTPUT"
+          echo "js_bytes=$js_bytes" >> "$GITHUB_OUTPUT"
+
+          echo "Uncompressed dist bytes: $total_bytes"
+          echo "Self-contained index.js bytes: $js_bytes"
+          if (( total_bytes >= 100000000 )); then
+            echo "Package exceeds 100,000,000-byte Yandex target" >&2
+            exit 1
+          fi
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path('dist/index.html').read_text(encoding='utf-8')
+          if re.search(r'<script(?![^>]*\bsrc=)', html, re.I):
+              raise SystemExit('Inline script found in offline shell')
+          if re.search(r'<style\b', html, re.I):
+              raise SystemExit('Inline style found in offline shell')
+          if re.search(r'\son[a-z]+\s*=', html, re.I):
+              raise SystemExit('Inline event handler found in offline shell')
+          print('Offline/Yandex CSP shell audit: PASS')
+          PY
+
+      - name: Upload fast offline Yandex build
+        uses: actions/upload-artifact@v4
+        with:
+          name: astromenace-yandexgames-fast-offline
+          path: dist/
+          if-no-files-found: error
+          compression-level: 9
+          retention-days: 90
+
+      - name: Publish success marker
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > web/OFFLINE_BUILD_STATUS.md <<EOF
+          # Fast offline web build
+
+          - Status: **SUCCESS**
+          - Run ID: `${{ github.run_id }}`
+          - Commit: `${{ github.sha }}`
+          - Uncompressed dist bytes: **${{ steps.build.outputs.total_bytes }}**
+          - Self-contained JS bytes: **${{ steps.build.outputs.js_bytes }}**
+          - Separate `.data`: **NO**
+          - Separate `.wasm`: **NO**
+          - Direct `file://` packaging: **YES**
+          - RU/EN runtime: **YES**
+          - Interstitial after successful mission: **YES**
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add web/OFFLINE_BUILD_STATUS.md
+          if ! git diff --cached --quiet; then
+            git commit -m 'Update fast offline WebAssembly build status [skip ci]'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
