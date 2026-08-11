@@ -62,7 +62,7 @@ emcmake: cmake -S /tmp/gl4es -B /tmp/gl4es-build -DCMAKE_BUILD_TYPE=Release -DNO
 -- Performing Test SUPPORTS_UNWIND_TABLES
 -- Performing Test SUPPORTS_UNWIND_TABLES - Success
 -- Not on Linux: building without GLX support.
--- Configuring done (2.9s)
+-- Configuring done (3.2s)
 -- Generating done (0.0s)
 -- Build files have been written to: /tmp/gl4es-build
 [  1%] Building C object src/CMakeFiles/GL.dir/gl/arbconverter.c.o
@@ -149,8 +149,8 @@ emcmake: cmake -S /tmp/gl4es -B /tmp/gl4es-build -DCMAKE_BUILD_TYPE=Release -DNO
 <built-in>:61:21: note: expanded from macro '__INT_MAX__'
    61 | #define __INT_MAX__ 2147483647
       |                     ^~~~~~~~~~
-2 warnings generated.
 [ 68%] Building C object src/CMakeFiles/GL.dir/gl/samplers.c.o
+2 warnings generated.
 [ 70%] Building C object src/CMakeFiles/GL.dir/gl/shader.c.o
 [ 71%] Building C object src/CMakeFiles/GL.dir/gl/shaderconv.c.o
 [ 72%] Building C object src/CMakeFiles/GL.dir/gl/shader_hacks.c.o
@@ -174,5 +174,5 @@ emcmake: cmake -S /tmp/gl4es -B /tmp/gl4es-build -DCMAKE_BUILD_TYPE=Release -DNO
 [ 98%] Building C object src/CMakeFiles/GL.dir/glx/hardext.c.o
 [100%] Linking C static library /tmp/gl4es/lib/libGL.a
 [100%] Built target GL
--rw-r--r-- 1 runner runner 1.9M Aug 11 13:16 /tmp/gl4es/lib/libGL.a
+-rw-r--r-- 1 runner runner 1.9M Aug 11 13:24 /tmp/gl4es/lib/libGL.a
 emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.6 (ce75e06884093bcefb86a6b8fd56a5d62a4cc245)
