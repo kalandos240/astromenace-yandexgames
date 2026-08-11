@@ -46,9 +46,9 @@ jobs:
               -G Ninja -DCMAKE_BUILD_TYPE=Release
             cmake --build /tmp/native-build --target astromenace
 
-            # models.pack contains source/original model material and is not read by
-            # the game runtime. Keep it in the public source repository for licensing,
-            # but do not ship this ~28 MiB development archive inside Yandex Games.
+            # models.pack is not referenced by the runtime. Keep it in the source
+            # repository for licensing/source completeness, but omit this ~28 MiB
+            # development archive from the Yandex Games runtime package.
             cp -a /tmp/native-astromenace/gamedata /tmp/yandex-gamedata
             rm -f /tmp/yandex-gamedata/models/models.pack
 
@@ -98,9 +98,9 @@ jobs:
             -sUSE_OGG=1 \
             -sUSE_VORBIS=1 \
             -lopenal \
-            -sASYNCIFY=1 \
             -sALLOW_MEMORY_GROWTH=1 \
             -sFULL_ES2=1 \
+            -sLEGACY_GL_EMULATION=1 \
             -sFORCE_FILESYSTEM=1 \
             -sENVIRONMENT=web \
             --preload-file /tmp/yandex-vfs/gamedata.vfs@/gamedata.vfs \
