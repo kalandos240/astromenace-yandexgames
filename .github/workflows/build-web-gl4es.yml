@@ -1,0 +1,252 @@
+name: Build AstroMenace WebAssembly (gl4es)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'web/yandex-pre.js'
+      - 'web/shell.html'
+      - 'web/web_glu_compat.cpp'
+      - 'scripts/enable_gl4es_web.py'
+      - '.github/workflows/build-web-gl4es.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: astromenace-web-gl4es-build
+  cancel-in-progress: true
+
+jobs:
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout port repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prepare optimized native VFS pack
+        id: native
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          mkdir -p web
+          {
+            sudo apt-get update
+            sudo apt-get install -y \
+              build-essential cmake ninja-build git \
+              libsdl2-dev libogg-dev libvorbis-dev \
+              libopenal-dev libalut-dev libfreetype6-dev libglu1-mesa-dev
+
+            rm -rf /tmp/native-astromenace /tmp/native-build /tmp/yandex-gamedata /tmp/yandex-vfs
+            git clone --depth 1 https://github.com/midzer/astromenace.git /tmp/native-astromenace
+            cmake -S /tmp/native-astromenace -B /tmp/native-build \
+              -G Ninja -DCMAKE_BUILD_TYPE=Release
+            cmake --build /tmp/native-build --target astromenace
+
+            cp -a /tmp/native-astromenace/gamedata /tmp/yandex-gamedata
+            # This archive contains model source/development material and is not
+            # opened by the game runtime. Omitting it saves roughly 28 MiB.
+            rm -f /tmp/yandex-gamedata/models/models.pack
+
+            mkdir -p /tmp/yandex-vfs
+            /tmp/native-build/astromenace \
+              --pack \
+              --rawdata=/tmp/yandex-gamedata \
+              --dir=/tmp/yandex-vfs
+            test -s /tmp/yandex-vfs/gamedata.vfs
+            ls -lh /tmp/yandex-vfs/gamedata.vfs
+          } > native-gl4es-build.log 2>&1
+          code=$?
+          tail -n 300 native-gl4es-build.log > web/NATIVE_BUILD_LOG_GL4ES.txt || true
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          if [[ $code -eq 0 ]]; then
+            echo 'success=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'success=false' >> "$GITHUB_OUTPUT"
+          fi
+          exit $code
+
+      - name: Build gl4es for Emscripten
+        id: gl4es
+        if: steps.native.outputs.success == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          {
+            rm -rf /tmp/emsdk /tmp/gl4es /tmp/gl4es-build
+            git clone --depth 1 https://github.com/emscripten-core/emsdk.git /tmp/emsdk
+            cd /tmp/emsdk
+            ./emsdk install latest
+            ./emsdk activate latest
+            source ./emsdk_env.sh
+
+            git clone https://github.com/ptitSeb/gl4es.git /tmp/gl4es
+            git -C /tmp/gl4es checkout 81547d986798e876de8b434193920b606a72363f
+
+            emcmake cmake -S /tmp/gl4es -B /tmp/gl4es-build \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DNOX11=ON \
+              -DNOEGL=ON \
+              -DSTATICLIB=ON \
+              -DDEFAULT_ES=2
+            cmake --build /tmp/gl4es-build --target GL -j2
+            test -s /tmp/gl4es/lib/libGL.a
+            ls -lh /tmp/gl4es/lib/libGL.a
+            em++ --version | head -n 1
+          } > gl4es-build.log 2>&1
+          code=$?
+          tail -n 300 gl4es-build.log > web/GL4ES_BUILD_LOG.txt || true
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          if [[ $code -eq 0 ]]; then
+            echo 'success=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'success=false' >> "$GITHUB_OUTPUT"
+          fi
+          exit $code
+
+      - name: Build WebAssembly package through gl4es
+        id: webbuild
+        if: steps.native.outputs.success == 'true' && steps.gl4es.outputs.success == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -uo pipefail
+          source /tmp/emsdk/emsdk_env.sh
+          cd "$GITHUB_WORKSPACE"
+
+          rm -rf dist
+          mkdir -p dist web
+
+          # gl4es must be initialized after SDL creates the browser GL context.
+          python3 scripts/enable_gl4es_web.py
+
+          mapfile -t SOURCES < <(find src -type f -name '*.cpp' -print | sort)
+
+          set +e
+          em++ "${SOURCES[@]}" web/web_glu_compat.cpp \
+            -std=c++11 -O3 -flto -fno-exceptions -fno-rtti \
+            -I/tmp/gl4es/include -I. -Isrc \
+            /tmp/gl4es/lib/libGL.a \
+            -sUSE_SDL=2 \
+            -sUSE_FREETYPE=1 \
+            -sUSE_OGG=1 \
+            -sUSE_VORBIS=1 \
+            -lopenal \
+            -sALLOW_MEMORY_GROWTH=1 \
+            -sFULL_ES2=1 \
+            -sGL_ENABLE_GET_PROC_ADDRESS=1 \
+            -sFORCE_FILESYSTEM=1 \
+            -sENVIRONMENT=web \
+            --preload-file /tmp/yandex-vfs/gamedata.vfs@/gamedata.vfs \
+            --pre-js web/yandex-pre.js \
+            --shell-file web/shell.html \
+            -o dist/index.html \
+            > web-gl4es-build.log 2>&1
+          build_code=$?
+          set -e
+
+          tail -n 400 web-gl4es-build.log > web/BUILD_LOG_GL4ES.txt || true
+          emcc_version="$(em++ --version | head -n 1)"
+          echo "emscripten=$emcc_version" >> "$GITHUB_OUTPUT"
+          echo "exit_code=$build_code" >> "$GITHUB_OUTPUT"
+
+          if [[ $build_code -eq 0 ]]; then
+            total_bytes="$(find dist -maxdepth 1 -type f -printf '%s\n' | awk '{s+=$1} END {print s+0}')"
+            data_bytes="$(find dist -maxdepth 1 -type f -name '*.data' -printf '%s\n' | awk '{s+=$1} END {print s+0}')"
+            wasm_bytes="$(find dist -maxdepth 1 -type f -name '*.wasm' -printf '%s\n' | awk '{s+=$1} END {print s+0}')"
+            js_bytes="$(find dist -maxdepth 1 -type f -name '*.js' -printf '%s\n' | awk '{s+=$1} END {print s+0}')"
+            echo "total_bytes=$total_bytes" >> "$GITHUB_OUTPUT"
+            echo "data_bytes=$data_bytes" >> "$GITHUB_OUTPUT"
+            echo "wasm_bytes=$wasm_bytes" >> "$GITHUB_OUTPUT"
+            echo "js_bytes=$js_bytes" >> "$GITHUB_OUTPUT"
+            echo 'success=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'success=false' >> "$GITHUB_OUTPUT"
+          fi
+          exit $build_code
+
+      - name: Write gl4es build status
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p web
+          if [[ "${{ steps.native.outputs.success }}" != "true" ]]; then
+            {
+              echo '# Web build status (gl4es)'
+              echo
+              echo '- Status: **FAILED (native VFS preparation)**'
+              echo '- Native exit code: **${{ steps.native.outputs.exit_code }}**'
+              echo '- See `web/NATIVE_BUILD_LOG_GL4ES.txt`.'
+            } > web/BUILD_STATUS_GL4ES.md
+            : > web/GL4ES_BUILD_LOG.txt
+            : > web/BUILD_LOG_GL4ES.txt
+          elif [[ "${{ steps.gl4es.outputs.success }}" != "true" ]]; then
+            {
+              echo '# Web build status (gl4es)'
+              echo
+              echo '- Status: **FAILED (gl4es compilation)**'
+              echo '- gl4es exit code: **${{ steps.gl4es.outputs.exit_code }}**'
+              echo '- See `web/GL4ES_BUILD_LOG.txt`.'
+            } > web/BUILD_STATUS_GL4ES.md
+            : > web/BUILD_LOG_GL4ES.txt
+          elif [[ "${{ steps.webbuild.outputs.success }}" == "true" ]]; then
+            {
+              echo '# Web build status (gl4es)'
+              echo
+              echo '- Status: **SUCCESS**'
+              echo '- Emscripten: `${{ steps.webbuild.outputs.emscripten }}`'
+              echo '- Uncompressed dist bytes: **${{ steps.webbuild.outputs.total_bytes }}**'
+              echo '- Asset data bytes: **${{ steps.webbuild.outputs.data_bytes }}**'
+              echo '- WebAssembly bytes: **${{ steps.webbuild.outputs.wasm_bytes }}**'
+              echo '- JavaScript bytes: **${{ steps.webbuild.outputs.js_bytes }}**'
+              echo '- Output: GitHub Actions artifact `astromenace-yandexgames-web-gl4es`'
+            } > web/BUILD_STATUS_GL4ES.md
+          else
+            {
+              echo '# Web build status (gl4es)'
+              echo
+              echo '- Status: **FAILED (AstroMenace Emscripten link)**'
+              echo '- Web exit code: **${{ steps.webbuild.outputs.exit_code }}**'
+              echo '- Emscripten: `${{ steps.webbuild.outputs.emscripten }}`'
+              echo '- See `web/BUILD_LOG_GL4ES.txt`.'
+            } > web/BUILD_STATUS_GL4ES.md
+          fi
+
+      - name: Upload gl4es Yandex Games web build
+        if: steps.webbuild.outputs.success == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: astromenace-yandexgames-web-gl4es
+          path: dist/
+          if-no-files-found: error
+          compression-level: 9
+
+      - name: Publish gl4es build status to repository
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          # CI patches this source file only for compilation. Do not publish the
+          # generated patch as a separate source change.
+          git restore src/core/graphics/gl_main.cpp || true
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            web/BUILD_STATUS_GL4ES.md \
+            web/BUILD_LOG_GL4ES.txt \
+            web/GL4ES_BUILD_LOG.txt \
+            web/NATIVE_BUILD_LOG_GL4ES.txt
+          if git diff --cached --quiet; then
+            echo 'gl4es build status unchanged.'
+            exit 0
+          fi
+          git commit -m 'Update gl4es WebAssembly build status [skip ci]'
+          git pull --rebase origin main
+          git push origin HEAD:main
