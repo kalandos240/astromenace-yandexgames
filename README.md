@@ -1,6 +1,6 @@
 # AstroMenace for Yandex Games
 
-[![Build AstroMenace WebAssembly](https://github.com/kalandos240/astromenace-yandexgames/actions/workflows/build-web.yml/badge.svg)](https://github.com/kalandos240/astromenace-yandexgames/actions/workflows/build-web.yml)
+[![Build AstroMenace WebAssembly](https://github.com/kalandos240/astromenace-yandexgames/actions/workflows/build-web-gl4es.yml/badge.svg)](https://github.com/kalandos240/astromenace-yandexgames/actions/workflows/build-web-gl4es.yml)
 
 Browser/WebAssembly adaptation of the open-source **AstroMenace** space shooter for **Yandex Games**.
 
@@ -16,7 +16,8 @@ The Yandex Games port is under active development. The current work includes:
 
 - C++/SDL2 to WebAssembly compilation with Emscripten;
 - browser-safe Emscripten main loop;
-- legacy OpenGL compatibility for WebGL;
+- gl4es-based OpenGL 1.x/2.x compatibility on top of WebGL;
+- small web-only GLU compatibility helpers for AstroMenace;
 - Yandex Games SDK initialization;
 - `LoadingAPI.ready()` integration;
 - automatic Yandex language detection;
@@ -27,23 +28,25 @@ The Yandex Games port is under active development. The current work includes:
 - automated GitHub Actions WebAssembly builds;
 - runtime package optimization for the Yandex Games size limit.
 
-Build diagnostics are written to [`web/BUILD_STATUS.md`](./web/BUILD_STATUS.md). Asset-size analysis is available in [`web/ASSET_SIZE_REPORT.txt`](./web/ASSET_SIZE_REPORT.txt).
+The current renderer/build diagnostics are written to [`web/BUILD_STATUS_GL4ES.md`](./web/BUILD_STATUS_GL4ES.md) after a CI run. Asset-size analysis is available in [`web/ASSET_SIZE_REPORT.txt`](./web/ASSET_SIZE_REPORT.txt).
 
 ## Building the web version
 
-The reproducible build is defined in:
+The current reproducible WebAssembly build is defined in:
 
 ```text
-.github/workflows/build-web.yml
+.github/workflows/build-web-gl4es.yml
 ```
 
-Run **Build AstroMenace WebAssembly** from the repository's GitHub Actions page. A successful run produces the artifact:
+Run **Build AstroMenace WebAssembly (gl4es)** from the repository's GitHub Actions page. A successful run produces the artifact:
 
 ```text
-astromenace-yandexgames-web
+astromenace-yandexgames-web-gl4es
 ```
 
 The artifact contains a Yandex Games-ready web root with `index.html`, JavaScript, WebAssembly and packaged game data.
+
+The older `build-web.yml` workflow is retained temporarily as a diagnostic reference while the renderer migration is completed.
 
 ## Yandex Games integration
 
@@ -69,6 +72,7 @@ The original game-data tree contains development/source material that is not req
 
 - Original AstroMenace: [viewizard/astromenace](https://github.com/viewizard/astromenace)
 - Emscripten groundwork used during this port: [midzer/astromenace](https://github.com/midzer/astromenace)
+- OpenGL compatibility layer used by the browser build: [ptitSeb/gl4es](https://github.com/ptitSeb/gl4es)
 
 ## License
 
