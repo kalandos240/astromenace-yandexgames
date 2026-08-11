@@ -8,16 +8,18 @@ on:
       - 'src/**'
       - 'web/yandex-pre.js'
       - 'web/shell.html'
+      - 'web/astromenace.css'
       - 'web/web_glu_compat.cpp'
       - 'scripts/enable_gl4es_web.py'
       - 'scripts/rle_tga_assets.py'
+      - 'scripts/optimize_wav_assets.py'
       - '.github/workflows/build-web-gl4es.yml'
 
 permissions:
   contents: write
 
 concurrency:
-  group: astromenace-web-gl4es-build-v4
+  group: astromenace-web-gl4es-build-v5
   cancel-in-progress: true
 
 jobs:
@@ -76,9 +78,9 @@ jobs:
             # models/models.pack is required by the upstream VFS builder.
             test -s /tmp/yandex-gamedata/models/models.pack
 
-            # AstroMenace natively supports RLE type-10 TGA files. Re-encode
-            # type-2 images losslessly and keep the original whenever RLE would
-            # be larger. Pixel values, orientation and dimensions stay intact.
+            # Optimize only the temporary browser distribution tree. TGA RLE is
+            # lossless; WAV downsampling keeps the full game while meeting the
+            # Yandex 100 MB uncompressed limit.
             python3 scripts/rle_tga_assets.py /tmp/yandex-gamedata
 
             mkdir -p /tmp/yandex-vfs
@@ -100,7 +102,9 @@ jobs:
           cp native-gl4es-build.log web/NATIVE_BUILD_LOG_GL4ES.txt || true
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
           tga_saved="$(grep -E '^TGA bytes saved:' native-gl4es-build.log | tail -1 | awk '{print $4}')"
+          wav_saved="$(grep -E '^WAV bytes saved:' native-gl4es-build.log | tail -1 | awk '{print $4}')"
           echo "tga_saved=${tga_saved:-0}" >> "$GITHUB_OUTPUT"
+          echo "wav_saved=${wav_saved:-0}" >> "$GITHUB_OUTPUT"
           if [[ $code -eq 0 ]]; then
             vfs_bytes="$(stat -c '%s' /tmp/yandex-vfs/gamedata.vfs)"
             echo "vfs_bytes=$vfs_bytes" >> "$GITHUB_OUTPUT"
@@ -199,14 +203,43 @@ jobs:
           echo "exit_code=$build_code" >> "$GITHUB_OUTPUT"
 
           if [[ $build_code -eq 0 ]]; then
+            cp web/astromenace.css dist/astromenace.css
+            test -s dist/index.html
+            test -s dist/astromenace.css
+            test -s dist/index.wasm
+            test -s dist/index.js
+            test -s dist/index.data
+
+            # Fail CI if our shell regresses to custom inline script/style/event
+            # handlers. This avoids CSP surprises when the ZIP is uploaded to
+            # Yandex Games.
+            python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          html = Path('dist/index.html').read_text(encoding='utf-8')
+          if 'astromenace.css' not in html:
+              raise SystemExit('External stylesheet is missing from generated index.html')
+          if re.search(r'<style\b', html, re.I):
+              raise SystemExit('Inline <style> block found in generated index.html')
+          if re.search(r'\son[a-z]+\s*=', html, re.I):
+              raise SystemExit('Inline event handler found in generated index.html')
+          for match in re.finditer(r'<script\b([^>]*)>', html, re.I):
+              if not re.search(r'\bsrc\s*=', match.group(1), re.I):
+                  raise SystemExit('Inline <script> block found in generated index.html')
+          print('CSP shell audit: PASS')
+          PY
+
             total_bytes="$(find dist -maxdepth 1 -type f -printf '%s\n' | awk '{s+=$1} END {print s+0}')"
             data_bytes="$(find dist -maxdepth 1 -type f -name '*.data' -printf '%s\n' | awk '{s+=$1} END {print s+0}')"
             wasm_bytes="$(find dist -maxdepth 1 -type f -name '*.wasm' -printf '%s\n' | awk '{s+=$1} END {print s+0}')"
             js_bytes="$(find dist -maxdepth 1 -type f -name '*.js' -printf '%s\n' | awk '{s+=$1} END {print s+0}')"
+            css_bytes="$(find dist -maxdepth 1 -type f -name '*.css' -printf '%s\n' | awk '{s+=$1} END {print s+0}')"
             echo "total_bytes=$total_bytes" >> "$GITHUB_OUTPUT"
             echo "data_bytes=$data_bytes" >> "$GITHUB_OUTPUT"
             echo "wasm_bytes=$wasm_bytes" >> "$GITHUB_OUTPUT"
             echo "js_bytes=$js_bytes" >> "$GITHUB_OUTPUT"
+            echo "css_bytes=$css_bytes" >> "$GITHUB_OUTPUT"
             if (( total_bytes <= 100000000 )); then
               echo 'size_ok=true' >> "$GITHUB_OUTPUT"
             else
@@ -243,6 +276,7 @@ jobs:
               echo '- Status: **FAILED (gl4es compilation)**'
               echo '- Run ID: `${{ github.run_id }}`'
               echo '- Lossless TGA bytes saved: **${{ steps.native.outputs.tga_saved }}**'
+              echo '- WAV bytes saved: **${{ steps.native.outputs.wav_saved }}**'
               echo '- Packed VFS bytes: **${{ steps.native.outputs.vfs_bytes }}**'
               echo '- See `web/GL4ES_BUILD_LOG.txt`.'
             } > web/BUILD_STATUS_GL4ES.md
@@ -254,11 +288,14 @@ jobs:
               echo '- Run ID: `${{ github.run_id }}`'
               echo '- Emscripten: `${{ steps.webbuild.outputs.emscripten }}`'
               echo '- Lossless TGA bytes saved: **${{ steps.native.outputs.tga_saved }}**'
+              echo '- WAV bytes saved: **${{ steps.native.outputs.wav_saved }}**'
               echo '- Packed VFS bytes: **${{ steps.native.outputs.vfs_bytes }}**'
               echo '- Uncompressed dist bytes: **${{ steps.webbuild.outputs.total_bytes }}**'
               echo '- Asset data bytes: **${{ steps.webbuild.outputs.data_bytes }}**'
               echo '- WebAssembly bytes: **${{ steps.webbuild.outputs.wasm_bytes }}**'
               echo '- JavaScript bytes: **${{ steps.webbuild.outputs.js_bytes }}**'
+              echo '- CSS bytes: **${{ steps.webbuild.outputs.css_bytes }}**'
+              echo '- CSP shell audit: **PASS**'
               echo '- Yandex 100,000,000-byte target: **${{ steps.webbuild.outputs.size_ok }}**'
               echo '- Output: GitHub Actions artifact `astromenace-yandexgames-web-gl4es`'
             } > web/BUILD_STATUS_GL4ES.md
@@ -266,7 +303,7 @@ jobs:
             {
               echo '# Web build status (gl4es)'
               echo
-              echo '- Status: **FAILED (AstroMenace Emscripten link)**'
+              echo '- Status: **FAILED (AstroMenace Emscripten link/package audit)**'
               echo '- Run ID: `${{ github.run_id }}`'
               echo '- Packed VFS bytes: **${{ steps.native.outputs.vfs_bytes }}**'
               echo '- See `web/BUILD_LOG_GL4ES.txt`.'
@@ -274,7 +311,7 @@ jobs:
           fi
 
       - name: Upload gl4es Yandex Games web build
-        if: steps.webbuild.outputs.success == 'true'
+        if: steps.webbuild.outputs.success == 'true' && steps.webbuild.outputs.size_ok == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: astromenace-yandexgames-web-gl4es
@@ -288,7 +325,11 @@ jobs:
         run: |
           set -euo pipefail
           cd "$GITHUB_WORKSPACE"
-          git restore src/core/graphics/gl_main.cpp || true
+          # scripts/enable_gl4es_web.py patches these files only in CI.
+          git restore \
+            src/core/graphics/gl_main.cpp \
+            src/platform/video.cpp \
+            src/game/game.cpp || true
           touch web/NATIVE_BUILD_LOG_GL4ES.txt web/GL4ES_BUILD_LOG.txt web/BUILD_LOG_GL4ES.txt
 
           git config user.name "github-actions[bot]"
