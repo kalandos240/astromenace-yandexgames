@@ -6,51 +6,61 @@ namespace {
 struct YandexAdSchedulerInstaller {
     YandexAdSchedulerInstaller()
     {
-        // Use emscripten_run_script instead of EM_ASM here: the scheduler has
-        // normal JavaScript commas/object literals which the EM_ASM C macro can
-        // otherwise interpret as additional macro arguments.
+        // JavaScript lives in a raw string because the scheduler contains normal
+        // commas/object literals that are inconvenient inside the EM_ASM macro.
         emscripten_run_script(R"ASTROMENACE_JS(
             (() => {
-                // AstroMenace/Yandex interstitial policy:
-                // - one request per 2 minutes;
-                // - never interrupt active gameplay;
-                // - if the timer expires during a mission, keep one pending
-                //   request until the first safe non-gameplay state;
-                // - Yandex Games still decides whether a request is actually
-                //   shown and may suppress it.
                 if (Module.yandexTwoMinuteAdsInstalled) return;
                 Module.yandexTwoMinuteAdsInstalled = true;
 
                 const AD_INTERVAL_MS = 120000;
-                const CHECK_INTERVAL_MS = 1000;
                 let nextAdAt = 0;
+                let safeAttemptQueued = false;
 
                 const originalLevelComplete =
                     typeof Module.yandexLevelComplete === 'function'
                         ? Module.yandexLevelComplete.bind(Module)
                         : null;
+                const originalGameplayStop =
+                    typeof Module.yandexGameplayStop === 'function'
+                        ? Module.yandexGameplayStop.bind(Module)
+                        : null;
+                const originalGameReady =
+                    typeof Module.yandexGameReady === 'function'
+                        ? Module.yandexGameReady.bind(Module)
+                        : null;
 
                 const isGameplayActive = () =>
                     Boolean(Module.yandexGameplayRequested || Module.yandexGameplayApiRunning);
 
-                // Keep the bridge's existing fullscreen-ad implementation: it
-                // already pauses audio, releases pointer lock, stops GameplayAPI
-                // and restores the correct state in SDK callbacks. This scheduler
-                // decides only WHEN that implementation may be invoked.
-                const showSafeInterstitial = async () => {
-                    if (!originalLevelComplete) return false;
-                    if (typeof Module.yandexSDK?.adv?.showFullscreenAdv !== 'function') return false;
-                    if (Module.yandexAdInProgress) return false;
-                    if (Module.yandexPlatformPaused || document.hidden) return false;
-                    if (isGameplayActive()) return false;
+                const adIsDue = () =>
+                    Boolean(nextAdAt && Date.now() >= nextAdAt);
 
-                    // Advance the deadline before requesting the ad. If Yandex
-                    // suppresses this display, we still wait another two minutes
-                    // instead of hammering the SDK every second.
+                const canRequestAdNow = () =>
+                    Boolean(
+                        Module.yandexGameReadySent &&
+                        adIsDue() &&
+                        typeof Module.yandexSDK?.adv?.showFullscreenAdv === 'function' &&
+                        !Module.yandexAdInProgress &&
+                        !Module.yandexPlatformPaused &&
+                        !document.hidden &&
+                        !isGameplayActive()
+                    );
+
+                // The captured bridge implementation already performs all SDK
+                // callbacks correctly: save flush, GameplayAPI stop, sound pause,
+                // pointer-lock release and state restoration after the ad.
+                const showDueInterstitial = async () => {
+                    safeAttemptQueued = false;
+                    if (!originalLevelComplete || !canRequestAdNow()) return false;
+
+                    // Advance before the SDK request. Yandex can suppress an
+                    // overly frequent request; in that case we still wait for the
+                    // next 2-minute window rather than immediately retrying.
                     nextAdAt = Date.now() + AD_INTERVAL_MS;
                     try {
                         await originalLevelComplete();
-                        console.info('[Yandex] Two-minute interstitial requested in a safe non-gameplay state.');
+                        console.info('[Yandex] Due interstitial requested at a safe non-gameplay pause.');
                         return true;
                     } catch (error) {
                         console.warn('[Yandex] Scheduled interstitial failed:', error);
@@ -58,29 +68,43 @@ struct YandexAdSchedulerInstaller {
                     }
                 };
 
-                const tick = () => {
-                    if (!Module.yandexGameReadySent) return;
-
-                    if (!nextAdAt) {
-                        // Start the cadence after the game is ready so we do not
-                        // collide with the platform's startup advertising.
-                        nextAdAt = Date.now() + AD_INTERVAL_MS;
-                        return;
-                    }
-
-                    if (Date.now() < nextAdAt) return;
-
-                    // A due ad stays pending for the entire mission. The first
-                    // check after gameplay stops will request it.
-                    if (isGameplayActive()) return;
-                    if (Module.yandexAdInProgress || Module.yandexPlatformPaused || document.hidden) return;
-
-                    void showSafeInterstitial();
+                const queueSafeAttempt = () => {
+                    if (safeAttemptQueued || !adIsDue()) return;
+                    safeAttemptQueued = true;
+                    // Run on the next task so C++/SDL can finish switching from
+                    // gameplay to the pause/result/menu state first.
+                    setTimeout(() => {
+                        safeAttemptQueued = false;
+                        void showDueInterstitial();
+                    }, 0);
                 };
 
-                // Mission completion no longer forces an interstitial. It ends
-                // gameplay and flushes the save. A due 2-minute ad will then be
-                // requested by tick() because the player is in a safe state.
+                // Start the 2-minute cadence only after the interactive game is
+                // ready. This intentionally does not compete with the automatic
+                // startup ad shown by the Yandex Games platform.
+                if (originalGameReady) {
+                    Module.yandexGameReady = (...args) => {
+                        const result = originalGameReady(...args);
+                        if (!nextAdAt) nextAdAt = Date.now() + AD_INTERVAL_MS;
+                        return result;
+                    };
+                }
+
+                // A gameplay -> pause/menu/result transition is a logical pause.
+                // If the 2-minute deadline expired during the mission, request the
+                // pending ad immediately after this transition instead of during
+                // active flight.
+                if (originalGameplayStop) {
+                    Module.yandexGameplayStop = (...args) => {
+                        const result = originalGameplayStop(...args);
+                        queueSafeAttempt();
+                        return result;
+                    };
+                }
+
+                // Successful mission completion no longer forces an ad every
+                // level. It closes GameplayAPI and flushes progress. A due ad is
+                // then handled by the safe-transition hook above.
                 Module.yandexLevelComplete = async () => {
                     try {
                         Module.yandexGameplayStop?.();
@@ -90,17 +114,24 @@ struct YandexAdSchedulerInstaller {
                     } catch (error) {
                         console.warn('[Yandex] Level-complete save flush failed:', error);
                     }
-                    tick();
+                    queueSafeAttempt();
                 };
+
+                // If the player has already been outside gameplay for two minutes,
+                // do not pop an ad out of nowhere. Wait for their next menu click,
+                // then request it immediately after that non-gameplay action.
+                Module.canvas?.addEventListener('pointerdown', () => {
+                    if (!isGameplayActive()) queueSafeAttempt();
+                }, true);
 
                 Module.yandexAdScheduler = {
                     intervalMs: AD_INTERVAL_MS,
-                    tick,
+                    isDue: adIsDue,
+                    requestIfSafe: queueSafeAttempt,
                     getNextAdAt: () => nextAdAt
                 };
 
-                setInterval(tick, CHECK_INTERVAL_MS);
-                console.info('[Yandex] Interstitial scheduler installed: every 120s, non-gameplay only.');
+                console.info('[Yandex] Interstitial scheduler installed: 120s cadence, logical pauses only, never active gameplay.');
             })();
         )ASTROMENACE_JS");
     }
