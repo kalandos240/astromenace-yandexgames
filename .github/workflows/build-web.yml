@@ -21,28 +21,42 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install native build dependencies
+      - name: Prepare native VFS pack
+        id: native
+        continue-on-error: true
         shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential cmake ninja-build git \
-            libsdl2-dev libogg-dev libvorbis-dev \
-            libopenal-dev libalut-dev libfreetype6-dev
+          set +e
+          mkdir -p web
+          {
+            sudo apt-get update
+            sudo apt-get install -y \
+              build-essential cmake ninja-build git \
+              libsdl2-dev libogg-dev libvorbis-dev \
+              libopenal-dev libalut-dev libfreetype6-dev
 
-      - name: Build matching native packer and gamedata.vfs
-        shell: bash
-        run: |
-          set -euo pipefail
-          git clone --depth 1 https://github.com/midzer/astromenace.git /tmp/native-astromenace
-          cmake -S /tmp/native-astromenace -B /tmp/native-build \
-            -G Ninja -DCMAKE_BUILD_TYPE=Release
-          cmake --build /tmp/native-build --target astromenace
-          test -s /tmp/native-build/gamedata.vfs
-          ls -lh /tmp/native-build/gamedata.vfs
+            rm -rf /tmp/native-astromenace /tmp/native-build
+            git clone --depth 1 https://github.com/midzer/astromenace.git /tmp/native-astromenace
+            cmake -S /tmp/native-astromenace -B /tmp/native-build \
+              -G Ninja -DCMAKE_BUILD_TYPE=Release
+            cmake --build /tmp/native-build --target astromenace
+            test -s /tmp/native-build/gamedata.vfs
+            ls -lh /tmp/native-build/gamedata.vfs
+          } > native-build.log 2>&1
+          code=$?
+          tail -n 300 native-build.log > web/NATIVE_BUILD_LOG.txt || true
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          if [[ $code -eq 0 ]]; then
+            echo 'success=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'success=false' >> "$GITHUB_OUTPUT"
+          fi
+          exit $code
 
       - name: Build WebAssembly package
         id: webbuild
+        if: steps.native.outputs.success == 'true'
+        continue-on-error: true
         shell: bash
         run: |
           set -uo pipefail
@@ -80,28 +94,50 @@ jobs:
 
           tail -n 300 web-build.log > web/BUILD_LOG.txt || true
           emcc_version="$(em++ --version | head -n 1)"
+          echo "emscripten=$emcc_version" >> "$GITHUB_OUTPUT"
+          echo "exit_code=$build_code" >> "$GITHUB_OUTPUT"
 
           if [[ $build_code -eq 0 ]]; then
             total_bytes="$(find dist -maxdepth 1 -type f -printf '%s\n' | awk '{s+=$1} END {print s+0}')"
+            echo "total_bytes=$total_bytes" >> "$GITHUB_OUTPUT"
+            echo 'success=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'success=false' >> "$GITHUB_OUTPUT"
+          fi
+          exit $build_code
+
+      - name: Write build status
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p web
+          if [[ "${{ steps.native.outputs.success }}" != "true" ]]; then
+            {
+              echo '# Web build status'
+              echo
+              echo '- Status: **FAILED (native VFS preparation)**'
+              echo '- Native exit code: **${{ steps.native.outputs.exit_code }}**'
+              echo '- See `web/NATIVE_BUILD_LOG.txt`.'
+            } > web/BUILD_STATUS.md
+            : > web/BUILD_LOG.txt
+          elif [[ "${{ steps.webbuild.outputs.success }}" == "true" ]]; then
             {
               echo '# Web build status'
               echo
               echo '- Status: **SUCCESS**'
-              echo "- Emscripten: \`$emcc_version\`"
-              echo "- Uncompressed dist bytes: **$total_bytes**"
+              echo '- Emscripten: `${{ steps.webbuild.outputs.emscripten }}`'
+              echo '- Uncompressed dist bytes: **${{ steps.webbuild.outputs.total_bytes }}**'
               echo '- Output: GitHub Actions artifact `astromenace-yandexgames-web`'
             } > web/BUILD_STATUS.md
-            echo 'success=true' >> "$GITHUB_OUTPUT"
           else
             {
               echo '# Web build status'
               echo
-              echo '- Status: **FAILED**'
-              echo "- Exit code: **$build_code**"
-              echo "- Emscripten: \`$emcc_version\`"
-              echo '- See `web/BUILD_LOG.txt` for the tail of the compiler output.'
+              echo '- Status: **FAILED (Emscripten)**'
+              echo '- Web exit code: **${{ steps.webbuild.outputs.exit_code }}**'
+              echo '- Emscripten: `${{ steps.webbuild.outputs.emscripten }}`'
+              echo '- See `web/BUILD_LOG.txt`.'
             } > web/BUILD_STATUS.md
-            echo 'success=false' >> "$GITHUB_OUTPUT"
           fi
 
       - name: Upload Yandex Games web build
@@ -120,10 +156,11 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add web/BUILD_STATUS.md web/BUILD_LOG.txt
+          git add web/BUILD_STATUS.md web/BUILD_LOG.txt web/NATIVE_BUILD_LOG.txt
           if git diff --cached --quiet; then
             echo 'Build status unchanged.'
             exit 0
           fi
           git commit -m 'Update WebAssembly build status [skip ci]'
+          git pull --rebase origin main
           git push origin HEAD:main
