@@ -2,12 +2,12 @@ shared:INFO: (Emscripten: Running sanity checks)
 ports:INFO: retrieving port: zlib from https://github.com/madler/zlib/archive/refs/tags/v1.3.2.tar.gz
 ports:INFO: unpacking port: zlib
 cache:INFO: generating port: sysroot/lib/wasm32-emscripten/lto/libz.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libz.a" for subsequent builds)
-system_libs:INFO: compiled 15 inputs in 0.92s
+system_libs:INFO: compiled 15 inputs in 1.06s
 cache:INFO:  - ok
 ports:INFO: retrieving port: freetype from https://github.com/freetype/freetype/archive/VER-2-13-3.zip
 ports:INFO: unpacking port: freetype
 cache:INFO: generating port: sysroot/lib/wasm32-emscripten/lto/libfreetype.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libfreetype.a" for subsequent builds)
-system_libs:INFO: compiled 42 inputs in 4.36s
+system_libs:INFO: compiled 42 inputs in 4.79s
 cache:INFO:  - ok
 ports:INFO: retrieving port: ogg from https://github.com/xiph/ogg/releases/download/v1.3.5/libogg-1.3.5.zip
 ports:INFO: unpacking port: ogg
@@ -17,21 +17,21 @@ cache:INFO:  - ok
 ports:INFO: retrieving port: vorbis from https://github.com/xiph/vorbis/releases/download/v1.3.7/libvorbis-1.3.7.zip
 ports:INFO: unpacking port: vorbis
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libvorbis.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libvorbis.a" for subsequent builds)
-system_libs:INFO: compiled 22 inputs in 1.69s
+system_libs:INFO: compiled 22 inputs in 1.79s
 cache:INFO:  - ok
 ports:INFO: retrieving port: sdl2 from https://github.com/libsdl-org/SDL/archive/release-2.32.10.zip
 ports:INFO: unpacking port: sdl2
 cache:INFO: generating port: sysroot/lib/wasm32-emscripten/lto/libSDL2.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libSDL2.a" for subsequent builds)
-system_libs:INFO: compiled 119 inputs in 8.14s
+system_libs:INFO: compiled 119 inputs in 9.28s
 cache:INFO:  - ok
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libGL-emu-getprocaddr.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libGL-emu-getprocaddr.a" for subsequent builds)
-system_libs:INFO: compiled 4 inputs in 0.23s
+system_libs:INFO: compiled 4 inputs in 0.24s
 cache:INFO:  - ok
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libal.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libal.a" for subsequent builds)
 system_libs:INFO: compiled 1 inputs in 0.16s
 cache:INFO:  - ok
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libhtml5.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libhtml5.a" for subsequent builds)
-system_libs:INFO: compiled 5 inputs in 0.33s
+system_libs:INFO: compiled 5 inputs in 0.37s
 cache:INFO:  - ok
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libstubs.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libstubs.a" for subsequent builds)
 system_libs:INFO: compiled 2 inputs in 0.16s
@@ -40,38 +40,42 @@ cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libnoex
 system_libs:INFO: compiled 1 inputs in 0.11s
 cache:INFO:  - ok
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libc.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libc.a" for subsequent builds)
-system_libs:INFO: compiled 1075 inputs in 7.57s
+system_libs:INFO: compiled 1075 inputs in 7.95s
 cache:INFO:  - ok
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libdlmalloc.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libdlmalloc.a" for subsequent builds)
 system_libs:INFO: compiled 2 inputs in 0.36s
 cache:INFO:  - ok
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libclang_rt.builtins.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libclang_rt.builtins.a" for subsequent builds)
-system_libs:INFO: compiled 184 inputs in 1.71s
+system_libs:INFO: compiled 184 inputs in 1.84s
 cache:INFO:  - ok
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libc++-noexcept.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libc++-noexcept.a" for subsequent builds)
-system_libs:INFO: compiled 57 inputs in 13.21s
+system_libs:INFO: compiled 57 inputs in 15.79s
 cache:INFO:  - ok
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libc++abi-noexcept.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libc++abi-noexcept.a" for subsequent builds)
-system_libs:INFO: compiled 17 inputs in 1.99s
+system_libs:INFO: compiled 17 inputs in 2.29s
 cache:INFO:  - ok
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libsockets.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libsockets.a" for subsequent builds)
-system_libs:INFO: compiled 27 inputs in 0.57s
+system_libs:INFO: compiled 27 inputs in 0.58s
 cache:INFO:  - ok
-error: /tmp/emsdk/upstream/emscripten/src/lib/libglemu.js: failure to execute JS library "/tmp/emsdk/upstream/emscripten/src/lib/libglemu.js":
-error: /tmp/emsdk/upstream/emscripten/src/lib/libglemu.js: use -sVERBOSE to save preprocessed JS
-Internal compiler error JS compiler
-Please create a bug report at https://github.com/emscripten-core/emscripten/issues/
-with a log of the build and the input files used to run. Exception message: "node:internal/assert/utils:77
-    throw err;
-    ^
-
-AssertionError [ERR_ASSERTION]: cannot emulate both ES2 and legacy GL
-    at /tmp/emsdk/upstream/emscripten/src/lib/libglemu.preprocessed.js:8:1
-    at Script.runInContext (node:vm:149:12)
-    at Module.runInContext (node:vm:301:6)
-    at runInMacroContext (file:///tmp/emsdk/upstream/emscripten/src/utility.mjs:378:13)
-    at Object.executeJSLibraryFile (file:///tmp/emsdk/upstream/emscripten/src/modules.mjs:337:7)
-    at Object.load (file:///tmp/emsdk/upstream/emscripten/src/modules.mjs:277:12)
-    at Module.runJSify (file:///tmp/emsdk/upstream/emscripten/src/jsifier.mjs:422:18)
-    at file:///tmp/emsdk/upstream/emscripten/tools/compiler.mjs:100:17
-em++: error: '/tmp/emsdk/node/24.19.0_64bit/bin/node /tmp/emsdk/upstream/emscripten/tools/compiler.mjs - --symbols-only' failed (returned 1)
+wasm-ld: error: dist/index.wasm.lto.o: undefined symbol: glPopAttrib
+wasm-ld: error: dist/index.wasm.lto.o: undefined symbol: glPushAttrib
+wasm-ld: error: dist/index.wasm.lto.o: undefined symbol: glGetTexLevelParameterfv
+wasm-ld: error: dist/index.wasm.lto.o: undefined symbol: glGetTexLevelParameterfv
+wasm-ld: error: dist/index.wasm.lto.o: undefined symbol: glPopAttrib
+wasm-ld: error: dist/index.wasm.lto.o: undefined symbol: gluBuild2DMipmaps
+wasm-ld: error: dist/index.wasm.lto.o: undefined symbol: glPushAttrib
+wasm-ld: error: dist/index.wasm.lto.o: undefined symbol: glPopAttrib
+wasm-ld: error: dist/index.wasm.lto.o: undefined symbol: glLightf
+wasm-ld: error: dist/index.wasm.lto.o: undefined symbol: glLightf
+wasm-ld: error: dist/index.wasm.lto.o: undefined symbol: glLightf
+wasm-ld: error: dist/index.wasm.lto.o: undefined symbol: glPopAttrib
+wasm-ld: error: dist/index.wasm.lto.o: undefined symbol: glPopAttrib
+wasm-ld: error: dist/index.wasm.lto.o: undefined symbol: glPopAttrib
+wasm-ld: error: dist/index.wasm.lto.o: undefined symbol: glPopAttrib
+wasm-ld: error: dist/index.wasm.lto.o: undefined symbol: glPopAttrib
+wasm-ld: error: dist/index.wasm.lto.o: undefined symbol: glPopAttrib
+wasm-ld: error: dist/index.wasm.lto.o: undefined symbol: glPopAttrib
+wasm-ld: error: dist/index.wasm.lto.o: undefined symbol: glPopAttrib
+wasm-ld: error: dist/index.wasm.lto.o: undefined symbol: glPopAttrib
+wasm-ld: error: too many errors emitted, stopping now (use -error-limit=0 to see all errors)
+em++: error: '/tmp/emsdk/upstream/bin/wasm-ld -o dist/index.wasm /tmp/tmpu5huu898libemscripten_js_symbols.so -Bstatic --strip-debug -u__cxa_atexit --export=_emscripten_stack_alloc --export=__wasm_call_ctors --export=emscripten_stack_get_current --export=_emscripten_stack_restore --export=malloc --export-if-defined=__start_em_asm --export-if-defined=__stop_em_asm --export-if-defined=__start_em_lib_deps --export-if-defined=__stop_em_lib_deps --export-if-defined=__start_em_js --export-if-defined=__stop_em_js --export-if-defined=main --export-if-defined=__main_argc_argv --export-table -z stack-size=65536 --max-memory=2147483648 --initial-heap=16777216 --no-entry --no-stack-first --table-base=1 --global-base=1024 /tmp/emscripten_temp_ndweivz5/audio.o /tmp/emscripten_temp_ndweivz5/loading.o /tmp/emscripten_temp_ndweivz5/model3d.o /tmp/emscripten_temp_ndweivz5/shader.o /tmp/emscripten_temp_ndweivz5/texture.o /tmp/emscripten_temp_ndweivz5/command.o /tmp/emscripten_temp_ndweivz5/config.o /tmp/emscripten_temp_ndweivz5/audio_1.o /tmp/emscripten_temp_ndweivz5/buffer.o /tmp/emscripten_temp_ndweivz5/music.o /tmp/emscripten_temp_ndweivz5/openal.o /tmp/emscripten_temp_ndweivz5/sound.o /tmp/emscripten_temp_ndweivz5/camera.o /tmp/emscripten_temp_ndweivz5/camera_math.o /tmp/emscripten_temp_ndweivz5/collision_detection.o /tmp/emscripten_temp_ndweivz5/font.o /tmp/emscripten_temp_ndweivz5/extensions.o /tmp/emscripten_temp_ndweivz5/gl_draw2d.o /tmp/emscripten_temp_ndweivz5/gl_draw3d.o /tmp/emscripten_temp_ndweivz5/gl_fbo.o /tmp/emscripten_temp_ndweivz5/gl_glsl.o /tmp/emscripten_temp_ndweivz5/gl_light.o /tmp/emscripten_temp_ndweivz5/gl_main.o /tmp/emscripten_temp_ndweivz5/gl_matrix.o /tmp/emscripten_temp_ndweivz5/gl_texture.o /tmp/emscripten_temp_ndweivz5/gl_vao.o /tmp/emscripten_temp_ndweivz5/gl_vbo.o /tmp/emscripten_temp_ndweivz5/misc.o /tmp/emscripten_temp_ndweivz5/light.o /tmp/emscripten_temp_ndweivz5/math.o /tmp/emscripten_temp_ndweivz5/matrix33.o /tmp/emscripten_temp_ndweivz5/matrix44.o /tmp/emscripten_temp_ndweivz5/rand.o /tmp/emscripten_temp_ndweivz5/model3d_1.o /tmp/emscripten_temp_ndweivz5/particle_system.o /tmp/emscripten_temp_ndweivz5/particle_system2d.o /tmp/emscripten_temp_ndweivz5/keyboard.o /tmp/emscripten_temp_ndweivz5/mouse.o /tmp/emscripten_temp_ndweivz5/open_url.o /tmp/emscripten_temp_ndweivz5/text.o /tmp/emscripten_temp_ndweivz5/texture_1.o /tmp/emscripten_temp_ndweivz5/texture_tga.o /tmp/emscripten_temp_ndweivz5/time_thread.o /tmp/emscripten_temp_ndweivz5/vfs.o /tmp/emscripten_temp_ndweivz5/xml.o /tmp/emscripten_temp_ndweivz5/camera_1.o /tmp/emscripten_temp_ndweivz5/game.o /tmp/emscripten_temp_ndweivz5/game_player_ship.o /tmp/emscripten_temp_ndweivz5/hud.o /tmp/emscripten_temp_ndweivz5/weapon_panel.o /tmp/emscripten_temp_ndweivz5/shadow_map.o /tmp/emscripten_temp_ndweivz5/skybox.o /tmp/emscripten_temp_ndweivz5/star_system.o /tmp/emscripten_temp_ndweivz5/loop_proc.o /tmp/emscripten_temp_ndweivz5/main.o /tmp/emscripten_temp_ndweivz5/button.o /tmp/emscripten_temp_ndweivz5/dialog.o /tmp/emscripten_temp_ndweivz5/menu.o /tmp/emscripten_temp_ndweivz5/menu_conf_control.o /tmp/emscripten_temp_ndweivz5/menu_credits.o /tmp/emscripten_temp_ndweivz5/menu_difficulty.o /tmp/emscripten_temp_ndweivz5/menu_information.o /tmp/emscripten_temp_ndweivz5/menu_interface.o /tmp/emscripten_temp_ndweivz5/menu_mission.o /tmp/emscripten_temp_ndweivz5/menu_options.o /tmp/emscripten_temp_ndweivz5/menu_options_adv.o /tmp/emscripten_temp_ndweivz5/menu_profile.o /tmp/emscripten_temp_ndweivz5/menu_top_scores.o /tmp/emscripten_temp_ndweivz5/menu_workshop.o /tmp/emscripten_temp_ndweivz5/menu_workshop_shipyard.o /tmp/emscripten_temp_ndweivz5/menu_workshop_weaponry.o /tmp/emscripten_temp_ndweivz5/menu_workshop_workshop.o /tmp/emscripten_temp_ndweivz5/collision_detection_1.o /tmp/emscripten_temp_ndweivz5/bullet_explosion.o /tmp/emscripten_temp_ndweivz5/explosion.o /tmp/emscripten_temp_ndweivz5/ground_explosion.o /tmp/emscripten_temp_ndweivz5/space_explosion.o /tmp/emscripten_temp_ndweivz5/civilian_building.o /tmp/emscripten_temp_ndweivz5/ground_object.o /tmp/emscripten_temp_ndweivz5/military_building.o /tmp/emscripten_temp_ndweivz5/tracked.o /tmp/emscripten_temp_ndweivz5/wheeled.o /tmp/emscripten_temp_ndweivz5/object3_functions.o /tmp/emscripten_temp_ndweivz5/object3d.o /tmp/emscripten_temp_ndweivz5/object3d_collision.o /tmp/emscripten_temp_ndweivz5/object3d_manager.o /tmp/emscripten_temp_ndweivz5/functions.o /tmp/emscripten_temp_ndweivz5/projectile.o /tmp/emscripten_temp_ndweivz5/base_part.o /tmp/emscripten_temp_ndweivz5/big_asteroid.o /tmp/emscripten_temp_ndweivz5/planet.o /tmp/emscripten_temp_ndweivz5/planetoids.o /tmp/emscripten_temp_ndweivz5/small_asteroid.o /tmp/emscripten_temp_ndweivz5/space_debris.o /tmp/emscripten_temp_ndweivz5/space_object.o /tmp/emscripten_temp_ndweivz5/alien_space_fighter.o /tmp/emscripten_temp_ndweivz5/alien_space_mothership.o /tmp/emscripten_temp_ndweivz5/earth_space_fighter.o /tmp/emscripten_temp_ndweivz5/functions_1.o /tmp/emscripten_temp_ndweivz5/pirate_ship.o /tmp/emscripten_temp_ndweivz5/space_ship.o /tmp/emscripten_temp_ndweivz5/functions_2.o /tmp/emscripten_temp_ndweivz5/weapon.o /tmp/emscripten_temp_ndweivz5/joystick.o /tmp/emscripten_temp_ndweivz5/locale.o /tmp/emscripten_temp_ndweivz5/mouse_1.o /tmp/emscripten_temp_ndweivz5/path.o /tmp/emscripten_temp_ndweivz5/video.o /tmp/emscripten_temp_ndweivz5/script.o /tmp/emscripten_temp_ndweivz5/cursor.o /tmp/emscripten_temp_ndweivz5/font_1.o /tmp/emscripten_temp_ndweivz5/fps_counter.o /tmp/emscripten_temp_ndweivz5/stopwatch.o /tmp/emscripten_temp_ndweivz5/text_1.o /tmp/emscripten_temp_ndweivz5/game_speed.o /tmp/emscripten_temp_ndweivz5/fs2vfs.o -L/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto -L/tmp/emsdk/upstream/emscripten/src/lib /tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libSDL2.a /tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libvorbis.a /tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libogg.a /tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libfreetype.a /tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libz.a -lGL-emu-getprocaddr -lal -lhtml5 -lstubs -lnoexit -lc -ldlmalloc -lclang_rt.builtins -lc++-noexcept -lc++abi-noexcept -lsockets -mllvm -combiner-global-alias-analysis=false -mllvm -enable-emscripten-sjlj -mllvm -disable-lsr' failed (returned 1)
