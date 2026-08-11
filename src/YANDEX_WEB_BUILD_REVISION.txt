@@ -1,0 +1,5 @@
+Yandex Games web runtime revision: startup-lifecycle-fix-2026-08-11
+
+This file intentionally lives under src/ so changes to the browser runtime can
+trigger the reproducible WebAssembly GitHub Actions pipeline even when earlier
+concurrent runs were cancelled by subsequent commits.
