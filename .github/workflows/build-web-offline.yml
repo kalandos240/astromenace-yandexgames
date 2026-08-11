@@ -47,7 +47,7 @@ jobs:
             git push origin HEAD:main
           fi
 
-      - name: Prepare optimized RU EN game data
+      - name: Prepare complete optimized RU EN game data
         shell: bash
         run: |
           set -euo pipefail
@@ -59,6 +59,30 @@ jobs:
 
           rm -rf /tmp/native-astromenace /tmp/native-build /tmp/yandex-gamedata /tmp/yandex-vfs
           git clone --depth 1 https://github.com/midzer/astromenace.git /tmp/native-astromenace
+
+          # AstroMenace's VFS converter has a hard-coded manifest. If language
+          # directories are deleted without changing that manifest, the converter
+          # aborts halfway through and leaves a deceptively large but incomplete
+          # gamedata.vfs. Patch only the temporary native packer so EN/RU is a
+          # first-class complete manifest rather than a truncated archive.
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('/tmp/native-astromenace/src/utils/fs2vfs.cpp')
+          text = path.read_text(encoding='utf-8')
+          removed = 0
+          kept = []
+          for line in text.splitlines(keepends=True):
+              if any(f'"lang/{locale}/' in line for locale in ('de', 'pl', 'es', 'tr')):
+                  removed += 1
+                  continue
+              kept.append(line)
+          if removed < 1:
+              raise SystemExit('No non-EN/RU language entries found in native VFS manifest')
+          path.write_text(''.join(kept), encoding='utf-8')
+          print(f'Removed {removed} non-EN/RU entries from temporary VFS manifest')
+          PY
+
           cmake -S /tmp/native-astromenace -B /tmp/native-build \
             -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build /tmp/native-build --target astromenace
@@ -68,12 +92,31 @@ jobs:
           python3 scripts/rle_tga_assets.py /tmp/yandex-gamedata | tee web/OFFLINE_ASSET_OPTIMIZATION.txt
 
           mkdir -p /tmp/yandex-vfs
+          set +e
           /tmp/native-build/astromenace \
             --pack \
             --rawdata=/tmp/yandex-gamedata \
-            --dir=/tmp/yandex-vfs
+            --dir=/tmp/yandex-vfs \
+            > web/OFFLINE_VFS_PACK_LOG.txt 2>&1
+          pack_code=$?
+          set -e
+          cat web/OFFLINE_VFS_PACK_LOG.txt
+          if [[ $pack_code -ne 0 ]]; then
+            echo "VFS packer failed with exit code $pack_code" >&2
+            exit "$pack_code"
+          fi
+          if grep -qE 'compilation process aborted|Can.t find file' web/OFFLINE_VFS_PACK_LOG.txt; then
+            echo 'VFS packer reported an aborted/incomplete archive.' >&2
+            exit 1
+          fi
+
           test -s /tmp/yandex-vfs/gamedata.vfs
-          stat -c 'Fast web VFS bytes: %s' /tmp/yandex-vfs/gamedata.vfs
+          vfs_bytes="$(stat -c '%s' /tmp/yandex-vfs/gamedata.vfs)"
+          echo "Fast RU/EN VFS bytes: $vfs_bytes"
+          if (( vfs_bytes < 50000000 || vfs_bytes > 80000000 )); then
+            echo "Unexpected RU/EN VFS size: $vfs_bytes" >&2
+            exit 1
+          fi
 
       - name: Build gl4es for Emscripten
         shell: bash
@@ -110,15 +153,6 @@ jobs:
           rm -rf dist
           mkdir -p dist
 
-          # Fix the temporary source-rewrite boundary before applying the web
-          # patch. This intentionally modifies only the Actions worktree.
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('scripts/enable_gl4es_offline.py')
-          s = p.read_text(encoding='utf-8')
-          s = s.replace('text[end + 1:]', 'text[end + 2:]')
-          p.write_text(s, encoding='utf-8')
-          PY
           python3 scripts/enable_gl4es_offline.py
           mapfile -t SOURCES < <(find src -type f -name '*.cpp' -print | sort)
 
@@ -232,7 +266,7 @@ jobs:
           - Separate `.data`: **NO**
           - Separate `.wasm`: **NO**
           - Direct `file://` packaging: **YES**
-          - RU/EN runtime: **YES**
+          - Complete RU/EN VFS: **YES**
           - Interstitial after successful mission: **YES**
           EOF
           git config user.name "github-actions[bot]"
