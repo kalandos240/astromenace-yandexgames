@@ -35,8 +35,8 @@ jobs:
           # Fast offline web build
 
           - Status: **RUNNING**
-          - Run ID: `${{ github.run_id }}`
-          - Commit: `${{ github.sha }}`
+          - Run ID: ${{ github.run_id }}
+          - Commit: ${{ github.sha }}
           EOF
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -110,6 +110,15 @@ jobs:
           rm -rf dist
           mkdir -p dist
 
+          # Fix the temporary source-rewrite boundary before applying the web
+          # patch. This intentionally modifies only the Actions worktree.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/enable_gl4es_offline.py')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('text[end + 1:]', 'text[end + 2:]')
+          p.write_text(s, encoding='utf-8')
+          PY
           python3 scripts/enable_gl4es_offline.py
           mapfile -t SOURCES < <(find src -type f -name '*.cpp' -print | sort)
 
@@ -216,8 +225,8 @@ jobs:
           # Fast offline web build
 
           - Status: **SUCCESS**
-          - Run ID: `${{ github.run_id }}`
-          - Commit: `${{ github.sha }}`
+          - Run ID: ${{ github.run_id }}
+          - Commit: ${{ github.sha }}
           - Uncompressed dist bytes: **${{ steps.build.outputs.total_bytes }}**
           - Self-contained JS bytes: **${{ steps.build.outputs.js_bytes }}**
           - Separate `.data`: **NO**
@@ -234,3 +243,22 @@ jobs:
             git pull --rebase origin main
             git push origin HEAD:main
           fi
+
+      - name: Publish failure marker
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          cat > web/OFFLINE_BUILD_STATUS.md <<EOF
+          # Fast offline web build
+
+          - Status: **FAILED**
+          - Run ID: ${{ github.run_id }}
+          - Commit: ${{ github.sha }}
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add web/OFFLINE_BUILD_STATUS.md
+          git commit -m 'Mark fast offline WebAssembly build failed [skip ci]' || true
+          git pull --rebase origin main || true
+          git push origin HEAD:main || true
