@@ -2,30 +2,76 @@ shared:INFO: (Emscripten: Running sanity checks)
 ports:INFO: retrieving port: zlib from https://github.com/madler/zlib/archive/refs/tags/v1.3.2.tar.gz
 ports:INFO: unpacking port: zlib
 cache:INFO: generating port: sysroot/lib/wasm32-emscripten/lto/libz.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libz.a" for subsequent builds)
-system_libs:INFO: compiled 15 inputs in 0.79s
+system_libs:INFO: compiled 15 inputs in 0.92s
 cache:INFO:  - ok
 ports:INFO: retrieving port: freetype from https://github.com/freetype/freetype/archive/VER-2-13-3.zip
 ports:INFO: unpacking port: freetype
 cache:INFO: generating port: sysroot/lib/wasm32-emscripten/lto/libfreetype.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libfreetype.a" for subsequent builds)
-system_libs:INFO: compiled 42 inputs in 3.46s
+system_libs:INFO: compiled 42 inputs in 4.36s
 cache:INFO:  - ok
 ports:INFO: retrieving port: ogg from https://github.com/xiph/ogg/releases/download/v1.3.5/libogg-1.3.5.zip
 ports:INFO: unpacking port: ogg
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libogg.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libogg.a" for subsequent builds)
-system_libs:INFO: compiled 2 inputs in 0.16s
+system_libs:INFO: compiled 2 inputs in 0.20s
 cache:INFO:  - ok
 ports:INFO: retrieving port: vorbis from https://github.com/xiph/vorbis/releases/download/v1.3.7/libvorbis-1.3.7.zip
 ports:INFO: unpacking port: vorbis
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libvorbis.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libvorbis.a" for subsequent builds)
-system_libs:INFO: compiled 22 inputs in 1.36s
+system_libs:INFO: compiled 22 inputs in 1.69s
 cache:INFO:  - ok
 ports:INFO: retrieving port: sdl2 from https://github.com/libsdl-org/SDL/archive/release-2.32.10.zip
 ports:INFO: unpacking port: sdl2
 cache:INFO: generating port: sysroot/lib/wasm32-emscripten/lto/libSDL2.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libSDL2.a" for subsequent builds)
-system_libs:INFO: compiled 119 inputs in 6.83s
+system_libs:INFO: compiled 119 inputs in 8.14s
 cache:INFO:  - ok
-src/core/graphics/gl_main.cpp:44:10: fatal error: 'gl4esinit.h' file not found
-   44 | #include <gl4esinit.h>
-      |          ^~~~~~~~~~~~~
-1 error generated.
-em++: error: '/tmp/emsdk/upstream/bin/clang++ -target wasm32-unknown-emscripten -fignore-exceptions -mllvm -combiner-global-alias-analysis=false -mllvm -enable-emscripten-sjlj -mllvm -disable-lsr --sysroot=/tmp/emsdk/upstream/emscripten/cache/sysroot -isystem /tmp/emsdk/upstream/emscripten/cache/sysroot/include/freetype2 -isystem /tmp/emsdk/upstream/emscripten/cache/sysroot/include/SDL2 -Xclang -iwithsysroot/include/compat -std=c++11 -O3 -flto -fno-exceptions -fno-rtti -Isrc -c src/core/graphics/gl_main.cpp -o /tmp/emscripten_temp_kfr_74ve/gl_main.o' failed (returned 1)
+cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libGL-emu-getprocaddr.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libGL-emu-getprocaddr.a" for subsequent builds)
+system_libs:INFO: compiled 4 inputs in 0.23s
+cache:INFO:  - ok
+cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libal.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libal.a" for subsequent builds)
+system_libs:INFO: compiled 1 inputs in 0.16s
+cache:INFO:  - ok
+cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libhtml5.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libhtml5.a" for subsequent builds)
+system_libs:INFO: compiled 5 inputs in 0.33s
+cache:INFO:  - ok
+cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libstubs.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libstubs.a" for subsequent builds)
+system_libs:INFO: compiled 2 inputs in 0.16s
+cache:INFO:  - ok
+cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libnoexit.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libnoexit.a" for subsequent builds)
+system_libs:INFO: compiled 1 inputs in 0.11s
+cache:INFO:  - ok
+cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libc.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libc.a" for subsequent builds)
+system_libs:INFO: compiled 1075 inputs in 7.57s
+cache:INFO:  - ok
+cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libdlmalloc.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libdlmalloc.a" for subsequent builds)
+system_libs:INFO: compiled 2 inputs in 0.36s
+cache:INFO:  - ok
+cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libclang_rt.builtins.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libclang_rt.builtins.a" for subsequent builds)
+system_libs:INFO: compiled 184 inputs in 1.71s
+cache:INFO:  - ok
+cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libc++-noexcept.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libc++-noexcept.a" for subsequent builds)
+system_libs:INFO: compiled 57 inputs in 13.21s
+cache:INFO:  - ok
+cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libc++abi-noexcept.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libc++abi-noexcept.a" for subsequent builds)
+system_libs:INFO: compiled 17 inputs in 1.99s
+cache:INFO:  - ok
+cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libsockets.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libsockets.a" for subsequent builds)
+system_libs:INFO: compiled 27 inputs in 0.57s
+cache:INFO:  - ok
+error: /tmp/emsdk/upstream/emscripten/src/lib/libglemu.js: failure to execute JS library "/tmp/emsdk/upstream/emscripten/src/lib/libglemu.js":
+error: /tmp/emsdk/upstream/emscripten/src/lib/libglemu.js: use -sVERBOSE to save preprocessed JS
+Internal compiler error JS compiler
+Please create a bug report at https://github.com/emscripten-core/emscripten/issues/
+with a log of the build and the input files used to run. Exception message: "node:internal/assert/utils:77
+    throw err;
+    ^
+
+AssertionError [ERR_ASSERTION]: cannot emulate both ES2 and legacy GL
+    at /tmp/emsdk/upstream/emscripten/src/lib/libglemu.preprocessed.js:8:1
+    at Script.runInContext (node:vm:149:12)
+    at Module.runInContext (node:vm:301:6)
+    at runInMacroContext (file:///tmp/emsdk/upstream/emscripten/src/utility.mjs:378:13)
+    at Object.executeJSLibraryFile (file:///tmp/emsdk/upstream/emscripten/src/modules.mjs:337:7)
+    at Object.load (file:///tmp/emsdk/upstream/emscripten/src/modules.mjs:277:12)
+    at Module.runJSify (file:///tmp/emsdk/upstream/emscripten/src/jsifier.mjs:422:18)
+    at file:///tmp/emsdk/upstream/emscripten/tools/compiler.mjs:100:17
+em++: error: '/tmp/emsdk/node/24.19.0_64bit/bin/node /tmp/emsdk/upstream/emscripten/tools/compiler.mjs - --symbols-only' failed (returned 1)
