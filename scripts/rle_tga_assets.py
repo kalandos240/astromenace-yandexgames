@@ -6,10 +6,10 @@ type-2 and RLE type-10 24/32-bit TGA images. The encoder preserves the original
 header fields, ID bytes, descriptor/orientation and pixel order, replacing a
 file only when RLE is strictly smaller.
 
-For the browser distribution only, PCM WAV clips above 22050 Hz are also
-resampled to 22050 Hz through FFmpeg while preserving channel count. The source
-repository and upstream assets remain untouched. A converted WAV is accepted
-only when it is valid and smaller than the original.
+For the browser distribution only, PCM WAV clips above 22050 Hz are resampled
+to 22050 Hz while preserving channel count and sample width. The WAV pass is
+self-contained and does not require FFmpeg on the CI runner. Source repository
+and upstream assets remain untouched.
 """
 
 from __future__ import annotations
@@ -17,7 +17,6 @@ from __future__ import annotations
 import argparse
 import os
 from pathlib import Path
-import shutil
 import struct
 import tempfile
 
@@ -154,13 +153,8 @@ def optimize_tgas(root: Path) -> int:
 
 
 def optimize_wavs(root: Path, rate: int = 22050) -> int:
-    if not shutil.which("ffmpeg") or not shutil.which("ffprobe"):
-        print("WAV optimization skipped: FFmpeg/FFprobe not available on runner")
-        print("WAV bytes saved: 0")
-        return 0
-
-    # Import the standalone optimizer from this script directory. Keeping the
-    # implementation in its own file also makes it easy to run independently.
+    # Import the standalone dependency-free PCM optimizer from this script
+    # directory. It uses the stdlib wave module and works on stock CI runners.
     from optimize_wav_assets import optimize as optimize_wav
 
     total_before = 0
