@@ -41,8 +41,6 @@
 // NOTE GL_MAX_TEXTURE_MAX_ANISOTROPY (since OpenGL 4.6)
 //      could be used to replace GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT
 
-#include <gl4esinit.h>
-
 #include <algorithm>
 #include "graphics_internal.h"
 #include "graphics.h"
@@ -157,8 +155,6 @@ bool vw_CreateOpenGLContext(int VSync)
     }
 
     GLContext = SDL_GL_CreateContext(SDLWindow);
-
-    initialize_gl4es();
 
     if (!GLContext) {
         std::cerr << __func__ << "(): " << "SDL_GL_CreateContext() failed: " << SDL_GetError() << "\n";
