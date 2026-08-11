@@ -21,9 +21,6 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   const setStatus = (text) => {
     const status = statusElement();
     if (!status || !text) return;
-    // Emscripten writes "Running..." immediately before main(). It is not a
-    // useful stage for users, so present a clearer label until C++ reports its
-    // cooperative startup stages.
     status.textContent = String(text) === 'Running...' ? 'Starting engine...' : String(text);
   };
 
@@ -33,10 +30,14 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     setStatus(`Startup error: ${message || 'unknown error'}`);
   };
 
+  const nextBrowserTurn = () => new Promise((resolve) => setTimeout(resolve, 0));
+
   Module.yandexSetStatus = setStatus;
   Module.setStatus = setStatus;
   Module.monitorRunDependencies = (left) => {
-    if (left > 0) setStatus(`Preparing embedded game data... (${left})`);
+    if (left > 0 && !String(statusElement()?.textContent || '').startsWith('Unpacking game data')) {
+      setStatus(`Preparing game... (${left})`);
+    }
   };
   Module.printErr = (text) => {
     console.error(text);
@@ -119,6 +120,62 @@ var Module = typeof Module !== 'undefined' ? Module : {};
       finish(error);
     }
   });
+
+  const decodeEmbeddedGzip = async () => {
+    const chunks = globalThis.ASTROMENACE_GAMEDATA_GZIP_B64_CHUNKS;
+    const gzipSize = Number(globalThis.ASTROMENACE_GAMEDATA_GZIP_SIZE || 0);
+    const rawSize = Number(globalThis.ASTROMENACE_GAMEDATA_RAW_SIZE || 0);
+
+    if (!Array.isArray(chunks) || chunks.length === 0 || !gzipSize || !rawSize) {
+      throw new Error('embedded gamedata is missing');
+    }
+    if (typeof DecompressionStream !== 'function') {
+      throw new Error('this browser does not support gzip DecompressionStream');
+    }
+
+    setStatus('Decoding game data...');
+    let compressed = new Uint8Array(gzipSize);
+    let offset = 0;
+
+    for (let index = 0; index < chunks.length; index++) {
+      const binary = atob(chunks[index]);
+      if (offset + binary.length > compressed.length) {
+        throw new Error('embedded gamedata size is invalid');
+      }
+      for (let i = 0; i < binary.length; i++) {
+        compressed[offset + i] = binary.charCodeAt(i);
+      }
+      offset += binary.length;
+
+      if ((index & 7) === 7 || index === chunks.length - 1) {
+        const percent = Math.min(99, Math.floor((100 * offset) / gzipSize));
+        setStatus(`Decoding game data... ${percent}%`);
+        await nextBrowserTurn();
+      }
+    }
+
+    if (offset !== gzipSize) {
+      throw new Error(`embedded gamedata is truncated (${offset}/${gzipSize})`);
+    }
+
+    // Drop the large base64 strings before allocating the uncompressed VFS.
+    globalThis.ASTROMENACE_GAMEDATA_GZIP_B64_CHUNKS = null;
+
+    setStatus('Unpacking game data...');
+    const stream = new Blob([compressed])
+      .stream()
+      .pipeThrough(new DecompressionStream('gzip'));
+    const rawBuffer = await new Response(stream).arrayBuffer();
+    compressed = null;
+
+    if (rawBuffer.byteLength !== rawSize) {
+      throw new Error(`unpacked gamedata size mismatch (${rawBuffer.byteLength}/${rawSize})`);
+    }
+
+    setStatus('Installing game data...');
+    FS.writeFile('/gamedata.vfs', new Uint8Array(rawBuffer));
+    await nextBrowserTurn();
+  };
 
   const encodeBytes = (bytes) => {
     let binary = '';
@@ -218,8 +275,6 @@ var Module = typeof Module !== 'undefined' ? Module : {};
         FS.writeFile(`${SAVE_DIR}/${name}`, decodeBytes(encoded));
       }
       await syncFs(false);
-      // Apply the recovered profile exactly once. This path is only used when
-      // the browser had no local save at startup.
       if (!sessionStorage.getItem('astromenace-cloud-restored')) {
         sessionStorage.setItem('astromenace-cloud-restored', '1');
         location.reload();
@@ -301,10 +356,28 @@ var Module = typeof Module !== 'undefined' ? Module : {};
 
   trackAudioContexts();
 
-  // Only local persistence is allowed to delay main(). Platform SDK/player/cloud
-  // setup is deliberately moved after the menu is ready, so network/API issues
-  // can never create an infinite startup spinner.
+  // Install the complete VFS from a normal external script resource. Script
+  // tags are allowed from file://, unlike fetch/XHR of index.data/index.wasm.
+  // This is what makes a double-clicked index.html a supported launch path.
   Module.preRun = Module.preRun || [];
+  Module.preRun.push(() => {
+    addRunDependency('astromenace-embedded-gamedata');
+    (async () => {
+      try {
+        await decodeEmbeddedGzip();
+      } catch (error) {
+        console.error('[Startup] Could not install game data:', error);
+        showFatal(error?.message || String(error));
+        // Deliberately keep the run dependency on fatal corruption. Starting
+        // C++ without a complete VFS would only turn this into a black screen.
+        return;
+      }
+      removeRunDependency('astromenace-embedded-gamedata');
+    })();
+  });
+
+  // Local persistence may delay startup briefly, but platform SDK/player/cloud
+  // setup is moved after the menu is ready so network/API issues cannot hang it.
   Module.preRun.push(() => {
     addRunDependency('astromenace-local-save');
     (async () => {
