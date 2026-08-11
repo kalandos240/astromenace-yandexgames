@@ -99,7 +99,6 @@ jobs:
             -sUSE_VORBIS=1 \
             -lopenal \
             -sALLOW_MEMORY_GROWTH=1 \
-            -sFULL_ES2=1 \
             -sLEGACY_GL_EMULATION=1 \
             -sFORCE_FILESYSTEM=1 \
             -sENVIRONMENT=web \
