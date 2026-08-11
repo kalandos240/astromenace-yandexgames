@@ -4,6 +4,7 @@
 This is intentionally separate from the legacy browser pipeline. It applies
 web-only source edits in the temporary Actions worktree:
 - gl4es initialization and browser-safe video modes;
+- removal of the desktop-only Quit button from the browser main menu;
 - immediate mission save + Yandex interstitial hook;
 - precise Yandex GameplayAPI start/stop hooks for missions and pause menus;
 - cooperative Asyncify startup yields so the browser remains responsive;
@@ -78,6 +79,31 @@ def patch_video_modes() -> None:
             raise SystemExit("DetectWindowSizeArray insertion point not found")
         text = text.replace(marker, marker + window_web, 1)
 
+    path.write_text(text, encoding="utf-8")
+
+
+def patch_web_main_menu() -> None:
+    """Remove the desktop Quit button from the browser/Yandex main menu."""
+    path = Path("src/menu/menu.cpp")
+    text = path.read_text(encoding="utf-8")
+    if "ASTROMENACE YANDEX MAIN MENU: QUIT REMOVED" in text:
+        return
+
+    marker = (
+        "    Y = Y+Prir;\n"
+        "    if (DrawButton384(X,Y, vw_GetTextUTF32(\"QUIT\"), MenuContentTransp, Button6Transp, LastButton6UpdateTime)) {\n"
+        "        SetCurrentDialogBox(eDialogBox::QuitFromGame);\n"
+        "    }\n"
+    )
+    if marker not in text:
+        raise SystemExit("Main-menu Quit button marker not found")
+
+    replacement = (
+        "    // ASTROMENACE YANDEX MAIN MENU: QUIT REMOVED\n"
+        "    // Browser games are closed using the platform/browser UI, so a desktop\n"
+        "    // Quit command is intentionally omitted from the Yandex build.\n"
+    )
+    text = text.replace(marker, replacement, 1)
     path.write_text(text, encoding="utf-8")
 
 
@@ -217,7 +243,7 @@ def patch_web_locale_preloads() -> None:
     removed = 0
     kept = []
     for line in text.splitlines(keepends=True):
-        if any(f'"lang/{locale}/' in line for locale in ("de", "pl", "es", "tr")):
+        if any(f'\"lang/{locale}/' in line for locale in ("de", "pl", "es", "tr")):
             removed += 1
             continue
         kept.append(line)
@@ -443,6 +469,7 @@ def patch_fast_asset_loading() -> None:
 def main() -> int:
     patch_gl_main()
     patch_video_modes()
+    patch_web_main_menu()
     patch_mission_save()
     patch_gameplay_api()
     patch_web_locale_preloads()
