@@ -48,6 +48,7 @@ jobs:
           fi
 
       - name: Prepare complete optimized RU EN game data
+        id: gamedata
         shell: bash
         run: |
           set -euo pipefail
@@ -60,27 +61,43 @@ jobs:
           rm -rf /tmp/native-astromenace /tmp/native-build /tmp/yandex-gamedata /tmp/yandex-vfs
           git clone --depth 1 https://github.com/midzer/astromenace.git /tmp/native-astromenace
 
-          # AstroMenace's VFS converter has a hard-coded manifest. If language
-          # directories are deleted without changing that manifest, the converter
-          # aborts halfway through and leaves a deceptively large but incomplete
-          # gamedata.vfs. Patch only the temporary native packer so EN/RU is a
-          # first-class complete manifest rather than a truncated archive.
+          # AstroMenace's packer uses a hard-coded VFS manifest. Removing files
+          # from the source tree without updating the manifest creates a partial,
+          # corrupt VFS. Patch only the temporary native packer so EN/RU is a
+          # complete manifest. The desktop-only loading artwork is also omitted:
+          # the web build replaces that renderer with its HTML loading overlay.
           python3 - <<'PY'
           from pathlib import Path
 
           path = Path('/tmp/native-astromenace/src/utils/fs2vfs.cpp')
           text = path.read_text(encoding='utf-8')
-          removed = 0
+          removed_languages = 0
+          removed_loading = 0
+          loading_files = {
+              'loading/loading_back.tga',
+              'loading/viewizardlogo.tga',
+              'loading/loading01.tga',
+              'loading/loading02.tga',
+              'loading/loading03.tga',
+              'loading/loading04.tga',
+              'loading/loading_line.tga',
+          }
           kept = []
           for line in text.splitlines(keepends=True):
               if any(f'"lang/{locale}/' in line for locale in ('de', 'pl', 'es', 'tr')):
-                  removed += 1
+                  removed_languages += 1
+                  continue
+              if any(f'"{name}"' in line for name in loading_files):
+                  removed_loading += 1
                   continue
               kept.append(line)
-          if removed < 1:
+          if removed_languages < 1:
               raise SystemExit('No non-EN/RU language entries found in native VFS manifest')
+          if removed_loading < 1:
+              raise SystemExit('No desktop loading artwork entries found in native VFS manifest')
           path.write_text(''.join(kept), encoding='utf-8')
-          print(f'Removed {removed} non-EN/RU entries from temporary VFS manifest')
+          print(f'Removed {removed_languages} non-EN/RU manifest entries')
+          print(f'Removed {removed_loading} desktop-only loading manifest entries')
           PY
 
           cmake -S /tmp/native-astromenace -B /tmp/native-build \
@@ -112,11 +129,20 @@ jobs:
 
           test -s /tmp/yandex-vfs/gamedata.vfs
           vfs_bytes="$(stat -c '%s' /tmp/yandex-vfs/gamedata.vfs)"
-          echo "Fast RU/EN VFS bytes: $vfs_bytes"
-          if (( vfs_bytes < 50000000 || vfs_bytes > 80000000 )); then
-            echo "Unexpected RU/EN VFS size: $vfs_bytes" >&2
+          echo "Complete fast RU/EN VFS bytes: $vfs_bytes"
+          if (( vfs_bytes < 80000000 || vfs_bytes >= 100000000 )); then
+            echo "Unexpected complete RU/EN VFS size: $vfs_bytes" >&2
             exit 1
           fi
+
+          # Offline launch cannot fetch index.data from file://. Compress the
+          # complete VFS once and later expose the gzip bytes through an external
+          # JavaScript resource, which script tags can load from file://.
+          gzip -9 -n -c /tmp/yandex-vfs/gamedata.vfs > /tmp/yandex-vfs/gamedata.vfs.gz
+          gzip_bytes="$(stat -c '%s' /tmp/yandex-vfs/gamedata.vfs.gz)"
+          echo "Gzip VFS bytes: $gzip_bytes"
+          echo "raw_bytes=$vfs_bytes" >> "$GITHUB_OUTPUT"
+          echo "gzip_bytes=$gzip_bytes" >> "$GITHUB_OUTPUT"
 
       - name: Build gl4es for Emscripten
         shell: bash
@@ -156,6 +182,9 @@ jobs:
           python3 scripts/enable_gl4es_offline.py
           mapfile -t SOURCES < <(find src -type f -name '*.cpp' -print | sort)
 
+          # SINGLE_FILE embeds the WebAssembly module into index.js. Game data is
+          # intentionally not passed through --preload-file/--embed-file: it is
+          # installed by yandex-offline-pre.js from gamedata.js before main().
           em++ "${SOURCES[@]}" web/web_glu_compat.cpp \
             -std=c++11 -O3 -flto -fno-exceptions -fno-rtti \
             -DASTROMENACE_WEB_ASYNC_STARTUP=1 \
@@ -174,11 +203,38 @@ jobs:
             -sASYNCIFY=1 \
             -sASYNCIFY_STACK_SIZE=65536 \
             -sSINGLE_FILE=1 \
-            -sSINGLE_FILE_BINARY_ENCODE=1 \
-            --embed-file /tmp/yandex-vfs/gamedata.vfs@/gamedata.vfs \
             --pre-js web/yandex-offline-pre.js \
             -o dist/index.js \
             2>&1 | tee web/OFFLINE_BUILD_LOG.txt
+
+          # Encode the already-compressed VFS into manageable base64 chunks. A
+          # chunk array avoids constructing one enormous source string at runtime.
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64
+
+          src = Path('/tmp/yandex-vfs/gamedata.vfs.gz')
+          raw_vfs = Path('/tmp/yandex-vfs/gamedata.vfs').stat().st_size
+          gzip_bytes = src.read_bytes()
+          encoded = base64.b64encode(gzip_bytes).decode('ascii')
+          chunk_size = 262144  # divisible by 4, safe for independent atob()
+          chunks = [encoded[i:i + chunk_size] for i in range(0, len(encoded), chunk_size)]
+
+          out = Path('dist/gamedata.js')
+          with out.open('w', encoding='ascii', newline='\n') as f:
+              f.write('/* Generated compressed AstroMenace runtime data. */\n')
+              f.write(f'globalThis.ASTROMENACE_GAMEDATA_RAW_SIZE={raw_vfs};\n')
+              f.write(f'globalThis.ASTROMENACE_GAMEDATA_GZIP_SIZE={len(gzip_bytes)};\n')
+              f.write('globalThis.ASTROMENACE_GAMEDATA_GZIP_B64_CHUNKS=[\n')
+              for chunk in chunks:
+                  f.write('"')
+                  f.write(chunk)
+                  f.write('",\n')
+              f.write('];\n')
+
+          print(f'gamedata.js chunks: {len(chunks)}')
+          print(f'gamedata.js bytes: {out.stat().st_size}')
+          PY
 
           cp web/offline-shell.html dist/index.html
           cp web/astromenace.css dist/astromenace.css
@@ -212,17 +268,23 @@ jobs:
 
           test -s dist/index.html
           test -s dist/index.js
+          test -s dist/gamedata.js
           test ! -e dist/index.data
           test ! -e dist/index.wasm
+          grep -q 'gamedata.js' dist/index.html
           grep -q 'index.js' dist/index.html
+          grep -q 'ASTROMENACE_GAMEDATA_GZIP_B64_CHUNKS' dist/gamedata.js
 
           total_bytes="$(find dist -type f -printf '%s\n' | awk '{s+=$1} END {print s+0}')"
           js_bytes="$(stat -c '%s' dist/index.js)"
+          gamedata_js_bytes="$(stat -c '%s' dist/gamedata.js)"
           echo "total_bytes=$total_bytes" >> "$GITHUB_OUTPUT"
           echo "js_bytes=$js_bytes" >> "$GITHUB_OUTPUT"
+          echo "gamedata_js_bytes=$gamedata_js_bytes" >> "$GITHUB_OUTPUT"
 
           echo "Uncompressed dist bytes: $total_bytes"
-          echo "Self-contained index.js bytes: $js_bytes"
+          echo "Self-contained engine JS bytes: $js_bytes"
+          echo "Compressed game-data JS bytes: $gamedata_js_bytes"
           if (( total_bytes >= 100000000 )); then
             echo "Package exceeds 100,000,000-byte Yandex target" >&2
             exit 1
@@ -238,6 +300,9 @@ jobs:
               raise SystemExit('Inline style found in offline shell')
           if re.search(r'\son[a-z]+\s*=', html, re.I):
               raise SystemExit('Inline event handler found in offline shell')
+          scripts = re.findall(r'<script\b[^>]*\bsrc=["\']([^"\']+)', html, re.I)
+          if scripts != ['gamedata.js', 'index.js']:
+              raise SystemExit(f'Unexpected offline script order: {scripts}')
           print('Offline/Yandex CSP shell audit: PASS')
           PY
 
@@ -261,8 +326,11 @@ jobs:
           - Status: **SUCCESS**
           - Run ID: ${{ github.run_id }}
           - Commit: ${{ github.sha }}
+          - Complete RU/EN VFS bytes: **${{ steps.gamedata.outputs.raw_bytes }}**
+          - Gzip VFS bytes: **${{ steps.gamedata.outputs.gzip_bytes }}**
           - Uncompressed dist bytes: **${{ steps.build.outputs.total_bytes }}**
-          - Self-contained JS bytes: **${{ steps.build.outputs.js_bytes }}**
+          - Engine `index.js` bytes: **${{ steps.build.outputs.js_bytes }}**
+          - Compressed `gamedata.js` bytes: **${{ steps.build.outputs.gamedata_js_bytes }}**
           - Separate `.data`: **NO**
           - Separate `.wasm`: **NO**
           - Direct `file://` packaging: **YES**
