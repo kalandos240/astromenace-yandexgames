@@ -16,9 +16,7 @@ permissions:
   contents: write
 
 concurrency:
-  # v2 deliberately uses a new group so this diagnostic run does not cancel
-  # an older long-running renderer build that may still be finishing.
-  group: astromenace-web-gl4es-build-v2
+  group: astromenace-web-gl4es-build-v3
   cancel-in-progress: true
 
 jobs:
@@ -51,12 +49,13 @@ jobs:
             git push origin HEAD:main
           fi
 
-      - name: Prepare optimized native VFS pack
+      - name: Prepare complete native VFS pack
         id: native
         continue-on-error: true
         shell: bash
         run: |
           set +e
+          cd "$GITHUB_WORKSPACE"
           mkdir -p web
           {
             sudo apt-get update
@@ -72,24 +71,39 @@ jobs:
             cmake --build /tmp/native-build --target astromenace
 
             cp -a /tmp/native-astromenace/gamedata /tmp/yandex-gamedata
-            # This archive contains model source/development material and is not
-            # opened by the game runtime. Omitting it saves roughly 28 MiB.
-            rm -f /tmp/yandex-gamedata/models/models.pack
+
+            # models/models.pack is an INPUT to AstroMenace's VFS builder.
+            # The packer reads models from it and writes the final gamedata.vfs;
+            # the raw models.pack file is not separately shipped in dist/.
+            test -s /tmp/yandex-gamedata/models/models.pack
 
             mkdir -p /tmp/yandex-vfs
             /tmp/native-build/astromenace \
               --pack \
               --rawdata=/tmp/yandex-gamedata \
               --dir=/tmp/yandex-vfs
+
             test -s /tmp/yandex-vfs/gamedata.vfs
+            vfs_bytes="$(stat -c '%s' /tmp/yandex-vfs/gamedata.vfs)"
+            echo "Packed gamedata.vfs: ${vfs_bytes} bytes"
+
+            # A valid AstroMenace VFS is many megabytes. This guard prevents a
+            # header-only/empty package (the broken build was just 16 bytes).
+            if (( vfs_bytes < 1048576 )); then
+              echo "gamedata.vfs is unexpectedly small: ${vfs_bytes} bytes" >&2
+              exit 1
+            fi
             ls -lh /tmp/yandex-vfs/gamedata.vfs
           } > native-gl4es-build.log 2>&1
           code=$?
           tail -n 300 native-gl4es-build.log > web/NATIVE_BUILD_LOG_GL4ES.txt || true
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
           if [[ $code -eq 0 ]]; then
+            vfs_bytes="$(stat -c '%s' /tmp/yandex-vfs/gamedata.vfs)"
+            echo "vfs_bytes=$vfs_bytes" >> "$GITHUB_OUTPUT"
             echo 'success=true' >> "$GITHUB_OUTPUT"
           else
+            echo 'vfs_bytes=0' >> "$GITHUB_OUTPUT"
             echo 'success=false' >> "$GITHUB_OUTPUT"
           fi
           exit $code
@@ -101,6 +115,8 @@ jobs:
         shell: bash
         run: |
           set +e
+          cd "$GITHUB_WORKSPACE"
+          mkdir -p web
           {
             rm -rf /tmp/emsdk /tmp/gl4es /tmp/gl4es-build
             git clone --depth 1 https://github.com/emscripten-core/emsdk.git /tmp/emsdk
@@ -124,8 +140,9 @@ jobs:
             test -s /tmp/gl4es/lib/libGL.a
             ls -lh /tmp/gl4es/lib/libGL.a
             em++ --version | head -n 1
-          } > gl4es-build.log 2>&1
+          } > "$GITHUB_WORKSPACE/gl4es-build.log" 2>&1
           code=$?
+          cd "$GITHUB_WORKSPACE"
           tail -n 300 gl4es-build.log > web/GL4ES_BUILD_LOG.txt || true
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
           if [[ $code -eq 0 ]]; then
@@ -200,7 +217,10 @@ jobs:
         if: always()
         shell: bash
         run: |
+          cd "$GITHUB_WORKSPACE"
           mkdir -p web
+          touch web/NATIVE_BUILD_LOG_GL4ES.txt web/GL4ES_BUILD_LOG.txt web/BUILD_LOG_GL4ES.txt
+
           if [[ "${{ steps.native.outputs.success }}" != "true" ]]; then
             {
               echo '# Web build status (gl4es)'
@@ -210,18 +230,16 @@ jobs:
               echo '- Native exit code: **${{ steps.native.outputs.exit_code }}**'
               echo '- See `web/NATIVE_BUILD_LOG_GL4ES.txt`.'
             } > web/BUILD_STATUS_GL4ES.md
-            : > web/GL4ES_BUILD_LOG.txt
-            : > web/BUILD_LOG_GL4ES.txt
           elif [[ "${{ steps.gl4es.outputs.success }}" != "true" ]]; then
             {
               echo '# Web build status (gl4es)'
               echo
               echo '- Status: **FAILED (gl4es compilation)**'
               echo '- Run ID: `${{ github.run_id }}`'
+              echo '- Packed VFS bytes: **${{ steps.native.outputs.vfs_bytes }}**'
               echo '- gl4es exit code: **${{ steps.gl4es.outputs.exit_code }}**'
               echo '- See `web/GL4ES_BUILD_LOG.txt`.'
             } > web/BUILD_STATUS_GL4ES.md
-            : > web/BUILD_LOG_GL4ES.txt
           elif [[ "${{ steps.webbuild.outputs.success }}" == "true" ]]; then
             {
               echo '# Web build status (gl4es)'
@@ -229,6 +247,7 @@ jobs:
               echo '- Status: **SUCCESS**'
               echo '- Run ID: `${{ github.run_id }}`'
               echo '- Emscripten: `${{ steps.webbuild.outputs.emscripten }}`'
+              echo '- Packed VFS bytes: **${{ steps.native.outputs.vfs_bytes }}**'
               echo '- Uncompressed dist bytes: **${{ steps.webbuild.outputs.total_bytes }}**'
               echo '- Asset data bytes: **${{ steps.webbuild.outputs.data_bytes }}**'
               echo '- WebAssembly bytes: **${{ steps.webbuild.outputs.wasm_bytes }}**'
@@ -241,6 +260,7 @@ jobs:
               echo
               echo '- Status: **FAILED (AstroMenace Emscripten link)**'
               echo '- Run ID: `${{ github.run_id }}`'
+              echo '- Packed VFS bytes: **${{ steps.native.outputs.vfs_bytes }}**'
               echo '- Web exit code: **${{ steps.webbuild.outputs.exit_code }}**'
               echo '- Emscripten: `${{ steps.webbuild.outputs.emscripten }}`'
               echo '- See `web/BUILD_LOG_GL4ES.txt`.'
@@ -261,9 +281,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          cd "$GITHUB_WORKSPACE"
+
           # CI patches this source file only for compilation. Do not publish the
           # generated patch as a separate source change.
           git restore src/core/graphics/gl_main.cpp || true
+          touch web/NATIVE_BUILD_LOG_GL4ES.txt web/GL4ES_BUILD_LOG.txt web/BUILD_LOG_GL4ES.txt
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
