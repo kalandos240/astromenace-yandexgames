@@ -33,6 +33,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   Module.yandexGameplayRequested = false;
   Module.yandexGameplayApiRunning = false;
   Module.yandexCloudResolved = false;
+  Module.yandexLastCloudFingerprint = null;
   Module.hadLocalSaveAtStartup = false;
   Module.localSaveUpdatedAtAtStartup = 0;
   Module.usesIDBFS = false;
@@ -472,14 +473,34 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     return `${names.length}:${hash.toString(16)}`;
   };
 
+  const isUnchangedCloudError = (error) =>
+    /data does not differ from the previous ones/i.test(String(error?.message || error || ''));
+
   const writeCloudPayload = async (flushCloud, updatedAtOverride = 0) => {
-    if (!Module.yandexPlayer || !Module.yandexCloudResolved) return;
+    if (!Module.yandexPlayer || !Module.yandexCloudResolved) return false;
     const files = collectSaveFiles();
-    if (!Object.keys(files).length) return;
+    if (!Object.keys(files).length) return false;
+
+    const fingerprint = fingerprintFiles(files);
+    if (fingerprint === Module.yandexLastCloudFingerprint) return false;
+
     const updatedAt = Math.max(Number(updatedAtOverride || 0), localSaveUpdatedAt(), 1);
-    await timeout(Module.yandexPlayer.setData({
-      [CLOUD_KEY]: { version: 3, updatedAt, files }
-    }, Boolean(flushCloud)), PLAYER_TIMEOUT_MS, 'player.setData');
+    const previousFingerprint = Module.yandexLastCloudFingerprint;
+    Module.yandexLastCloudFingerprint = fingerprint;
+
+    try {
+      await timeout(Module.yandexPlayer.setData({
+        [CLOUD_KEY]: { version: 3, updatedAt, files }
+      }, Boolean(flushCloud)), PLAYER_TIMEOUT_MS, 'player.setData');
+      return true;
+    } catch (error) {
+      if (isUnchangedCloudError(error)) {
+        console.debug('[Yandex] Cloud save unchanged; duplicate write skipped.');
+        return false;
+      }
+      Module.yandexLastCloudFingerprint = previousFingerprint;
+      throw error;
+    }
   };
 
   const syncSave = async (flushCloud = false) => {
@@ -566,6 +587,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     const cloudFiles = cloud?.files && typeof cloud.files === 'object' ? cloud.files : {};
     const cloudHasSave = Object.keys(cloudFiles).length > 0;
     const cloudTimestamp = Number(cloud?.updatedAt || 0);
+    Module.yandexLastCloudFingerprint = cloudHasSave ? fingerprintFiles(cloudFiles) : null;
 
     if (!cloudHasSave) {
       Module.yandexCloudResolved = true;
