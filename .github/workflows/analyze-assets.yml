@@ -1,0 +1,54 @@
+name: Analyze AstroMenace Assets
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/analyze-assets.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate asset size report
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo 'AstroMenace gamedata size report'
+            echo '================================'
+            echo
+            echo 'Top-level directories/files:'
+            du -h -d 1 gamedata | sort -h
+            echo
+            echo 'Largest 120 files:'
+            find gamedata -type f -printf '%s\t%p\n' | sort -nr | head -n 120 | awk '{printf "%.2f MiB\t%s\n", $1/1048576, $2}'
+            echo
+            echo 'Language directory sizes:'
+            if [[ -d gamedata/lang ]]; then du -h -d 1 gamedata/lang | sort -h; fi
+            echo
+            echo 'Audio files total:'
+            find gamedata -type f \( -iname '*.wav' -o -iname '*.ogg' \) -printf '%s\n' | awk '{s+=$1} END {printf "%.2f MiB\n", s/1048576}'
+            echo
+            echo 'TGA files total:'
+            find gamedata -type f -iname '*.tga' -printf '%s\n' | awk '{s+=$1} END {printf "%.2f MiB\n", s/1048576}'
+          } > web/ASSET_SIZE_REPORT.txt
+
+      - name: Commit report
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add web/ASSET_SIZE_REPORT.txt
+          git commit -m 'Add AstroMenace asset size report [skip ci]' || exit 0
+          git pull --rebase origin main
+          git push origin HEAD:main
