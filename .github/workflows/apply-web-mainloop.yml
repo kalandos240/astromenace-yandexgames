@@ -1,0 +1,38 @@
+name: Apply Browser Main Loop
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/apply_web_mainloop.py'
+      - '.github/workflows/apply-web-mainloop.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Convert desktop loop to Emscripten scheduler
+        run: python3 scripts/apply_web_mainloop.py
+
+      - name: Commit source patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- src/main.cpp; then
+            echo 'Main loop already patched.'
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/main.cpp
+          git commit -m 'Use browser-scheduled main loop for WebAssembly'
+          git pull --rebase origin main
+          git push origin HEAD:main
