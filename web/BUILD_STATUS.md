@@ -1,6 +1,5 @@
 # Web build status
 
-- Status: **FAILED (Emscripten)**
-- Web exit code: ****
-- Emscripten: ``
-- See `web/BUILD_LOG.txt`.
+- Status: **FAILED (native VFS preparation)**
+- Native exit code: ****
+- See `web/NATIVE_BUILD_LOG.txt`.
