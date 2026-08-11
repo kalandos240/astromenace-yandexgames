@@ -297,25 +297,18 @@ var Module = typeof Module !== 'undefined' ? Module : {};
 
     setStatus('Unpacking game data... 0%');
     const reader = compressedStream.pipeThrough(new DecompressionStream('gzip')).getReader();
-    let file = null;
+    const rawBytes = new Uint8Array(rawSize);
     let rawWritten = 0;
     let lastPercent = -1;
 
     try {
-      try { FS.unlink('/gamedata.vfs'); } catch (_) {}
-      file = FS.open('/gamedata.vfs', 'w');
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
         if (!value || !value.length) continue;
         if (rawWritten + value.length > rawSize) throw new Error('unpacked gamedata exceeds expected size');
-
-        /* IMPORTANT: an explicit file position is required. Passing null makes
-           Emscripten treat the position as zero on some FS implementations and
-           overwrites the VFS header on every decompressed chunk. */
-        const written = FS.write(file, value, 0, value.length, rawWritten);
-        if (written !== value.length) throw new Error(`short VFS write (${written}/${value.length})`);
-        rawWritten += written;
+        rawBytes.set(value, rawWritten);
+        rawWritten += value.length;
 
         const percent = Math.min(99, Math.floor((100 * rawWritten) / rawSize));
         if (percent !== lastPercent) {
@@ -325,22 +318,34 @@ var Module = typeof Module !== 'undefined' ? Module : {};
         }
       }
     } finally {
-      if (file) FS.close(file);
       globalThis.ASTROMENACE_GAMEDATA_GZIP_B64_CHUNKS = null;
     }
 
     if (rawWritten !== rawSize) throw new Error(`unpacked gamedata size mismatch (${rawWritten}/${rawSize})`);
-    const stat = FS.stat('/gamedata.vfs');
-    if (Number(stat?.size || 0) !== rawSize) throw new Error(`installed gamedata size mismatch (${stat?.size}/${rawSize})`);
 
-    const header = FS.readFile('/gamedata.vfs').subarray(0, 8);
     const expectedHeader = [0x56, 0x46, 0x53, 0x5f, 0x76, 0x31, 0x2e, 0x36]; // VFS_v1.6
     for (let i = 0; i < expectedHeader.length; i++) {
-      if (header[i] !== expectedHeader[i]) throw new Error('installed gamedata VFS header is invalid');
+      if (rawBytes[i] !== expectedHeader[i]) throw new Error('decompressed gamedata VFS header is invalid');
+    }
+
+    setStatus('Installing game data...');
+    try { FS.unlink('/gamedata.vfs'); } catch (_) {}
+
+    // Install the VFS atomically. Passing canOwn=true lets MEMFS own the single
+    // decompressed buffer directly, avoiding hundreds of positioned FS.write()
+    // calls and avoiding a second 88 MB copy of the game archive.
+    if (typeof FS.createDataFile !== 'function') throw new Error('MEMFS createDataFile is unavailable');
+    FS.createDataFile('/', 'gamedata.vfs', rawBytes, true, false, true);
+
+    const stat = FS.stat('/gamedata.vfs');
+    if (Number(stat?.size || 0) !== rawSize) throw new Error(`installed gamedata size mismatch (${stat?.size}/${rawSize})`);
+    const installedHeader = FS.readFile('/gamedata.vfs', { encoding: 'binary' }).subarray(0, 8);
+    for (let i = 0; i < expectedHeader.length; i++) {
+      if (installedHeader[i] !== expectedHeader[i]) throw new Error('installed gamedata VFS header is invalid');
     }
 
     setStatus('Installing game data... 100%');
-    console.info(`[Startup] Valid VFS installed: ${rawWritten} bytes, header VFS_v1.6.`);
+    console.info(`[Startup] Atomic MEMFS VFS installed: ${rawWritten} bytes, header VFS_v1.6.`);
     await nextBrowserTurn();
   };
 
