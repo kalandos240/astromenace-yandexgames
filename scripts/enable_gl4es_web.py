@@ -4,9 +4,9 @@
 The browser build uses gl4es because AstroMenace relies on a sizeable OpenGL
 1.x/2.x compatibility surface. The CI-only patches below also make desktop SDL
 window assumptions browser-safe, lock the web render surface to a stable 16:9
-resolution, persist completed-mission progress immediately, and notify the
-Yandex bridge after every successfully completed mission so it can show an
-interstitial between levels.
+resolution, persist completed-mission progress immediately, notify the Yandex
+bridge after every successfully completed mission, and expose useful startup
+stages on the HTML loading overlay.
 
 All edits are applied only to the temporary GitHub Actions worktree. Native
 source behaviour in the repository remains unchanged.
@@ -133,11 +133,70 @@ def patch_mission_save() -> None:
     path.write_text(text, encoding="utf-8")
 
 
+def patch_startup_status() -> None:
+    path = Path("src/main.cpp")
+    text = path.read_text(encoding="utf-8")
+
+    def status(message: str) -> str:
+        return (
+            "#ifdef __EMSCRIPTEN__\n"
+            "    EM_ASM({ if (Module.yandexSetStatus) Module.yandexSetStatus('"
+            + message
+            + "'); });\n"
+            "#endif\n"
+        )
+
+    stages = [
+        (
+            "    LogGameAndLibsVersion();\n",
+            "    LogGameAndLibsVersion();\n\n" + status("Initializing SDL...")
+        ),
+        (
+            "    if (vw_OpenVFS(GetDataPath() + \"gamedata.vfs\", GAME_VFS_BUILD) != 0) {\n",
+            status("Opening game data...")
+            + "    if (vw_OpenVFS(GetDataPath() + \"gamedata.vfs\", GAME_VFS_BUILD) != 0) {\n"
+        ),
+        (
+            "    if (!VideoConfig(FirstStart)) {\n",
+            status("Configuring video...") + "    if (!VideoConfig(FirstStart)) {\n"
+        ),
+        (
+            "RecreateWindow:\n\n    if (!vw_CreateWindow",
+            "RecreateWindow:\n\n" + status("Creating WebGL renderer...") + "    if (!vw_CreateWindow"
+        ),
+        (
+            "    GenerateFonts(); // should be called after vw_InitText() and InitFont()\n",
+            status("Generating fonts...")
+            + "    GenerateFonts(); // should be called after vw_InitText() and InitFont()\n"
+        ),
+        (
+            "    LoadAllGameAssets(); // should be called after GenerateFonts(), since we use fonts for 'LOADING' text\n",
+            status("Loading game assets...")
+            + "    LoadAllGameAssets(); // should be called after GenerateFonts(), since we use fonts for 'LOADING' text\n"
+        ),
+        (
+            "    InitMenu(eMenuStatus::MAIN_MENU);\n",
+            status("Opening main menu...") + "    InitMenu(eMenuStatus::MAIN_MENU);\n"
+        ),
+    ]
+
+    if "Loading game assets..." in text:
+        return
+
+    for marker, replacement in stages:
+        if marker not in text:
+            raise SystemExit(f"Could not find startup-status insertion point: {marker!r}")
+        text = text.replace(marker, replacement, 1)
+
+    path.write_text(text, encoding="utf-8")
+
+
 def main() -> int:
     patch_gl_main()
     patch_video_modes()
     patch_mission_save()
-    print("Enabled gl4es, browser-safe video modes, mission saves, and level-complete ads.")
+    patch_startup_status()
+    print("Enabled gl4es, browser-safe video modes, mission saves, ads, and startup diagnostics.")
     return 0
 
 
