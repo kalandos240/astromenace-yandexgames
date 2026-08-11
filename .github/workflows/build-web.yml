@@ -1,0 +1,129 @@
+name: Build AstroMenace WebAssembly
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'web/yandex-pre.js'
+      - '.github/workflows/build-web.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout port repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install native build dependencies
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake ninja-build git \
+            libsdl2-dev libogg-dev libvorbis-dev \
+            libopenal-dev libalut-dev libfreetype6-dev
+
+      - name: Build matching native packer and gamedata.vfs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/midzer/astromenace.git /tmp/native-astromenace
+          cmake -S /tmp/native-astromenace -B /tmp/native-build \
+            -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/native-build --target astromenace
+          test -s /tmp/native-build/gamedata.vfs
+          ls -lh /tmp/native-build/gamedata.vfs
+
+      - name: Build WebAssembly package
+        id: webbuild
+        shell: bash
+        run: |
+          set -uo pipefail
+          rm -rf /tmp/emsdk
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git /tmp/emsdk
+          cd /tmp/emsdk
+          ./emsdk install latest
+          ./emsdk activate latest
+          source ./emsdk_env.sh
+          cd "$GITHUB_WORKSPACE"
+
+          mkdir -p dist web
+          mapfile -t SOURCES < <(find src -type f -name '*.cpp' -print | sort)
+
+          set +e
+          em++ "${SOURCES[@]}" \
+            -std=c++11 -O3 -flto -fno-exceptions -fno-rtti \
+            -Isrc \
+            -sUSE_SDL=2 \
+            -sUSE_FREETYPE=1 \
+            -sUSE_OGG=1 \
+            -sUSE_VORBIS=1 \
+            -lopenal \
+            -sASYNCIFY=1 \
+            -sALLOW_MEMORY_GROWTH=1 \
+            -sFULL_ES2=1 \
+            -sFORCE_FILESYSTEM=1 \
+            -sENVIRONMENT=web \
+            --preload-file /tmp/native-build/gamedata.vfs@/gamedata.vfs \
+            --pre-js web/yandex-pre.js \
+            -o dist/index.html \
+            > web-build.log 2>&1
+          build_code=$?
+          set -e
+
+          tail -n 300 web-build.log > web/BUILD_LOG.txt || true
+          emcc_version="$(em++ --version | head -n 1)"
+
+          if [[ $build_code -eq 0 ]]; then
+            total_bytes="$(find dist -maxdepth 1 -type f -printf '%s\n' | awk '{s+=$1} END {print s+0}')"
+            {
+              echo '# Web build status'
+              echo
+              echo '- Status: **SUCCESS**'
+              echo "- Emscripten: \`$emcc_version\`"
+              echo "- Uncompressed dist bytes: **$total_bytes**"
+              echo '- Output: GitHub Actions artifact `astromenace-yandexgames-web`'
+            } > web/BUILD_STATUS.md
+            echo 'success=true' >> "$GITHUB_OUTPUT"
+          else
+            {
+              echo '# Web build status'
+              echo
+              echo '- Status: **FAILED**'
+              echo "- Exit code: **$build_code**"
+              echo "- Emscripten: \`$emcc_version\`"
+              echo '- See `web/BUILD_LOG.txt` for the tail of the compiler output.'
+            } > web/BUILD_STATUS.md
+            echo 'success=false' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload Yandex Games web build
+        if: steps.webbuild.outputs.success == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: astromenace-yandexgames-web
+          path: dist/
+          if-no-files-found: error
+          compression-level: 9
+
+      - name: Publish build status to repository
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add web/BUILD_STATUS.md web/BUILD_LOG.txt
+          if git diff --cached --quiet; then
+            echo 'Build status unchanged.'
+            exit 0
+          fi
+          git commit -m 'Update WebAssembly build status [skip ci]'
+          git push origin HEAD:main
