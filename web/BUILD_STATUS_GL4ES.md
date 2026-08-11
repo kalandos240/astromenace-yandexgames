@@ -1,6 +1,5 @@
 # Web build status (gl4es)
 
-- Status: **FAILED (native VFS preparation)**
-- Run ID: `31497085876`
-- Native exit code: ****
-- See `web/NATIVE_BUILD_LOG_GL4ES.txt`.
+- Status: **RUNNING**
+- Run ID: `31497386860`
+- Commit: `d2c0fa9550e51371169ea7d3f0880821ffc2c819`
