@@ -254,128 +254,173 @@ static void LogGameAndLibsVersion()
 }
 
 /*
+ * Run one game-loop iteration.
+ *
+ * Native builds call this from a blocking while-loop. The browser build is
+ * scheduled by Emscripten so control returns to the browser between frames.
+ */
+static bool NeedPause{false};
+static bool TimeThreadsPaused{false};
+
+static void LoopIteration()
+{
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        switch (event.type) {
+        case SDL_QUIT: // close window by ALT+F4 or click on window's 'close' button
+            if (MenuStatus == eMenuStatus::GAME) {
+                SetCurrentDialogBox(eDialogBox::QuitNoSave);
+            } else {
+                SetCurrentDialogBox(eDialogBox::QuitFromGame);
+            }
+            break;
+
+        case SDL_MOUSEMOTION:
+            vw_SetMousePos(event.motion.x, event.motion.y);
+            // in case we have mouse movement, reset keyboard selected menu element
+            CurrentKeyboardSelectMenuElement = 0;
+            break;
+        case SDL_MOUSEWHEEL:
+            vw_ChangeWheelStatus(-event.wheel.y);
+            break;
+        case SDL_MOUSEBUTTONDOWN:
+            vw_SetMouseButtonStatus(event.button.button, true);
+            if (event.button.button == SDL_BUTTON_LEFT) {
+                vw_SetMouseLeftClick(true);
+            }
+            if (event.button.button == SDL_BUTTON_RIGHT) {
+                vw_SetMouseRightClick(true);
+            }
+            if (event.button.clicks == 2 && event.button.button == SDL_BUTTON_LEFT) {
+                vw_SetMouseLeftDoubleClick(true);
+            }
+            break;
+        case SDL_MOUSEBUTTONUP:
+            vw_SetMouseButtonStatus(event.button.button, false);
+            if (event.button.button == SDL_BUTTON_LEFT) {
+                vw_SetMouseLeftClick(false);
+            }
+            if (event.button.button == SDL_BUTTON_RIGHT) {
+                vw_SetMouseRightClick(false);
+            }
+            if (event.button.clicks == 2 && event.button.button == SDL_BUTTON_LEFT) {
+                vw_SetMouseLeftDoubleClick(false);
+            }
+            break;
+
+        case SDL_JOYBUTTONDOWN:
+            vw_SetMouseLeftClick(true);
+            SetJoystickButton(event.jbutton.button, true);
+            break;
+        case SDL_JOYBUTTONUP:
+            vw_SetMouseLeftClick(false);
+            SetJoystickButton(event.jbutton.button, false);
+            break;
+        case SDL_JOYDEVICEADDED:
+        case SDL_JOYDEVICEREMOVED:
+            JoystickInit(vw_GetTimeThread(0));
+            break;
+
+        case SDL_WINDOWEVENT:
+            switch (event.window.event) {
+            case SDL_WINDOWEVENT_FOCUS_LOST:
+            case SDL_WINDOWEVENT_MINIMIZED:
+                NeedPause = true;
+                break;
+            case SDL_WINDOWEVENT_FOCUS_GAINED:
+            case SDL_WINDOWEVENT_RESTORED:
+                NeedPause = false;
+                break;
+            }
+            break;
+
+        case SDL_KEYUP:
+            vw_KeyStatusUpdate(event.key.keysym.sym);
+            break;
+
+        case SDL_TEXTINPUT:
+            vw_SetCurrentUnicodeChar(event.text.text);
+#ifndef NDEBUG
+            std::cout << "TextInput, Unicode: " << event.text.text << "\n";
+#endif
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    if (!NeedPause) {
+#ifdef __EMSCRIPTEN__
+        if (TimeThreadsPaused) {
+            vw_ResumeTimeThreads();
+            TimeThreadsPaused = false;
+        }
+#endif
+        JoystickEmulateMouseMovement(vw_GetTimeThread(0));
+        Loop_Proc();
+        AudioLoop();
+        return;
+    }
+
+    // turn off music while the tab/platform has paused the game
+    if (vw_IsAnyMusicPlaying()) {
+        vw_ReleaseAllMusic();
+    }
+
+    // pause, so, player doesn't lose anything
+    if ((MenuStatus == eMenuStatus::GAME) && (GameContentTransp < 1.0f)) {
+        NeedShowGameMenu = true;
+        NeedHideGameMenu = false;
+        GameContentTransp = 1.0f;
+        cGameSpeed::GetInstance().SetThreadSpeed(0.0f);
+        SetShowGameCursor(true);
+    }
+
+#ifdef __EMSCRIPTEN__
+    // SDL_WaitEvent() would block the browser main thread. Pause time once and
+    // simply return to JavaScript; focus/game_api_resume will resume us later.
+    if (!TimeThreadsPaused) {
+        vw_PauseTimeThreads();
+        TimeThreadsPaused = true;
+    }
+#else
+    vw_PauseTimeThreads();
+    SDL_WaitEvent(nullptr);
+    vw_ResumeTimeThreads();
+#endif
+}
+
+#ifdef __EMSCRIPTEN__
+static void EmscriptenLoop(void *)
+{
+    if (NeedQuitFromLoop) {
+        emscripten_cancel_main_loop();
+        return;
+    }
+    LoopIteration();
+}
+#endif
+
+/*
  * Main loop.
  */
 static void Loop()
 {
     NeedQuitFromLoop = false;
     NeedRecreateWindow = false;
-    bool NeedPause{false};
+    NeedPause = false;
+    TimeThreadsPaused = false;
 
+#ifdef __EMSCRIPTEN__
+    // Rendering work must yield to the browser after every frame. A blocking
+    // desktop-style while-loop would freeze the page and prevent WebGL/events.
+    emscripten_set_main_loop_arg(EmscriptenLoop, nullptr, 0, 1);
+#else
     while (!NeedQuitFromLoop) {
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            switch (event.type) {
-            case SDL_QUIT: // close window by ALT+F4 or click on window's 'close' button
-                if (MenuStatus == eMenuStatus::GAME) {
-                    SetCurrentDialogBox(eDialogBox::QuitNoSave);
-                } else {
-                    SetCurrentDialogBox(eDialogBox::QuitFromGame);
-                }
-                break;
-
-            case SDL_MOUSEMOTION:
-                vw_SetMousePos(event.motion.x, event.motion.y);
-                // in case we have mouse movement, reset keyboard selected menu element
-                CurrentKeyboardSelectMenuElement = 0;
-                break;
-            case SDL_MOUSEWHEEL:
-                vw_ChangeWheelStatus(-event.wheel.y);
-                break;
-            case SDL_MOUSEBUTTONDOWN:
-                vw_SetMouseButtonStatus(event.button.button, true);
-                if (event.button.button == SDL_BUTTON_LEFT) {
-                    vw_SetMouseLeftClick(true);
-                }
-                if (event.button.button == SDL_BUTTON_RIGHT) {
-                    vw_SetMouseRightClick(true);
-                }
-                if (event.button.clicks == 2 && event.button.button == SDL_BUTTON_LEFT) { // double click
-                    vw_SetMouseLeftDoubleClick(true);
-                }
-                break;
-            case SDL_MOUSEBUTTONUP:
-                vw_SetMouseButtonStatus(event.button.button, false);
-                if (event.button.button == SDL_BUTTON_LEFT) {
-                    vw_SetMouseLeftClick(false);
-                }
-                if (event.button.button == SDL_BUTTON_RIGHT) {
-                    vw_SetMouseRightClick(false);
-                }
-                if (event.button.clicks == 2 && event.button.button == SDL_BUTTON_LEFT) { // double click
-                    vw_SetMouseLeftDoubleClick(false);
-                }
-                break;
-
-            case SDL_JOYBUTTONDOWN:
-                // only events from opened joystick could be here, no checks are needed
-                vw_SetMouseLeftClick(true);
-                SetJoystickButton(event.jbutton.button, true);
-                break;
-            case SDL_JOYBUTTONUP:
-                // only events from opened joystick could be here, no checks are needed
-                vw_SetMouseLeftClick(false);
-                SetJoystickButton(event.jbutton.button, false);
-                break;
-            case SDL_JOYDEVICEADDED:
-            case SDL_JOYDEVICEREMOVED:
-                JoystickInit(vw_GetTimeThread(0));
-                break;
-
-            case SDL_WINDOWEVENT:
-                switch (event.window.event) {
-                case SDL_WINDOWEVENT_FOCUS_LOST:
-                case SDL_WINDOWEVENT_MINIMIZED:
-                    NeedPause = true;
-                    break;
-                case SDL_WINDOWEVENT_FOCUS_GAINED:
-                case SDL_WINDOWEVENT_RESTORED:
-                    NeedPause = false;
-                    break;
-                }
-                break;
-
-            case SDL_KEYUP:
-                vw_KeyStatusUpdate(event.key.keysym.sym);
-                break;
-
-            case SDL_TEXTINPUT:
-                // convert utf8 to utf32, that we need for taping
-                vw_SetCurrentUnicodeChar(event.text.text);
-#ifndef NDEBUG
-                std::cout << "TextInput, Unicode: " << event.text.text << "\n";
-#endif // NDEBUG
-                break;
-
-            default:
-                break;
-            }
-        }
-
-        if (!NeedPause) {
-            JoystickEmulateMouseMovement(vw_GetTimeThread(0));
-            Loop_Proc();
-            AudioLoop();
-        } else {
-            // turn off music
-            if (vw_IsAnyMusicPlaying()) {
-                vw_ReleaseAllMusic();
-            }
-
-            // pause, so, player don't lose anything
-            if ((MenuStatus == eMenuStatus::GAME) && (GameContentTransp < 1.0f)) {
-                NeedShowGameMenu = true;
-                NeedHideGameMenu = false;
-                GameContentTransp = 1.0f;
-                cGameSpeed::GetInstance().SetThreadSpeed(0.0f);
-                SetShowGameCursor(true);
-            }
-
-            vw_PauseTimeThreads();
-            SDL_WaitEvent(nullptr);
-            vw_ResumeTimeThreads();
-        }
+        LoopIteration();
     }
+#endif
 }
 
 } // astromenace namespace
