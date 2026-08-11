@@ -1,0 +1,38 @@
+name: Apply Web WAV Loader
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/apply_web_wav.py'
+      - '.github/workflows/apply-web-wav.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch WAV loading for Emscripten
+        run: python3 scripts/apply_web_wav.py
+
+      - name: Commit source patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- src/core/audio/buffer.cpp; then
+            echo 'WAV loader already patched.'
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/core/audio/buffer.cpp
+          git commit -m 'Replace FreeALUT WAV loader in WebAssembly build'
+          git pull --rebase origin main
+          git push origin HEAD:main
