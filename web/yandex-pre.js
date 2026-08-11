@@ -10,38 +10,97 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   const SAVE_DIR = '/persistent';
   const CLOUD_KEY = 'astromenaceSave';
   const SAVE_INTERVAL_MS = 15000;
+  const SDK_TIMEOUT_MS = 4000;
+  const IO_TIMEOUT_MS = 2000;
   const trackedAudioContexts = new Set();
 
-  // Keep all executable shell setup in this external Emscripten-generated
-  // JavaScript file. The HTML shell intentionally contains no custom inline
-  // script or inline event handlers, which keeps it compatible with
-  // restrictive platform CSP rules.
   Module.canvas = document.getElementById('canvas');
   Module.canvas?.addEventListener('contextmenu', (event) => event.preventDefault());
-  Module.setStatus = (text) => {
-    const status = document.getElementById('status');
-    const loading = document.getElementById('loading');
-    if (status && text) status.textContent = text;
-    if (!text && loading) loading.classList.add('hidden');
+
+  const statusElement = () => document.getElementById('status');
+  const loadingElement = () => document.getElementById('loading');
+
+  const localFileMessage =
+    'Direct file:// launch is not supported by WebAssembly data loading. ' +
+    'Upload the ZIP to Yandex Games or serve this folder through HTTP.';
+
+  const setStatus = (text) => {
+    const status = statusElement();
+    if (!status) return;
+
+    if (location.protocol === 'file:' && /^Downloading data/i.test(String(text || ''))) {
+      status.textContent = localFileMessage;
+      return;
+    }
+
+    if (text) status.textContent = String(text);
   };
+
+  const showFatal = (message) => {
+    const loading = loadingElement();
+    if (loading) loading.classList.add('error');
+    setStatus(`Startup error: ${message || 'unknown error'}`);
+  };
+
+  Module.yandexSetStatus = setStatus;
+  Module.setStatus = setStatus;
+
+  // Important: dependency count reaching zero only means Emscripten finished
+  // fetching/preloading index.data and index.wasm. AstroMenace still has to
+  // open the VFS, create WebGL and synchronously load all game assets. Keep the
+  // loading overlay visible until C++ explicitly calls yandexGameReady().
   Module.monitorRunDependencies = (left) => {
-    if (!left) Module.setStatus('');
+    if (left > 0) {
+      setStatus(`Preparing game data… (${left})`);
+    } else {
+      setStatus('Starting AstroMenace…');
+    }
   };
-  Module.printErr = (text) => console.error(text);
+
+  Module.printErr = (text) => {
+    console.error(text);
+    if (!Module.yandexGameReadySent && /(failed|error|corrupt|not found|unable|abort)/i.test(String(text))) {
+      showFatal(String(text));
+    }
+  };
+
+  Module.onAbort = (reason) => showFatal(reason || 'WebAssembly aborted');
+  Module.onExit = (status) => {
+    if (!Module.yandexGameReadySent && status !== 0) {
+      showFatal(`AstroMenace exited with code ${status}`);
+    }
+  };
+
+  window.addEventListener('error', (event) => {
+    if (!Module.yandexGameReadySent) {
+      showFatal(event?.message || 'JavaScript error');
+    }
+  });
+  window.addEventListener('unhandledrejection', (event) => {
+    if (!Module.yandexGameReadySent) {
+      const reason = event?.reason;
+      showFatal(reason?.message || String(reason || 'unhandled promise rejection'));
+    }
+  });
 
   Module.yandexSDK = null;
   Module.yandexPlayer = null;
-  Module.yandexLanguageIndex = 0;
+  // Instant browser-locale fallback. The SDK value replaces this during preRun
+  // when Yandex is available. Runtime language indexes are EN=0 and RU=1.
+  Module.yandexLanguageIndex = /^ru(?:[-_]|$)/i.test(navigator.language || '') ? 1 : 0;
   Module.yandexGameReadySent = false;
   Module.yandexPlatformPaused = false;
   Module.yandexAdInProgress = false;
 
   const languageIndex = (lang) => {
     const short = String(lang || 'en').toLowerCase().split(/[-_]/)[0];
-    // The Yandex runtime package contains only English and Russian.
-    // All other platform locales fall back to English automatically.
-    return ({ en: 0, ru: 1 })[short] ?? 0;
+    return short === 'ru' ? 1 : 0;
   };
+
+  const timeout = (promise, ms, label) => Promise.race([
+    Promise.resolve(promise),
+    new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timed out`)), ms))
+  ]);
 
   const trackAudioContexts = () => {
     const NativeAudioContext = window.AudioContext || window.webkitAudioContext;
@@ -49,14 +108,20 @@ var Module = typeof Module !== 'undefined' ? Module : {};
 
     const WrappedAudioContext = new Proxy(NativeAudioContext, {
       construct(target, args, newTarget) {
-        const context = Reflect.construct(target, args, newTarget === WrappedAudioContext ? target : newTarget);
+        const context = Reflect.construct(
+          target,
+          args,
+          newTarget === WrappedAudioContext ? target : newTarget
+        );
         trackedAudioContexts.add(context);
         return context;
       }
     });
     WrappedAudioContext.__astromenaceWrapped = true;
     window.AudioContext = WrappedAudioContext;
-    if (window.webkitAudioContext === NativeAudioContext) window.webkitAudioContext = WrappedAudioContext;
+    if (window.webkitAudioContext === NativeAudioContext) {
+      window.webkitAudioContext = WrappedAudioContext;
+    }
   };
 
   const pauseAudio = () => {
@@ -70,6 +135,31 @@ var Module = typeof Module !== 'undefined' ? Module : {};
       if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
     });
   };
+
+  const syncFs = (populate, timeoutMs = IO_TIMEOUT_MS) => new Promise((resolve) => {
+    let done = false;
+    const finish = (error) => {
+      if (done) return;
+      done = true;
+      if (error) console.warn('[Yandex] IDBFS sync failed:', error);
+      resolve(!error);
+    };
+
+    const timer = setTimeout(() => {
+      console.warn('[Yandex] IDBFS sync timed out; continuing startup.');
+      finish(null);
+    }, timeoutMs);
+
+    try {
+      FS.syncfs(Boolean(populate), (error) => {
+        clearTimeout(timer);
+        finish(error || null);
+      });
+    } catch (error) {
+      clearTimeout(timer);
+      finish(error);
+    }
+  });
 
   const encodeBytes = (bytes) => {
     let binary = '';
@@ -113,7 +203,11 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   const restoreCloudFiles = async () => {
     if (!Module.yandexPlayer) return;
     try {
-      const data = await Module.yandexPlayer.getData([CLOUD_KEY]);
+      const data = await timeout(
+        Module.yandexPlayer.getData([CLOUD_KEY]),
+        IO_TIMEOUT_MS,
+        'player.getData'
+      );
       const save = data && data[CLOUD_KEY];
       if (!save || !save.files) return;
 
@@ -122,52 +216,39 @@ var Module = typeof Module !== 'undefined' ? Module : {};
         FS.writeFile(`${SAVE_DIR}/${name}`, decodeBytes(encoded));
       }
     } catch (error) {
-      console.warn('[Yandex] Cloud save restore failed:', error);
+      console.warn('[Yandex] Cloud save restore skipped:', error);
     }
   };
 
   const syncSave = async (flushCloud = false) => {
     if (typeof FS === 'undefined') return;
-
-    await new Promise((resolve) => {
-      try {
-        FS.syncfs(false, (error) => {
-          if (error) console.warn('[Yandex] IDBFS sync failed:', error);
-          resolve();
-        });
-      } catch (error) {
-        console.warn('[Yandex] IDBFS sync failed:', error);
-        resolve();
-      }
-    });
+    await syncFs(false);
 
     if (!Module.yandexPlayer) return;
     try {
-      await Module.yandexPlayer.setData({
-        [CLOUD_KEY]: {
-          version: 1,
-          updatedAt: Date.now(),
-          files: collectSaveFiles()
-        }
-      }, Boolean(flushCloud));
+      await timeout(
+        Module.yandexPlayer.setData({
+          [CLOUD_KEY]: {
+            version: 1,
+            updatedAt: Date.now(),
+            files: collectSaveFiles()
+          }
+        }, Boolean(flushCloud)),
+        IO_TIMEOUT_MS,
+        'player.setData'
+      );
     } catch (error) {
       console.warn('[Yandex] Cloud save write failed:', error);
     }
   };
 
-  // Exposed for browser-side persistence hooks.
   Module.yandexSyncSave = syncSave;
 
-  // Called by the successful-mission path. We invoke an interstitial after
-  // every completed mission. Yandex Games itself may suppress a particular
-  // display when calls are too frequent; onClose(false) is handled normally.
   Module.yandexLevelComplete = async () => {
     await syncSave(true);
 
     const showFullscreenAdv = Module.yandexSDK?.adv?.showFullscreenAdv;
-    if (typeof showFullscreenAdv !== 'function' || Module.yandexAdInProgress) {
-      return;
-    }
+    if (typeof showFullscreenAdv !== 'function' || Module.yandexAdInProgress) return;
 
     Module.yandexAdInProgress = true;
     let finished = false;
@@ -205,63 +286,54 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     }
   };
 
-  const loadYandexSDK = () => new Promise((resolve) => {
-    if (typeof YaGames !== 'undefined') {
-      resolve(true);
-      return;
-    }
+  const registerPlatformEvents = (ysdk) => {
+    ysdk.on?.('game_api_pause', () => {
+      Module.yandexPlatformPaused = true;
+      pauseAudio();
+      window.dispatchEvent(new Event('blur'));
+    });
+    ysdk.on?.('game_api_resume', () => {
+      Module.yandexPlatformPaused = false;
+      if (!Module.yandexAdInProgress) {
+        resumeAudio();
+        window.dispatchEvent(new Event('focus'));
+      }
+    });
+  };
 
-    const script = document.createElement('script');
-    script.src = '/sdk.js';
-    script.async = true;
-    script.onload = () => resolve(typeof YaGames !== 'undefined');
-    script.onerror = () => resolve(false);
-    document.head.appendChild(script);
-
-    // Local/off-platform builds must still be runnable.
-    setTimeout(() => resolve(typeof YaGames !== 'undefined'), 5000);
-  });
-
-  const initYandex = async () => {
-    const loaded = await loadYandexSDK();
-    if (!loaded) {
-      console.info('[Yandex] SDK unavailable; running in standalone mode.');
+  const initYandexForStartup = async () => {
+    if (typeof YaGames === 'undefined') {
+      console.info('[Yandex] SDK unavailable; using browser language and local saves.');
       return;
     }
 
     try {
-      const ysdk = await YaGames.init();
+      const ysdk = await timeout(YaGames.init(), SDK_TIMEOUT_MS, 'YaGames.init');
       Module.yandexSDK = ysdk;
       Module.yandexLanguageIndex = languageIndex(ysdk.environment?.i18n?.lang);
+      registerPlatformEvents(ysdk);
 
       try {
-        Module.yandexPlayer = await ysdk.getPlayer();
+        Module.yandexPlayer = await timeout(ysdk.getPlayer(), IO_TIMEOUT_MS, 'ysdk.getPlayer');
+        await restoreCloudFiles();
+        await syncFs(false);
       } catch (error) {
-        console.warn('[Yandex] Player init failed:', error);
+        // Player/cloud availability must never block the game from launching.
+        console.warn('[Yandex] Player/cloud startup skipped:', error);
       }
-
-      // Yandex emits these events for startup/fullscreen/rewarded ads,
-      // purchase dialogs and page minimization. Synthetic focus events enter
-      // AstroMenace's existing SDL_WINDOWEVENT pause path, which freezes game
-      // time and opens the in-game pause state while audio is suspended.
-      ysdk.on?.('game_api_pause', () => {
-        Module.yandexPlatformPaused = true;
-        pauseAudio();
-        window.dispatchEvent(new Event('blur'));
-      });
-      ysdk.on?.('game_api_resume', () => {
-        Module.yandexPlatformPaused = false;
-        resumeAudio();
-        window.dispatchEvent(new Event('focus'));
-      });
     } catch (error) {
-      console.warn('[Yandex] SDK initialization failed:', error);
+      // SDK problems must not turn the game into a permanent black/loading screen.
+      console.warn('[Yandex] SDK initialization skipped:', error);
     }
   };
 
   Module.yandexGameReady = () => {
     if (Module.yandexGameReadySent) return;
     Module.yandexGameReadySent = true;
+
+    const loading = loadingElement();
+    if (loading) loading.classList.add('hidden');
+
     try {
       Module.yandexSDK?.features?.LoadingAPI?.ready();
       console.info('[Yandex] LoadingAPI.ready sent.');
@@ -269,9 +341,6 @@ var Module = typeof Module !== 'undefined' ? Module : {};
       console.warn('[Yandex] LoadingAPI.ready failed:', error);
     }
 
-    // Startup ads can emit game_api_pause before SDL has installed its browser
-    // focus handlers. Re-emit the pause once the game is actually ready so the
-    // first interactive frame cannot run behind an active platform overlay.
     if (Module.yandexPlatformPaused) {
       pauseAudio();
       window.dispatchEvent(new Event('blur'));
@@ -282,31 +351,28 @@ var Module = typeof Module !== 'undefined' ? Module : {};
 
   Module.preRun = Module.preRun || [];
   Module.preRun.push(() => {
-    addRunDependency('astromenace-yandex-init');
+    addRunDependency('astromenace-startup');
 
     (async () => {
       try {
+        setStatus('Preparing saved progress…');
         FS.mkdirTree(SAVE_DIR);
-        FS.mount(IDBFS, {}, SAVE_DIR);
+        try {
+          FS.mount(IDBFS, {}, SAVE_DIR);
+        } catch (error) {
+          // Re-running an Emscripten runtime in the same page can report that
+          // the mount already exists. Continue if so.
+          console.warn('[Yandex] IDBFS mount warning:', error);
+        }
 
-        await new Promise((resolve) => {
-          FS.syncfs(true, (error) => {
-            if (error) console.warn('[Yandex] Initial IDBFS load failed:', error);
-            resolve();
-          });
-        });
-
-        await initYandex();
-        await restoreCloudFiles();
-
-        await new Promise((resolve) => {
-          FS.syncfs(false, (error) => {
-            if (error) console.warn('[Yandex] Restored save sync failed:', error);
-            resolve();
-          });
-        });
+        await syncFs(true);
+        setStatus('Initializing platform…');
+        await initYandexForStartup();
+        setStatus('Starting AstroMenace…');
+      } catch (error) {
+        console.warn('[Yandex] Non-fatal startup integration error:', error);
       } finally {
-        removeRunDependency('astromenace-yandex-init');
+        removeRunDependency('astromenace-startup');
       }
     })();
   });
