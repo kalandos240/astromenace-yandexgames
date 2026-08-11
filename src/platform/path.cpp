@@ -78,9 +78,12 @@ const std::string &GetConfigPath()
         return ConfigPath;
     }
 
+    // The web build persists settings/profiles in IDBFS mounted by web/yandex-pre.js.
+#ifdef __EMSCRIPTEN__
+    ConfigPath = "/persistent/";
+#elif defined(__unix)
     // by some reason, SDL use XDG_CONFIG_DATA for preferences/configs, so,
     // we are forced to use own code instead of SDL_GetPrefPath() for unix
-#ifdef __unix
     // act accordingly to XDG Base Directory Specification
     // "$XDG_CONFIG_HOME" > "$HOME/.config"
     const char *tmpEnvCH = std::getenv("XDG_CONFIG_HOME");

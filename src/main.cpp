@@ -45,6 +45,20 @@
 #include "SDL2/SDL.h"
 #include <algorithm>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+
+EM_JS(int, AstroMenaceYandexLanguageIndex, (), {
+    return Number.isInteger(Module.yandexLanguageIndex) ? Module.yandexLanguageIndex : 0;
+});
+
+EM_JS(void, AstroMenaceYandexGameReady, (), {
+    if (typeof Module.yandexGameReady === 'function') {
+        Module.yandexGameReady();
+    }
+});
+#endif
+
 // NOTE switch to nested namespace definition (namespace A::B::C { ... }) (since C++17)
 namespace viewizard {
 namespace astromenace {
@@ -448,7 +462,18 @@ int main(int argc, char *argv[])
     }
 
     // should be called after vw_InitText(), since we need find language index numbers
-    bool FirstStart = false;//LoadXMLConfigFile(NeedResetConfig);
+    bool FirstStart = LoadXMLConfigFile(NeedResetConfig);
+#ifdef __EMSCRIPTEN__
+    // Yandex Games requires automatic language detection through the SDK.
+    const int YandexLanguageIndex = AstroMenaceYandexLanguageIndex();
+    if (YandexLanguageIndex >= 0
+        && YandexLanguageIndex < static_cast<int>(vw_GetLanguageListCount())) {
+        ChangeGameConfig().MenuLanguage = static_cast<unsigned>(YandexLanguageIndex);
+        ChangeGameConfig().VoiceLanguage = static_cast<unsigned>(YandexLanguageIndex);
+        // Skip the native first-start language chooser in the web build.
+        FirstStart = false;
+    }
+#endif
 
     if (!VideoConfig(FirstStart)) {
         vw_ReleaseText();
@@ -518,6 +543,11 @@ RecreateWindow:
 
     CursorInit(NeedShowSystemCursor); // should be called after vw_InitTimeThread(0) and LoadAllGameAssets()
     InitMenu(eMenuStatus::MAIN_MENU);
+
+#ifdef __EMSCRIPTEN__
+    // All game assets are loaded and the main menu is interactive at this point.
+    AstroMenaceYandexGameReady();
+#endif
 
     // Main loop.
     Loop();
