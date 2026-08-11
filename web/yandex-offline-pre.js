@@ -11,6 +11,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   const SDK_SCRIPT_TIMEOUT_MS = 6000;
   const SDK_INIT_TIMEOUT_MS = 8000;
   const PLAYER_TIMEOUT_MS = 2500;
+  const SAVE_CLOCK_TOLERANCE_MS = 1500;
   const RU_FALLBACK_LANGS = new Set(['ru', 'be', 'kk', 'uk', 'uz']);
   const trackedAudioContexts = new Set();
 
@@ -27,7 +28,11 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   Module.yandexGameReadySent = false;
   Module.yandexPlatformPaused = false;
   Module.yandexAdInProgress = false;
+  Module.yandexGameplayRequested = false;
+  Module.yandexGameplayApiRunning = false;
+  Module.yandexCloudResolved = false;
   Module.hadLocalSaveAtStartup = false;
+  Module.localSaveUpdatedAtAtStartup = 0;
 
   const isRussian = () => Module.yandexLanguageCode === 'ru';
 
@@ -96,9 +101,6 @@ var Module = typeof Module !== 'undefined' ? Module : {};
 
   Module.printErr = (value) => {
     const text = String(value || '');
-    // The web VFS intentionally contains only EN/RU. Upstream still has a few
-    // unconditional preload entries for other locales, but those assets are never
-    // selected in the EN/RU runtime. Do not surface those harmless misses as errors.
     if (isExpectedFirstLaunchMessage(text) || isUnusedLocaleAssetMessage(text)) {
       console.debug('[AstroMenace] Expected web fallback:', text);
       return;
@@ -161,6 +163,56 @@ var Module = typeof Module !== 'undefined' ? Module : {};
       if (ctx?.state === 'suspended') ctx.resume().catch(() => {});
     });
   };
+
+  const releasePointerLock = () => {
+    if (document.pointerLockElement === Module.canvas) {
+      try {
+        document.exitPointerLock?.();
+      } catch (_) {}
+    }
+  };
+
+  const tryPointerLock = () => {
+    if (!Module.yandexGameplayRequested || Module.yandexPlatformPaused || Module.yandexAdInProgress || document.hidden) return;
+    if (!Module.canvas?.requestPointerLock || document.pointerLockElement === Module.canvas) return;
+    try {
+      const result = Module.canvas.requestPointerLock();
+      if (result && typeof result.catch === 'function') result.catch(() => {});
+    } catch (_) {}
+  };
+
+  const setGameplayApiRunning = (running) => {
+    const shouldRun = Boolean(running) && !Module.yandexPlatformPaused && !Module.yandexAdInProgress && !document.hidden;
+    if (Module.yandexGameplayApiRunning === shouldRun) return;
+    const api = Module.yandexSDK?.features?.GameplayAPI;
+    try {
+      if (shouldRun) {
+        api?.start?.();
+      } else {
+        api?.stop?.();
+      }
+      Module.yandexGameplayApiRunning = shouldRun;
+      if (Module.yandexSDK) console.info(`[Yandex] GameplayAPI.${shouldRun ? 'start' : 'stop'} sent.`);
+    } catch (error) {
+      console.warn('[Yandex] GameplayAPI event failed:', error);
+    }
+  };
+
+  Module.yandexGameplayStart = () => {
+    Module.yandexGameplayRequested = true;
+    setGameplayApiRunning(true);
+    tryPointerLock();
+  };
+
+  Module.yandexGameplayStop = () => {
+    Module.yandexGameplayRequested = false;
+    setGameplayApiRunning(false);
+    releasePointerLock();
+  };
+
+  Module.canvas?.addEventListener('pointerdown', () => {
+    if (Module.yandexGameplayRequested) tryPointerLock();
+  });
 
   const syncFs = (populate, timeoutMs = 1500) => new Promise((resolve) => {
     let done = false;
@@ -273,18 +325,64 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     return files;
   };
 
+  const statTimestamp = (stat) => {
+    const value = stat?.mtime;
+    if (value instanceof Date) return value.getTime();
+    const numeric = Number(value || 0);
+    if (!Number.isFinite(numeric) || numeric <= 0) return 0;
+    return numeric < 1e12 ? numeric * 1000 : numeric;
+  };
+
+  const localSaveUpdatedAt = () => {
+    let newest = 0;
+    for (const name of saveFileNames()) {
+      if (!/^[A-Za-z0-9_.-]+$/.test(name)) continue;
+      try {
+        const stat = FS.stat(`${SAVE_DIR}/${name}`);
+        if (FS.isFile(stat.mode)) newest = Math.max(newest, statTimestamp(stat));
+      } catch (_) {}
+    }
+    return newest;
+  };
+
+  const fingerprintFiles = (files) => {
+    const names = Object.keys(files || {}).sort();
+    let hash = 2166136261;
+    const feed = (text) => {
+      for (let i = 0; i < text.length; i++) {
+        hash ^= text.charCodeAt(i);
+        hash = Math.imul(hash, 16777619) >>> 0;
+      }
+    };
+    for (const name of names) {
+      feed(name);
+      feed('\0');
+      feed(String(files[name] || ''));
+      feed('\0');
+    }
+    return `${names.length}:${hash.toString(16)}`;
+  };
+
+  const writeCloudPayload = async (flushCloud, updatedAtOverride = 0) => {
+    if (!Module.yandexPlayer || !Module.yandexCloudResolved) return;
+    const files = collectSaveFiles();
+    if (!Object.keys(files).length) return;
+    const updatedAt = Math.max(Number(updatedAtOverride || 0), localSaveUpdatedAt(), 1);
+    await timeout(Module.yandexPlayer.setData({
+      [CLOUD_KEY]: {
+        version: 3,
+        updatedAt,
+        files
+      }
+    }, Boolean(flushCloud)), PLAYER_TIMEOUT_MS, 'player.setData');
+  };
+
   const syncSave = async (flushCloud = false) => {
     if (typeof FS === 'undefined') return;
     await syncFs(false);
-    if (!Module.yandexPlayer) return;
+    if (!Module.yandexPlayer || !Module.yandexCloudResolved) return;
     try {
-      await timeout(Module.yandexPlayer.setData({
-        [CLOUD_KEY]: {
-          version: 2,
-          updatedAt: Date.now(),
-          files: collectSaveFiles()
-        }
-      }, Boolean(flushCloud)), PLAYER_TIMEOUT_MS, 'player.setData');
+      await writeCloudPayload(flushCloud);
     } catch (error) {
       console.warn('[Yandex] Cloud save write skipped:', error);
     }
@@ -294,6 +392,8 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   const registerPlatformEvents = (ysdk) => {
     ysdk.on?.('game_api_pause', () => {
       Module.yandexPlatformPaused = true;
+      setGameplayApiRunning(false);
+      releasePointerLock();
       pauseAudio();
       window.dispatchEvent(new Event('blur'));
     });
@@ -302,6 +402,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
       if (!Module.yandexAdInProgress) {
         resumeAudio();
         window.dispatchEvent(new Event('focus'));
+        if (Module.yandexGameplayRequested) setGameplayApiRunning(true);
       }
     });
   };
@@ -340,30 +441,72 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     const ysdk = await timeout(YaGames.init(), SDK_INIT_TIMEOUT_MS, 'YaGames.init');
     Module.yandexSDK = ysdk;
 
-    // Requirement 2.14: use the SDK language during launch, before main().
     const resolved = setGameLanguage(ysdk.environment?.i18n?.lang);
     registerPlatformEvents(ysdk);
     console.info(`[Yandex] SDK initialized before main; language ${resolved.sdkLang || 'unknown'} -> ${resolved.gameLang}.`);
   };
 
-  const restoreCloudOnlyWhenNoLocalSave = async () => {
-    if (!Module.yandexPlayer || Module.hadLocalSaveAtStartup) return;
-    try {
-      const data = await timeout(Module.yandexPlayer.getData([CLOUD_KEY]), PLAYER_TIMEOUT_MS, 'player.getData');
-      const save = data?.[CLOUD_KEY];
-      if (!save?.files || !Object.keys(save.files).length) return;
-      for (const [name, encoded] of Object.entries(save.files)) {
-        if (!/^[A-Za-z0-9_.-]+$/.test(name) || typeof encoded !== 'string') continue;
-        FS.writeFile(`${SAVE_DIR}/${name}`, decodeBytes(encoded));
-      }
-      await syncFs(false);
-      if (!sessionStorage.getItem('astromenace-cloud-restored')) {
-        sessionStorage.setItem('astromenace-cloud-restored', '1');
-        location.reload();
-      }
-    } catch (error) {
-      console.warn('[Yandex] Cloud restore skipped:', error);
+  const restoreCloudFiles = async (cloudFiles) => {
+    const allowedCloudNames = new Set(Object.keys(cloudFiles || {}).filter((name) => /^[A-Za-z0-9_.-]+$/.test(name)));
+    for (const name of saveFileNames()) {
+      if (!/^[A-Za-z0-9_.-]+$/.test(name) || allowedCloudNames.has(name)) continue;
+      try {
+        FS.unlink(`${SAVE_DIR}/${name}`);
+      } catch (_) {}
     }
+    for (const [name, encoded] of Object.entries(cloudFiles || {})) {
+      if (!/^[A-Za-z0-9_.-]+$/.test(name) || typeof encoded !== 'string') continue;
+      FS.writeFile(`${SAVE_DIR}/${name}`, decodeBytes(encoded));
+    }
+    await syncFs(false);
+  };
+
+  const resolveNewestSave = async () => {
+    if (!Module.yandexPlayer) return false;
+
+    const localFiles = collectSaveFiles();
+    const localHasSave = Object.keys(localFiles).length > 0;
+    const localTimestamp = Number(Module.localSaveUpdatedAtAtStartup || localSaveUpdatedAt() || 0);
+
+    const data = await timeout(Module.yandexPlayer.getData([CLOUD_KEY]), PLAYER_TIMEOUT_MS, 'player.getData');
+    const cloud = data?.[CLOUD_KEY];
+    const cloudFiles = cloud?.files && typeof cloud.files === 'object' ? cloud.files : {};
+    const cloudHasSave = Object.keys(cloudFiles).length > 0;
+    const cloudTimestamp = Number(cloud?.updatedAt || 0);
+
+    if (!cloudHasSave) {
+      Module.yandexCloudResolved = true;
+      if (localHasSave) await writeCloudPayload(true, localTimestamp);
+      console.info('[Yandex] Save merge: local save selected (cloud empty).');
+      return false;
+    }
+
+    if (!Module.hadLocalSaveAtStartup) {
+      await restoreCloudFiles(cloudFiles);
+      Module.yandexCloudResolved = true;
+      console.info('[Yandex] Save merge: cloud save selected (no local save existed at startup).');
+      return true;
+    }
+
+    const localFingerprint = fingerprintFiles(localFiles);
+    const cloudFingerprint = fingerprintFiles(cloudFiles);
+    if (localFingerprint === cloudFingerprint) {
+      Module.yandexCloudResolved = true;
+      console.info('[Yandex] Save merge: local and cloud progress are identical.');
+      return false;
+    }
+
+    if (cloudTimestamp > localTimestamp + SAVE_CLOCK_TOLERANCE_MS) {
+      await restoreCloudFiles(cloudFiles);
+      Module.yandexCloudResolved = true;
+      console.info(`[Yandex] Save merge: newer cloud save selected (${cloudTimestamp} > ${localTimestamp}).`);
+      return true;
+    }
+
+    Module.yandexCloudResolved = true;
+    await writeCloudPayload(true, localTimestamp);
+    console.info(`[Yandex] Save merge: newer local save selected (${localTimestamp} >= ${cloudTimestamp}).`);
+    return false;
   };
 
   const initPlayerAfterGameReady = async () => {
@@ -371,18 +514,27 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     if (!ysdk) return;
     try {
       Module.yandexPlayer = await timeout(ysdk.getPlayer(), PLAYER_TIMEOUT_MS, 'ysdk.getPlayer');
-      await restoreCloudOnlyWhenNoLocalSave();
+      const restoredCloud = await resolveNewestSave();
+      if (restoredCloud) {
+        const stamp = String(Date.now());
+        sessionStorage.setItem('astromenace-cloud-restored', stamp);
+        location.reload();
+      }
     } catch (error) {
-      console.warn('[Yandex] Player initialization skipped:', error);
+      Module.yandexCloudResolved = true;
+      console.warn('[Yandex] Player/save initialization skipped:', error);
     }
   };
 
   Module.yandexLevelComplete = async () => {
+    Module.yandexGameplayStop();
     await syncSave(true);
     const showFullscreenAdv = Module.yandexSDK?.adv?.showFullscreenAdv;
     if (typeof showFullscreenAdv !== 'function' || Module.yandexAdInProgress) return;
 
     Module.yandexAdInProgress = true;
+    setGameplayApiRunning(false);
+    releasePointerLock();
     let finished = false;
     const finish = () => {
       if (finished) return;
@@ -391,6 +543,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
       if (!Module.yandexPlatformPaused && !document.hidden) {
         window.dispatchEvent(new Event('focus'));
         resumeAudio();
+        if (Module.yandexGameplayRequested) setGameplayApiRunning(true);
       }
     };
 
@@ -398,6 +551,8 @@ var Module = typeof Module !== 'undefined' ? Module : {};
       Module.yandexSDK.adv.showFullscreenAdv({
         callbacks: {
           onOpen: () => {
+            setGameplayApiRunning(false);
+            releasePointerLock();
             pauseAudio();
             window.dispatchEvent(new Event('blur'));
           },
@@ -420,14 +575,13 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     const loading = loadingElement();
     if (loading) loading.classList.add('hidden');
 
-    // Requirement 1.19.2: C++ calls this after InitMenu(), exactly when the
-    // interactive main menu becomes available.
     try {
       Module.yandexSDK?.features?.LoadingAPI?.ready();
       if (Module.yandexSDK) console.info('[Yandex] LoadingAPI.ready sent.');
     } catch (error) {
       console.warn('[Yandex] LoadingAPI.ready failed:', error);
     }
+    setGameplayApiRunning(false);
     initPlayerAfterGameReady();
   };
 
@@ -436,8 +590,6 @@ var Module = typeof Module !== 'undefined' ? Module : {};
 
   Module.preRun = Module.preRun || [];
 
-  // Initialize SDK and resolve language before C++ reads yandexLanguageIndex.
-  // file:// deliberately skips SDK networking and remains directly launchable.
   Module.preRun.push(() => {
     addRunDependency('astromenace-yandex-sdk');
     (async () => {
@@ -452,8 +604,6 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     })();
   });
 
-  // Install the complete VFS from a normal external script resource. Script
-  // tags are allowed from file://, unlike fetch/XHR of index.data/index.wasm.
   Module.preRun.push(() => {
     addRunDependency('astromenace-embedded-gamedata');
     (async () => {
@@ -481,6 +631,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
         }
         await syncFs(true, IDB_STARTUP_TIMEOUT_MS);
         Module.hadLocalSaveAtStartup = saveFileNames().length > 0;
+        Module.localSaveUpdatedAtAtStartup = localSaveUpdatedAt();
       } finally {
         removeRunDependency('astromenace-local-save');
       }
@@ -493,11 +644,18 @@ var Module = typeof Module !== 'undefined' ? Module : {};
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
+      setGameplayApiRunning(false);
+      releasePointerLock();
       pauseAudio();
       syncSave(true);
     } else if (!Module.yandexPlatformPaused && !Module.yandexAdInProgress) {
       resumeAudio();
+      if (Module.yandexGameplayRequested) setGameplayApiRunning(true);
     }
   });
-  window.addEventListener('pagehide', () => syncSave(true));
+  window.addEventListener('pagehide', () => {
+    setGameplayApiRunning(false);
+    releasePointerLock();
+    syncSave(true);
+  });
 })();
