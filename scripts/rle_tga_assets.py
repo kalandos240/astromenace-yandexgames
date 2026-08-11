@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Optimize AstroMenace assets in the temporary Yandex web-build tree.
 
+The Yandex runtime intentionally ships only English and Russian localization.
+The source repository remains complete; filtering happens only in CI's temporary
+gamedata copy before gamedata.vfs is generated.
+
 TGA optimization is lossless: AstroMenace natively supports both uncompressed
 type-2 and RLE type-10 24/32-bit TGA images. The encoder preserves the original
 header fields, ID bytes, descriptor/orientation and pixel order, replacing a
@@ -17,10 +21,72 @@ remain untouched.
 from __future__ import annotations
 
 import argparse
+import csv
 import os
 from pathlib import Path
+import shutil
 import struct
 import tempfile
+
+
+def filter_web_languages(root: Path) -> int:
+    """Keep only EN and RU in the temporary browser gamedata tree.
+
+    Upstream text.csv columns are EN, DE, RU, PL, ES, TR. Keeping columns 0 and
+    2 makes the web runtime language indexes EN=0 and RU=1. Any language-specific
+    directories for the removed locales are deleted from the temporary copy.
+    """
+    lang_root = root / "lang"
+    text_csv = lang_root / "text.csv"
+    if not text_csv.is_file():
+        raise SystemExit(f"language table not found: {text_csv}")
+
+    before = sum(path.stat().st_size for path in lang_root.rglob("*") if path.is_file())
+
+    with text_csv.open("r", encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.reader(source, delimiter=";", quotechar='"'))
+
+    if not rows or len(rows[0]) < 3:
+        raise SystemExit("unexpected AstroMenace language table format")
+    if rows[0][0].strip().lower() != "en" or rows[0][2].strip().lower() != "ru":
+        raise SystemExit(f"unexpected language columns: {rows[0][:6]}")
+
+    filtered: list[list[str]] = []
+    for row_number, row in enumerate(rows, start=1):
+        if len(row) < 3:
+            raise SystemExit(f"language table row {row_number} has fewer than 3 columns")
+        filtered.append([row[0], row[2]])
+
+    fd, tmp_name = tempfile.mkstemp(prefix="text.", suffix=".csv", dir=str(lang_root))
+    os.close(fd)
+    tmp = Path(tmp_name)
+    try:
+        with tmp.open("w", encoding="utf-8", newline="") as target:
+            writer = csv.writer(
+                target,
+                delimiter=";",
+                quotechar='"',
+                quoting=csv.QUOTE_ALL,
+                lineterminator="\n",
+            )
+            writer.writerows(filtered)
+        os.replace(tmp, text_csv)
+    finally:
+        if tmp.exists():
+            tmp.unlink()
+
+    for locale in ("de", "pl", "es", "tr"):
+        locale_path = lang_root / locale
+        if locale_path.is_dir():
+            shutil.rmtree(locale_path)
+
+    after = sum(path.stat().st_size for path in lang_root.rglob("*") if path.is_file())
+    saved = before - after
+    print("Web runtime languages: en, ru")
+    print(f"Language bytes before: {before}")
+    print(f"Language bytes after: {after}")
+    print(f"Language bytes saved: {saved}")
+    return saved
 
 
 def encode_rle_pixels(pixels: bytes, bytes_per_pixel: int) -> bytes:
@@ -201,9 +267,10 @@ def main() -> int:
     if not root.is_dir():
         raise SystemExit(f"not a directory: {root}")
 
+    language_saved = filter_web_languages(root)
     tga_saved = optimize_tgas(root)
     wav_saved = optimize_wavs(root)
-    print(f"Web asset bytes saved total: {tga_saved + wav_saved}")
+    print(f"Web asset bytes saved total: {language_saved + tga_saved + wav_saved}")
     return 0
 
 
