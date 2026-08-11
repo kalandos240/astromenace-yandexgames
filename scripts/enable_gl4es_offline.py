@@ -259,7 +259,10 @@ def patch_fast_asset_loading() -> None:
     ForEachTextureAssetLoad(UpdateLoadStatus);
 }
 '''
-    text = text[:start] + replacement + text[end + 1:]
+    # end points to the newline immediately before the old function's closing
+    # brace. Skip that newline and brace, but keep the namespace close that
+    # follows it.
+    text = text[:start] + replacement + text[end + 2:]
     path.write_text(text, encoding="utf-8")
 
 
