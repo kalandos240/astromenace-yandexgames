@@ -5,6 +5,7 @@ This is intentionally separate from the legacy browser pipeline. It applies
 web-only source edits in the temporary Actions worktree:
 - gl4es initialization and browser-safe video modes;
 - immediate mission save + Yandex interstitial hook;
+- precise Yandex GameplayAPI start/stop hooks for missions and pause menus;
 - cooperative Asyncify startup yields so the browser remains responsive;
 - removal of the desktop 4-second Viewizard splash and native loading renderer;
 - lightweight HTML loading progress during asset initialization;
@@ -113,6 +114,95 @@ def patch_mission_save() -> None:
             "    ExitGame(Command);\n"
         )
         text = text.replace(marker, hook, 1)
+
+    path.write_text(text, encoding="utf-8")
+
+
+def patch_gameplay_api() -> None:
+    """Mark actual mission gameplay and pause/menu transitions for Yandex."""
+    path = Path("src/game/game.cpp")
+    text = path.read_text(encoding="utf-8")
+    if "ASTROMENACE YANDEX GAMEPLAY API" in text:
+        return
+
+    start_marker = (
+        "    LastGameOnOffUpdateTime = vw_GetTimeThread(0);\n"
+        "    GameBlackTransp = 1.0f;\n"
+        "    NeedOnGame = true;\n"
+        "}\n"
+    )
+    if start_marker not in text:
+        raise SystemExit("InitGame gameplay-start marker not found")
+    start_replacement = (
+        "    LastGameOnOffUpdateTime = vw_GetTimeThread(0);\n"
+        "    GameBlackTransp = 1.0f;\n"
+        "    NeedOnGame = true;\n"
+        "#ifdef __EMSCRIPTEN__\n"
+        "    // ASTROMENACE YANDEX GAMEPLAY API: the mission is now playable.\n"
+        "    EM_ASM({ if (Module.yandexGameplayStart) Module.yandexGameplayStart(); });\n"
+        "#endif\n"
+        "}\n"
+    )
+    text = text.replace(start_marker, start_replacement, 1)
+
+    exit_marker = (
+        "void RealExitGame()\n"
+        "{\n"
+        "    ReleaseSpaceShip(PlayerFighter);\n"
+    )
+    if exit_marker not in text:
+        raise SystemExit("RealExitGame gameplay-stop marker not found")
+    exit_replacement = (
+        "void RealExitGame()\n"
+        "{\n"
+        "#ifdef __EMSCRIPTEN__\n"
+        "    EM_ASM({ if (Module.yandexGameplayStop) Module.yandexGameplayStop(); });\n"
+        "#endif\n"
+        "    ReleaseSpaceShip(PlayerFighter);\n"
+    )
+    text = text.replace(exit_marker, exit_replacement, 1)
+
+    resume_marker = (
+        "                if (DrawButton384(X,Y, vw_GetTextUTF32(\"RESUME\"), GameContentTransp, GameButton1Transp, LastGameButton1UpdateTime)) {\n"
+        "                    GameMenu = false;\n"
+        "                    NeedShowGameMenu = false;\n"
+    )
+    if resume_marker not in text:
+        raise SystemExit("Resume-button gameplay marker not found")
+    resume_replacement = (
+        "                if (DrawButton384(X,Y, vw_GetTextUTF32(\"RESUME\"), GameContentTransp, GameButton1Transp, LastGameButton1UpdateTime)) {\n"
+        "                    GameMenu = false;\n"
+        "#ifdef __EMSCRIPTEN__\n"
+        "                    EM_ASM({ if (Module.yandexGameplayStart) Module.yandexGameplayStart(); });\n"
+        "#endif\n"
+        "                    NeedShowGameMenu = false;\n"
+    )
+    text = text.replace(resume_marker, resume_replacement, 1)
+
+    toggle_marker = (
+        "                } else {\n"
+        "                    GameMenu = !GameMenu;\n"
+        "                }\n\n"
+        "                if (GameMenu && (!GameMissionCompleteStatus || GameMissionCompleteStatusShowDialog)) {\n"
+    )
+    if toggle_marker not in text:
+        raise SystemExit("Escape/menu gameplay marker not found")
+    toggle_replacement = (
+        "                } else {\n"
+        "                    GameMenu = !GameMenu;\n"
+        "                }\n"
+        "#ifdef __EMSCRIPTEN__\n"
+        "                EM_ASM({\n"
+        "                    if ($0) {\n"
+        "                        if (Module.yandexGameplayStop) Module.yandexGameplayStop();\n"
+        "                    } else {\n"
+        "                        if (Module.yandexGameplayStart) Module.yandexGameplayStart();\n"
+        "                    }\n"
+        "                }, GameMenu ? 1 : 0);\n"
+        "#endif\n\n"
+        "                if (GameMenu && (!GameMissionCompleteStatus || GameMissionCompleteStatusShowDialog)) {\n"
+    )
+    text = text.replace(toggle_marker, toggle_replacement, 1)
 
     path.write_text(text, encoding="utf-8")
 
@@ -335,8 +425,6 @@ def patch_fast_asset_loading() -> None:
 #ifdef ASTROMENACE_WEB_ASYNC_STARTUP
             emscripten_sleep(0);
 #endif
-            // Yield roughly 32 times across the complete asset set. This keeps
-            // Firefox/Chromium responsive without paying a yield cost per file.
             const unsigned Step = AllDrawLoading > 32 ? AllDrawLoading / 32 : 1;
             NextYield = RealLoadedAssets + Step;
         }
@@ -356,6 +444,7 @@ def main() -> int:
     patch_gl_main()
     patch_video_modes()
     patch_mission_save()
+    patch_gameplay_api()
     patch_web_locale_preloads()
     patch_first_run_config_noise()
     patch_startup_yields()
