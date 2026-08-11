@@ -10,6 +10,21 @@
   const SAVE_INTERVAL_MS = 15000;
   const trackedAudioContexts = new Set();
 
+  // Keep all executable shell setup in this external Emscripten-generated
+  // JavaScript file. The HTML shell intentionally contains no custom inline
+  // script, which keeps it compatible with restrictive platform CSP rules.
+  Module.canvas = document.getElementById('canvas');
+  Module.setStatus = (text) => {
+    const status = document.getElementById('status');
+    const loading = document.getElementById('loading');
+    if (status && text) status.textContent = text;
+    if (!text && loading) loading.classList.add('hidden');
+  };
+  Module.monitorRunDependencies = (left) => {
+    if (!left) Module.setStatus('');
+  };
+  Module.printErr = (text) => console.error(text);
+
   Module.yandexSDK = null;
   Module.yandexPlayer = null;
   Module.yandexLanguageIndex = 0;
