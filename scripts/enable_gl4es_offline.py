@@ -7,7 +7,9 @@ web-only source edits in the temporary Actions worktree:
 - immediate mission save + Yandex interstitial hook;
 - cooperative Asyncify startup yields so the browser remains responsive;
 - removal of the desktop 4-second Viewizard splash and native loading renderer;
-- lightweight HTML loading progress during asset initialization.
+- lightweight HTML loading progress during asset initialization;
+- removal of unused non-RU/EN texture preloads from the RU/EN browser build;
+- quiet, correct first-run config/profile creation without false console errors.
 """
 
 from pathlib import Path
@@ -111,6 +113,93 @@ def patch_mission_save() -> None:
             "    ExitGame(Command);\n"
         )
         text = text.replace(marker, hook, 1)
+
+    path.write_text(text, encoding="utf-8")
+
+
+def patch_web_locale_preloads() -> None:
+    """Remove texture-map entries for locales not shipped by the RU/EN web VFS."""
+    path = Path("src/assets/texture.cpp")
+    text = path.read_text(encoding="utf-8")
+    if "ASTROMENACE WEB RU EN TEXTURE MAP" in text:
+        return
+
+    removed = 0
+    kept = []
+    for line in text.splitlines(keepends=True):
+        if any(f'"lang/{locale}/' in line for locale in ("de", "pl", "es", "tr")):
+            removed += 1
+            continue
+        kept.append(line)
+
+    if removed < 1:
+        raise SystemExit("No non-RU/EN localized texture preloads found")
+
+    text = ''.join(kept)
+    marker = "std::unordered_map<unsigned, sTextureAsset> TextureMap{\n"
+    if marker not in text:
+        raise SystemExit("TextureMap marker not found")
+    text = text.replace(
+        marker,
+        "// ASTROMENACE WEB RU EN TEXTURE MAP: unused locale entries removed by build script.\n" + marker,
+        1,
+    )
+    path.write_text(text, encoding="utf-8")
+    print(f"Removed {removed} unused non-RU/EN texture preload entries.")
+
+
+def patch_first_run_config_noise() -> None:
+    """Avoid expected missing-file error logs on a clean browser profile."""
+    path = Path("src/config/config.cpp")
+    text = path.read_text(encoding="utf-8")
+    if "ASTROMENACE WEB FIRST RUN" in text:
+        return
+
+    profile_marker = (
+        "    if (File.fail()) {\n"
+        "        std::cerr << __func__ << \"(): \" << \"Can't open file \" << FileName << \"\\n\";\n"
+        "        return;\n"
+        "    }\n"
+    )
+    if profile_marker not in text:
+        raise SystemExit("LoadPilotProfiles first-run marker not found")
+    profile_replacement = (
+        "    if (File.fail()) {\n"
+        "#ifndef __EMSCRIPTEN__\n"
+        "        std::cerr << __func__ << \"(): \" << \"Can't open file \" << FileName << \"\\n\";\n"
+        "#endif\n"
+        "        return;\n"
+        "    }\n"
+    )
+    text = text.replace(profile_marker, profile_replacement, 1)
+
+    config_marker = (
+        "    // NeedResetConfig, only pilot profiles should be loaded\n"
+        "    if (NeedResetConfig)\n"
+        "        return false;\n\n"
+        "    std::unique_ptr<cXMLDocument> XMLdoc{new cXMLDocument(GetConfigPath() + ConfigFileName)};\n"
+    )
+    if config_marker not in text:
+        raise SystemExit("LoadXMLConfigFile first-run marker not found")
+    config_replacement = (
+        "    // NeedResetConfig, only pilot profiles should be loaded\n"
+        "    if (NeedResetConfig)\n"
+        "        return false;\n\n"
+        "#ifdef __EMSCRIPTEN__\n"
+        "    // ASTROMENACE WEB FIRST RUN: a missing config is normal on a new player.\n"
+        "    // Create defaults before asking the XML parser to open the file so the\n"
+        "    // browser console is not polluted with a false 'file not found' error.\n"
+        "    {\n"
+        "        std::ifstream ExistingConfig(GetConfigPath() + ConfigFileName);\n"
+        "        if (!ExistingConfig.good()) {\n"
+        "            SaveXMLConfigFile();\n"
+        "            return true;\n"
+        "        }\n"
+        "    }\n"
+        "#endif\n\n"
+        "    std::unique_ptr<cXMLDocument> XMLdoc{new cXMLDocument(GetConfigPath() + ConfigFileName)};\n"
+    )
+    text = text.replace(config_marker, config_replacement, 1)
 
     path.write_text(text, encoding="utf-8")
 
@@ -259,9 +348,6 @@ def patch_fast_asset_loading() -> None:
     ForEachTextureAssetLoad(UpdateLoadStatus);
 }
 '''
-    # end points to the newline immediately before the old function's closing
-    # brace. Skip that newline and brace, but keep the namespace close that
-    # follows it.
     text = text[:start] + replacement + text[end + 2:]
     path.write_text(text, encoding="utf-8")
 
@@ -270,6 +356,8 @@ def main() -> int:
     patch_gl_main()
     patch_video_modes()
     patch_mission_save()
+    patch_web_locale_preloads()
+    patch_first_run_config_noise()
     patch_startup_yields()
     patch_fast_asset_loading()
     print("Prepared fast offline/Yandex AstroMenace WebAssembly sources.")
