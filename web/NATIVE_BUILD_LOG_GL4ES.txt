@@ -7,8 +7,8 @@ Get:4 http://azure.archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
 Get:5 http://azure.archive.ubuntu.com/ubuntu noble-security InRelease [126 kB]
 Get:8 https://dl.google.com/linux/chrome-stable/deb stable InRelease [2548 B]
 Get:9 https://packages.microsoft.com/repos/azure-cli noble/main amd64 Packages [2375 B]
-Get:10 https://packages.microsoft.com/ubuntu/24.04/prod noble/main armhf Packages [12.2 kB]
-Get:11 https://packages.microsoft.com/ubuntu/24.04/prod noble/main arm64 Packages [278 kB]
+Get:10 https://packages.microsoft.com/ubuntu/24.04/prod noble/main arm64 Packages [278 kB]
+Get:11 https://packages.microsoft.com/ubuntu/24.04/prod noble/main armhf Packages [12.2 kB]
 Get:12 https://packages.microsoft.com/ubuntu/24.04/prod noble/main all Packages [643 B]
 Get:13 https://packages.microsoft.com/ubuntu/24.04/prod noble/main amd64 Packages [318 kB]
 Get:14 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [1187 kB]
@@ -31,12 +31,12 @@ Get:30 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 Componen
 Get:31 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 Packages [1200 kB]
 Get:32 http://azure.archive.ubuntu.com/ubuntu noble-security/universe Translation-en [239 kB]
 Get:33 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 Components [76.2 kB]
+Get:38 https://dl.google.com/linux/chrome-stable/deb stable/main amd64 Packages [1412 B]
 Get:34 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [1320 kB]
 Get:35 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted Translation-en [302 kB]
 Get:36 http://azure.archive.ubuntu.com/ubuntu noble-security/multiverse amd64 Packages [40.3 kB]
 Get:37 http://azure.archive.ubuntu.com/ubuntu noble-security/multiverse Translation-en [10.6 kB]
-Get:38 https://dl.google.com/linux/chrome-stable/deb stable/main amd64 Packages [1412 B]
-Fetched 11.3 MB in 1s (7815 kB/s)
+Fetched 11.3 MB in 1s (7854 kB/s)
 Reading package lists...
 Reading package lists...
 Building dependency tree...
@@ -201,7 +201,7 @@ Get:104 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libxxf86vm-dev a
 Get:105 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 libsdl2-dev amd64 2.30.0+dfsg-1ubuntu3.1 [1141 kB]
 Get:106 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libvorbis-dev amd64 1.3.7-1build3 [342 kB]
 Get:107 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 ninja-build amd64 1.11.1-2 [129 kB]
-Fetched 37.8 MB in 1s (38.1 MB/s)
+Fetched 37.8 MB in 4s (8880 kB/s)
 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 202954 files and directories currently installed.)
 Preparing to unpack .../0-libnss-systemd_255.4-1ubuntu8.17_amd64.deb ...
 Unpacking libnss-systemd:amd64 (255.4-1ubuntu8.17) over (255.4-1ubuntu8.16) ...
@@ -644,7 +644,7 @@ Service restarts being deferred:
 No containers need to be restarted.
 
 User sessions running outdated binaries:
- runner @ user manager service: systemd[1130]
+ runner @ user manager service: systemd[1241]
 
 No VM guests are running outdated hypervisor (qemu) binaries on this host.
 Cloning into '/tmp/native-astromenace'...
@@ -686,125 +686,125 @@ CMake Deprecation Warning at CMakeLists.txt:1 (CMAKE_MINIMUM_REQUIRED):
 -- Found freetype2 headers: /usr/include/freetype2
 -- CMAKE_CXX_FLAGS:  -std=c++11 -fno-exceptions -fno-rtti -Wnon-virtual-dtor -Wshadow -Winit-self -Wcast-align -Winline -Wunreachable-code -Wmissing-include-dirs -Wmain -Wextra -Wall -Weffc++ -Wno-attributes -Wzero-as-null-pointer-constant
 Game data dir: /tmp/native-astromenace/gamedata/
--- Configuring done (1.2s)
+-- Configuring done (2.2s)
 -- Generating done (0.0s)
 -- Build files have been written to: /tmp/native-build
 [1/117] Building CXX object CMakeFiles/astromenace.dir/src/command.cpp.o
 [2/117] Building CXX object CMakeFiles/astromenace.dir/src/assets/shader.cpp.o
 [3/117] Building CXX object CMakeFiles/astromenace.dir/src/core/audio/audio.cpp.o
-[4/117] Building CXX object CMakeFiles/astromenace.dir/src/assets/loading.cpp.o
-[5/117] Building CXX object CMakeFiles/astromenace.dir/src/assets/model3d.cpp.o
-[6/117] Building CXX object CMakeFiles/astromenace.dir/src/assets/texture.cpp.o
-[7/117] Building CXX object CMakeFiles/astromenace.dir/src/core/audio/openal.cpp.o
-[8/117] Building CXX object CMakeFiles/astromenace.dir/src/assets/audio.cpp.o
-[9/117] Building CXX object CMakeFiles/astromenace.dir/src/core/audio/buffer.cpp.o
-[10/117] Building CXX object CMakeFiles/astromenace.dir/src/core/camera/camera.cpp.o
+[4/117] Building CXX object CMakeFiles/astromenace.dir/src/assets/texture.cpp.o
+[5/117] Building CXX object CMakeFiles/astromenace.dir/src/assets/loading.cpp.o
+[6/117] Building CXX object CMakeFiles/astromenace.dir/src/assets/model3d.cpp.o
+[7/117] Building CXX object CMakeFiles/astromenace.dir/src/assets/audio.cpp.o
+[8/117] Building CXX object CMakeFiles/astromenace.dir/src/core/audio/openal.cpp.o
+[9/117] Building CXX object CMakeFiles/astromenace.dir/src/core/camera/camera.cpp.o
+[10/117] Building CXX object CMakeFiles/astromenace.dir/src/core/audio/buffer.cpp.o
 [11/117] Building CXX object CMakeFiles/astromenace.dir/src/core/camera/camera_math.cpp.o
 [12/117] Building CXX object CMakeFiles/astromenace.dir/src/config/config.cpp.o
-[13/117] Building CXX object CMakeFiles/astromenace.dir/src/core/audio/sound.cpp.o
+[13/117] Building CXX object CMakeFiles/astromenace.dir/src/core/audio/music.cpp.o
 [14/117] Building CXX object CMakeFiles/astromenace.dir/src/core/collision_detection/collision_detection.cpp.o
-[15/117] Building CXX object CMakeFiles/astromenace.dir/src/core/audio/music.cpp.o
-[16/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_draw3d.cpp.o
-[17/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_fbo.cpp.o
-[18/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_draw2d.cpp.o
-[19/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_light.cpp.o
-[20/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_glsl.cpp.o
-[21/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/extensions.cpp.o
-[22/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_texture.cpp.o
-[23/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_matrix.cpp.o
-[24/117] Building CXX object CMakeFiles/astromenace.dir/src/core/font/font.cpp.o
-[25/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_vao.cpp.o
-[26/117] Building CXX object CMakeFiles/astromenace.dir/src/core/light/light.cpp.o
-[27/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_vbo.cpp.o
-[28/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/misc.cpp.o
-[29/117] Building CXX object CMakeFiles/astromenace.dir/src/core/math/matrix44.cpp.o
-[30/117] Building CXX object CMakeFiles/astromenace.dir/src/core/math/matrix33.cpp.o
+[15/117] Building CXX object CMakeFiles/astromenace.dir/src/core/audio/sound.cpp.o
+[16/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_draw2d.cpp.o
+[17/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_draw3d.cpp.o
+[18/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_fbo.cpp.o
+[19/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_matrix.cpp.o
+[20/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/extensions.cpp.o
+[21/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_light.cpp.o
+[22/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_glsl.cpp.o
+[23/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_vao.cpp.o
+[24/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_texture.cpp.o
+[25/117] Building CXX object CMakeFiles/astromenace.dir/src/core/font/font.cpp.o
+[26/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_vbo.cpp.o
+[27/117] Building CXX object CMakeFiles/astromenace.dir/src/core/light/light.cpp.o
+[28/117] Building CXX object CMakeFiles/astromenace.dir/src/core/math/matrix33.cpp.o
+[29/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_main.cpp.o
+[30/117] Building CXX object CMakeFiles/astromenace.dir/src/core/math/matrix44.cpp.o
 [31/117] Building CXX object CMakeFiles/astromenace.dir/src/core/math/math.cpp.o
-[32/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_main.cpp.o
+[32/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/misc.cpp.o
 [33/117] Building CXX object CMakeFiles/astromenace.dir/src/core/math/rand.cpp.o
-[34/117] Building CXX object CMakeFiles/astromenace.dir/src/core/platform/mouse.cpp.o
-[35/117] Building CXX object CMakeFiles/astromenace.dir/src/core/particle_system2d/particle_system2d.cpp.o
+[34/117] Building CXX object CMakeFiles/astromenace.dir/src/core/particle_system2d/particle_system2d.cpp.o
+[35/117] Building CXX object CMakeFiles/astromenace.dir/src/core/platform/mouse.cpp.o
 [36/117] Building CXX object CMakeFiles/astromenace.dir/src/core/platform/open_url.cpp.o
 [37/117] Building CXX object CMakeFiles/astromenace.dir/src/core/particle_system/particle_system.cpp.o
-[38/117] Building CXX object CMakeFiles/astromenace.dir/src/core/platform/keyboard.cpp.o
-[39/117] Building CXX object CMakeFiles/astromenace.dir/src/core/model3d/model3d.cpp.o
-[40/117] Building CXX object CMakeFiles/astromenace.dir/src/core/texture/texture_tga.cpp.o
-[41/117] Building CXX object CMakeFiles/astromenace.dir/src/core/texture/texture.cpp.o
+[38/117] Building CXX object CMakeFiles/astromenace.dir/src/core/texture/texture_tga.cpp.o
+[39/117] Building CXX object CMakeFiles/astromenace.dir/src/core/texture/texture.cpp.o
+[40/117] Building CXX object CMakeFiles/astromenace.dir/src/core/model3d/model3d.cpp.o
+[41/117] Building CXX object CMakeFiles/astromenace.dir/src/core/platform/keyboard.cpp.o
 [42/117] Building CXX object CMakeFiles/astromenace.dir/src/core/text/text.cpp.o
 [43/117] Building CXX object CMakeFiles/astromenace.dir/src/core/time_thread/time_thread.cpp.o
 [44/117] Building CXX object CMakeFiles/astromenace.dir/src/game/camera.cpp.o
-[45/117] Building CXX object CMakeFiles/astromenace.dir/src/core/vfs/vfs.cpp.o
-[46/117] Building CXX object CMakeFiles/astromenace.dir/src/core/xml/xml.cpp.o
-[47/117] Building CXX object CMakeFiles/astromenace.dir/src/game/weapon_panel.cpp.o
+[45/117] Building CXX object CMakeFiles/astromenace.dir/src/core/xml/xml.cpp.o
+[46/117] Building CXX object CMakeFiles/astromenace.dir/src/core/vfs/vfs.cpp.o
+[47/117] Building CXX object CMakeFiles/astromenace.dir/src/gfx/shadow_map.cpp.o
 [48/117] Building CXX object CMakeFiles/astromenace.dir/src/gfx/skybox.cpp.o
-[49/117] Building CXX object CMakeFiles/astromenace.dir/src/gfx/shadow_map.cpp.o
-[50/117] Building CXX object CMakeFiles/astromenace.dir/src/game/hud.cpp.o
-[51/117] Building CXX object CMakeFiles/astromenace.dir/src/main.cpp.o
+[49/117] Building CXX object CMakeFiles/astromenace.dir/src/game/game_player_ship.cpp.o
+[50/117] Building CXX object CMakeFiles/astromenace.dir/src/game/weapon_panel.cpp.o
+[51/117] Building CXX object CMakeFiles/astromenace.dir/src/game/game.cpp.o
 [52/117] Building CXX object CMakeFiles/astromenace.dir/src/gfx/star_system.cpp.o
-[53/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/button.cpp.o
-[54/117] Building CXX object CMakeFiles/astromenace.dir/src/game/game.cpp.o
-[55/117] Building CXX object CMakeFiles/astromenace.dir/src/game/game_player_ship.cpp.o
+[53/117] Building CXX object CMakeFiles/astromenace.dir/src/game/hud.cpp.o
+[54/117] Building CXX object CMakeFiles/astromenace.dir/src/loop_proc.cpp.o
+[55/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/button.cpp.o
 [56/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_credits.cpp.o
-[57/117] Building CXX object CMakeFiles/astromenace.dir/src/loop_proc.cpp.o
-[58/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_difficulty.cpp.o
-[59/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_interface.cpp.o
+[57/117] Building CXX object CMakeFiles/astromenace.dir/src/main.cpp.o
+[58/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu.cpp.o
+[59/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_difficulty.cpp.o
 [60/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_conf_control.cpp.o
-[61/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu.cpp.o
-[62/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_options_adv.cpp.o
-[63/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_mission.cpp.o
-[64/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_top_scores.cpp.o
+[61/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_interface.cpp.o
+[62/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_mission.cpp.o
+[63/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_options_adv.cpp.o
+[64/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/dialog.cpp.o
 [65/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_options.cpp.o
 [66/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_workshop.cpp.o
 [67/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_profile.cpp.o
-[68/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/collision_detection.cpp.o
-[69/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/dialog.cpp.o
-[70/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_workshop_shipyard.cpp.o
-[71/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_information.cpp.o
-[72/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_workshop_workshop.cpp.o
-[73/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_workshop_weaponry.cpp.o
+[68/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_top_scores.cpp.o
+[69/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_workshop_shipyard.cpp.o
+[70/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/collision_detection.cpp.o
+[71/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_workshop_workshop.cpp.o
+[72/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_information.cpp.o
+[73/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/explosion/explosion.cpp.o
 [74/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/explosion/ground_explosion.cpp.o
-[75/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/ground_object/civilian_building.cpp.o
-[76/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/explosion/explosion.cpp.o
-[77/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/explosion/bullet_explosion.cpp.o
+[75/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/explosion/bullet_explosion.cpp.o
+[76/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/ground_object/civilian_building.cpp.o
+[77/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/ground_object/military_building.cpp.o
 [78/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/explosion/space_explosion.cpp.o
-[79/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/ground_object/wheeled.cpp.o
-[80/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/ground_object/military_building.cpp.o
-[81/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/ground_object/ground_object.cpp.o
-[82/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/ground_object/tracked.cpp.o
-[83/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/object3_functions.cpp.o
-[84/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/object3d_manager.cpp.o
-[85/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/object3d.cpp.o
-[86/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/object3d_collision.cpp.o
-[87/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/projectile/functions.cpp.o
+[79/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_workshop_weaponry.cpp.o
+[80/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/ground_object/ground_object.cpp.o
+[81/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/ground_object/tracked.cpp.o
+[82/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/object3_functions.cpp.o
+[83/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/object3d_manager.cpp.o
+[84/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/ground_object/wheeled.cpp.o
+[85/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/object3d_collision.cpp.o
+[86/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/projectile/functions.cpp.o
+[87/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/object3d.cpp.o
 [88/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_object/big_asteroid.cpp.o
-[89/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_object/planet.cpp.o
-[90/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_object/small_asteroid.cpp.o
-[91/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_object/space_debris.cpp.o
-[92/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_object/planetoids.cpp.o
-[93/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_object/base_part.cpp.o
+[89/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_object/base_part.cpp.o
+[90/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_object/planet.cpp.o
+[91/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_object/planetoids.cpp.o
+[92/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_object/space_debris.cpp.o
+[93/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_object/small_asteroid.cpp.o
 [94/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_object/space_object.cpp.o
 [95/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_ship/functions.cpp.o
-[96/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/projectile/projectile.cpp.o
-[97/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_ship/earth_space_fighter.cpp.o
-[98/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/weapon/functions.cpp.o
+[96/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_ship/earth_space_fighter.cpp.o
+[97/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/projectile/projectile.cpp.o
+[98/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_ship/space_ship.cpp.o
 [99/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_ship/alien_space_fighter.cpp.o
-[100/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_ship/pirate_ship.cpp.o
-[101/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_ship/space_ship.cpp.o
-[102/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_ship/alien_space_mothership.cpp.o
-[103/117] Building CXX object CMakeFiles/astromenace.dir/src/platform/joystick.cpp.o
-[104/117] Building CXX object CMakeFiles/astromenace.dir/src/platform/mouse.cpp.o
-[105/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/weapon/weapon.cpp.o
-[106/117] Building CXX object CMakeFiles/astromenace.dir/src/platform/locale.cpp.o
-[107/117] Building CXX object CMakeFiles/astromenace.dir/src/script/script.cpp.o
-[108/117] Building CXX object CMakeFiles/astromenace.dir/src/platform/path.cpp.o
-[109/117] Building CXX object CMakeFiles/astromenace.dir/src/ui/cursor.cpp.o
-[110/117] Building CXX object CMakeFiles/astromenace.dir/src/ui/font.cpp.o
-[111/117] Building CXX object CMakeFiles/astromenace.dir/src/platform/video.cpp.o
-[112/117] Building CXX object CMakeFiles/astromenace.dir/src/utils/fs2vfs.cpp.o
-[113/117] Building CXX object CMakeFiles/astromenace.dir/src/ui/game/text.cpp.o
-[114/117] Building CXX object CMakeFiles/astromenace.dir/src/ui/game_speed.cpp.o
-[115/117] Building CXX object CMakeFiles/astromenace.dir/src/ui/game/stopwatch.cpp.o
-[116/117] Building CXX object CMakeFiles/astromenace.dir/src/ui/fps_counter.cpp.o
+[100/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/weapon/functions.cpp.o
+[101/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_ship/alien_space_mothership.cpp.o
+[102/117] Building CXX object CMakeFiles/astromenace.dir/src/platform/mouse.cpp.o
+[103/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_ship/pirate_ship.cpp.o
+[104/117] Building CXX object CMakeFiles/astromenace.dir/src/platform/joystick.cpp.o
+[105/117] Building CXX object CMakeFiles/astromenace.dir/src/platform/locale.cpp.o
+[106/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/weapon/weapon.cpp.o
+[107/117] Building CXX object CMakeFiles/astromenace.dir/src/platform/path.cpp.o
+[108/117] Building CXX object CMakeFiles/astromenace.dir/src/ui/cursor.cpp.o
+[109/117] Building CXX object CMakeFiles/astromenace.dir/src/platform/video.cpp.o
+[110/117] Building CXX object CMakeFiles/astromenace.dir/src/script/script.cpp.o
+[111/117] Building CXX object CMakeFiles/astromenace.dir/src/ui/font.cpp.o
+[112/117] Building CXX object CMakeFiles/astromenace.dir/src/ui/game/stopwatch.cpp.o
+[113/117] Building CXX object CMakeFiles/astromenace.dir/src/ui/fps_counter.cpp.o
+[114/117] Building CXX object CMakeFiles/astromenace.dir/src/utils/fs2vfs.cpp.o
+[115/117] Building CXX object CMakeFiles/astromenace.dir/src/ui/game_speed.cpp.o
+[116/117] Building CXX object CMakeFiles/astromenace.dir/src/ui/game/text.cpp.o
 [117/117] Linking CXX executable astromenace
 AstroMenace 1.4.2
 VFS version 221114
@@ -1332,12 +1332,16 @@ models/normalmap/buildings_nm.tga file added to VFS.
 lang/pl/menu/button_weaponry_in.tga file added to VFS.
 lang/pl/menu/button_weaponry_out.tga file added to VFS.
 VFS file was created /tmp/native-build/gamedata.vfs
-TGA files examined: 185
-TGA files RLE-compressed: 178
-TGA bytes before: 57348299
-TGA bytes after: 44240814
-TGA bytes saved: 13107485
-TGA reduction: 22.86%
+Web runtime languages: en, ru
+Language bytes before: 5688333
+Language bytes after: 3933439
+Language bytes saved: 1754894
+TGA files examined: 178
+TGA files RLE-compressed: 171
+TGA bytes before: 57016267
+TGA bytes after: 44029567
+TGA bytes saved: 12986700
+TGA reduction: 22.78%
 Skipped TGA already RLE: 6
 Skipped TGA no saving: 1
 Largest RLE savings:
@@ -1366,12 +1370,12 @@ Largest RLE savings:
       198238      262188 ->      63950  game/game_panel_el.tga
       177816      196652 ->      18836  menu/button256_back.tga
       177790      196652 ->      18862  models/mine/mine3i.tga
-WAV files examined: 78
-WAV files optimized: 78
-WAV bytes before: 12697678
-WAV bytes after: 5097564
-WAV bytes saved: 7600114
-WAV reduction: 59.85%
+WAV files examined: 68
+WAV files optimized: 68
+WAV bytes before: 11332756
+WAV bytes after: 4414880
+WAV bytes saved: 6917876
+WAV reduction: 61.04%
 Largest WAV savings:
       234922      367184 ->     132262  44100->16000 Hz     sfx/weaponfire19.wav
       229102      358018 ->     128916  44100->16000 Hz     sfx/weaponfire15.wav
@@ -1398,7 +1402,7 @@ Largest WAV savings:
       122956      193010 ->      70054  44100->16000 Hz     sfx/weaponfire8.wav
       121522      189214 ->      67692  44100->16000 Hz     sfx/game_showmenu.wav
       119534      187640 ->      68106  44100->16000 Hz     lang/ru/voice/Warning.wav
-Web asset bytes saved total: 20707599
+Web asset bytes saved total: 21659470
 AstroMenace 1.4.2
 VFS version 221114
 
@@ -1830,100 +1834,7 @@ loading/loading_line.tga file added to VFS.
 loading/loading01.tga file added to VFS.
 loading/loading02.tga file added to VFS.
 loading/loading04.tga file added to VFS.
-lang/de/voice/EngineMalfunction.wav file added to VFS.
-lang/de/voice/WeaponDamaged.wav file added to VFS.
-lang/de/voice/MissileDetected.wav file added to VFS.
-lang/de/voice/PrepareForAction.wav file added to VFS.
-lang/de/voice/Attention.wav file added to VFS.
-lang/de/voice/WeaponDestroyed.wav file added to VFS.
-lang/de/voice/WeaponMalfunction.wav file added to VFS.
-lang/de/voice/PowerSupplyReestablished.wav file added to VFS.
-lang/de/voice/ReactorMalfunction.wav file added to VFS.
-lang/de/voice/Warning.wav file added to VFS.
-lang/de/menu/button_weaponry_in.tga file added to VFS.
-lang/de/menu/button_weaponry_out.tga file added to VFS.
-lang/de/game/pause.tga file added to VFS.
-lang/de/game/mission.tga file added to VFS.
-lang/de/game/missionfailed.tga file added to VFS.
-menu/cursor_shadow.tga file added to VFS.
-music/boss-intro.ogg file added to VFS.
-music/menu.ogg file added to VFS.
-music/boss-loop.ogg file added to VFS.
-music/game.ogg file added to VFS.
-music/missionfailed.ogg file added to VFS.
-script/mission6.xml file added to VFS.
-script/list.xml file added to VFS.
-script/mission14.xml file added to VFS.
-script/mission8.xml file added to VFS.
-script/mission9_icon.tga file added to VFS.
-script/mission15_icon.tga file added to VFS.
-script/mission3.xml file added to VFS.
-script/mission7.xml file added to VFS.
-script/mission12.xml file added to VFS.
-script/mission5.xml file added to VFS.
-script/mission1.xml file added to VFS.
-script/mission10_icon.tga file added to VFS.
-script/mission13_icon.tga file added to VFS.
-script/menu3.xml file added to VFS.
-script/mission5_icon.tga file added to VFS.
-script/mission13.xml file added to VFS.
-script/mission14_icon.tga file added to VFS.
-script/mission6_icon.tga file added to VFS.
-script/mission3_icon.tga file added to VFS.
-script/mission11.xml file added to VFS.
-script/mission4.xml file added to VFS.
-script/mission2.xml file added to VFS.
-script/mission11_icon.tga file added to VFS.
-script/mission4_icon.tga file added to VFS.
-script/mission8_icon.tga file added to VFS.
-script/mission7_icon.tga file added to VFS.
-script/aimode.xml file added to VFS.
-script/mission10.xml file added to VFS.
-script/mission2_icon.tga file added to VFS.
-script/mission12_icon.tga file added to VFS.
-script/menu2.xml file added to VFS.
-script/mission15.xml file added to VFS.
-script/mission1_icon.tga file added to VFS.
-script/mission9.xml file added to VFS.
-script/menu1.xml file added to VFS.
-skybox/1/skybox_front5.tga file added to VFS.
-skybox/1/skybox_left2.tga file added to VFS.
-skybox/1/skybox_right1.tga file added to VFS.
-skybox/1/skybox_back6.tga file added to VFS.
-skybox/1/skybox_bottom4.tga file added to VFS.
-skybox/1/skybox_top3.tga file added to VFS.
-skybox/tile_back.tga file added to VFS.
-skybox/tile_stars.tga file added to VFS.
-skybox/2/skybox_front5.tga file added to VFS.
-skybox/2/skybox_left2.tga file added to VFS.
-skybox/2/skybox_right1.tga file added to VFS.
-skybox/2/skybox_back6.tga file added to VFS.
-skybox/2/skybox_bottom4.tga file added to VFS.
-skybox/2/skybox_top3.tga file added to VFS.
-font/LiberationMono-Bold.ttf file added to VFS.
-font/LiberationSans-Bold.ttf file added to VFS.
-font/LiberationSerif-Bold.ttf file added to VFS.
-font/FreeMonoBold.otf file added to VFS.
-font/FreeSansBold.otf file added to VFS.
-font/FreeSerifBold.otf file added to VFS.
-font/LinBiolinum_RB.otf file added to VFS.
-font/LinLibertine_RB.otf file added to VFS.
-lang/text.csv file added to VFS.
-gfx/trail1.tga file added to VFS.
-gfx/trail2.tga file added to VFS.
-gfx/trail3.tga file added to VFS.
-gfx/trail4.tga file added to VFS.
-gfx/trail5.tga file added to VFS.
-models/normalmap/alien_mothership_nm.tga file added to VFS.
-models/normalmap/m_class7_nm.tga file added to VFS.
-models/normalmap/d_class3_nm.tga file added to VFS.
-models/normalmap/a_class4_nm.tga file added to VFS.
-models/normalmap/planet_asteroids_nm.tga file added to VFS.
-models/normalmap/q_class2_nm.tga file added to VFS.
-models/normalmap/bomber_nm.tga file added to VFS.
-models/normalmap/buildings_nm.tga file added to VFS.
-lang/pl/menu/button_weaponry_in.tga file added to VFS.
-lang/pl/menu/button_weaponry_out.tga file added to VFS.
-VFS file was created /tmp/yandex-vfs/gamedata.vfs
-Packed gamedata.vfs: 95312900 bytes
--rw-r--r-- 1 runner runner 91M Aug 11 14:37 /tmp/yandex-vfs/gamedata.vfs
+WriteIntoVFSfromFile(): Can't find file /tmp/yandex-gamedata/lang/de/voice/EngineMalfunction.wav
+vw_CreateVFS(): VFS compilation process aborted!
+Packed gamedata.vfs: 66190956 bytes
+-rw-r--r-- 1 runner runner 64M Aug 11 14:58 /tmp/yandex-vfs/gamedata.vfs
