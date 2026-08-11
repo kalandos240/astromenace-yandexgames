@@ -19,7 +19,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: astromenace-web-gl4es-build-v5
+  group: astromenace-web-gl4es-build-v6
   cancel-in-progress: true
 
 jobs:
@@ -204,11 +204,56 @@ jobs:
 
           if [[ $build_code -eq 0 ]]; then
             cp web/astromenace.css dist/astromenace.css
+
+            # Ship license notices with the exact browser binary. The public
+            # repository URL below also gives recipients the corresponding
+            # source and the CI scripts used to produce this build.
+            mkdir -p dist/licenses
+            cp LICENSE.md dist/LICENSE.md
+            cp AUTHORS.md dist/AUTHORS.md
+            cp licenses/GPL-3.0.txt dist/licenses/GPL-3.0.txt
+            cp licenses/CC-BY-SA-4.0.txt dist/licenses/CC-BY-SA-4.0.txt
+            cp licenses/OFL-1.1.txt dist/licenses/OFL-1.1.txt
+
+            gl4es_license="$(find /tmp/gl4es -maxdepth 1 -type f \( -iname 'LICENSE' -o -iname 'LICENSE.*' -o -iname 'COPYING*' \) | head -n 1)"
+            if [[ -z "$gl4es_license" ]]; then
+              echo 'Could not locate gl4es license notice.' >&2
+              exit 1
+            fi
+            cp "$gl4es_license" dist/licenses/GL4ES-LICENSE.txt
+
+            emscripten_license="$(find /tmp/emsdk/upstream/emscripten -maxdepth 1 -type f \( -iname 'LICENSE' -o -iname 'LICENSE.*' \) | head -n 1)"
+            if [[ -z "$emscripten_license" ]]; then
+              echo 'Could not locate Emscripten license notice.' >&2
+              exit 1
+            fi
+            cp "$emscripten_license" dist/licenses/EMSCRIPTEN-LICENSE.txt
+
+            cat > dist/SOURCE_CODE.txt <<EOF
+          AstroMenace Yandex Games WebAssembly port
+          -----------------------------------------
+          Corresponding source for this build:
+          https://github.com/kalandos240/astromenace-yandexgames/tree/${{ github.sha }}
+
+          Upstream AstroMenace:
+          https://github.com/viewizard/astromenace
+
+          gl4es compatibility layer revision:
+          https://github.com/ptitSeb/gl4es/commit/81547d986798e876de8b434193920b606a72363f
+
+          The repository contains the browser integration and build scripts used
+          to generate this WebAssembly distribution. See LICENSE.md and licenses/.
+          EOF
+
             test -s dist/index.html
             test -s dist/astromenace.css
             test -s dist/index.wasm
             test -s dist/index.js
             test -s dist/index.data
+            test -s dist/LICENSE.md
+            test -s dist/SOURCE_CODE.txt
+            test -s dist/licenses/GL4ES-LICENSE.txt
+            test -s dist/licenses/EMSCRIPTEN-LICENSE.txt
 
             # Fail CI if our shell regresses to custom inline script/style/event
             # handlers. This avoids CSP surprises when the ZIP is uploaded to
@@ -230,7 +275,7 @@ jobs:
           print('CSP shell audit: PASS')
           PY
 
-            total_bytes="$(find dist -maxdepth 1 -type f -printf '%s\n' | awk '{s+=$1} END {print s+0}')"
+            total_bytes="$(find dist -type f -printf '%s\n' | awk '{s+=$1} END {print s+0}')"
             data_bytes="$(find dist -maxdepth 1 -type f -name '*.data' -printf '%s\n' | awk '{s+=$1} END {print s+0}')"
             wasm_bytes="$(find dist -maxdepth 1 -type f -name '*.wasm' -printf '%s\n' | awk '{s+=$1} END {print s+0}')"
             js_bytes="$(find dist -maxdepth 1 -type f -name '*.js' -printf '%s\n' | awk '{s+=$1} END {print s+0}')"
@@ -296,6 +341,7 @@ jobs:
               echo '- JavaScript bytes: **${{ steps.webbuild.outputs.js_bytes }}**'
               echo '- CSS bytes: **${{ steps.webbuild.outputs.css_bytes }}**'
               echo '- CSP shell audit: **PASS**'
+              echo '- License/source notices: **INCLUDED**'
               echo '- Yandex 100,000,000-byte target: **${{ steps.webbuild.outputs.size_ok }}**'
               echo '- Output: GitHub Actions artifact `astromenace-yandexgames-web-gl4es`'
             } > web/BUILD_STATUS_GL4ES.md
