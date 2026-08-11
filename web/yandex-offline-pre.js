@@ -8,8 +8,10 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   const CLOUD_KEY = 'astromenaceSave';
   const SAVE_INTERVAL_MS = 15000;
   const IDB_STARTUP_TIMEOUT_MS = 1200;
-  const SDK_TIMEOUT_MS = 2500;
-  const PLAYER_TIMEOUT_MS = 1800;
+  const SDK_SCRIPT_TIMEOUT_MS = 6000;
+  const SDK_INIT_TIMEOUT_MS = 8000;
+  const PLAYER_TIMEOUT_MS = 2500;
+  const RU_FALLBACK_LANGS = new Set(['ru', 'be', 'kk', 'uk', 'uz']);
   const trackedAudioContexts = new Set();
 
   Module.canvas = document.getElementById('canvas');
@@ -18,10 +20,51 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   const statusElement = () => document.getElementById('status');
   const loadingElement = () => document.getElementById('loading');
 
-  const setStatus = (text) => {
+  Module.yandexSDK = null;
+  Module.yandexPlayer = null;
+  Module.yandexLanguageCode = /^ru(?:[-_]|$)/i.test(navigator.language || '') ? 'ru' : 'en';
+  Module.yandexLanguageIndex = Module.yandexLanguageCode === 'ru' ? 1 : 0;
+  Module.yandexGameReadySent = false;
+  Module.yandexPlatformPaused = false;
+  Module.yandexAdInProgress = false;
+  Module.hadLocalSaveAtStartup = false;
+
+  const isRussian = () => Module.yandexLanguageCode === 'ru';
+
+  const localizeStatus = (value) => {
+    let text = String(value || '');
+    if (!isRussian()) {
+      return text === 'Running...' ? 'Starting engine...' : text;
+    }
+
+    const replacements = [
+      [/^Running\.\.\.$/, 'Запуск движка...'],
+      [/^Starting engine\.\.\.$/, 'Запуск движка...'],
+      [/^Connecting to Yandex Games\.\.\.$/, 'Подключение к Яндекс Играм...'],
+      [/^Decoding game data\.\.\./, 'Подготовка данных игры...'],
+      [/^Unpacking game data\.\.\./, 'Распаковка данных игры...'],
+      [/^Installing game data\.\.\./, 'Подготовка файлов игры...'],
+      [/^Loading saved progress\.\.\./, 'Загрузка сохранения...'],
+      [/^Preparing game\.\.\./, 'Подготовка игры...'],
+      [/^Initializing SDL\.\.\./, 'Инициализация игры...'],
+      [/^Opening game data\.\.\./, 'Открытие данных игры...'],
+      [/^Configuring video\.\.\./, 'Настройка изображения...'],
+      [/^Creating WebGL renderer\.\.\./, 'Запуск графики...'],
+      [/^Generating fonts\.\.\./, 'Подготовка шрифтов...'],
+      [/^Loading game assets\.\.\./, 'Загрузка ресурсов...'],
+      [/^Opening main menu\.\.\./, 'Открытие главного меню...'],
+      [/^Startup error:/, 'Ошибка запуска:']
+    ];
+    for (const [pattern, replacement] of replacements) {
+      if (pattern.test(text)) return text.replace(pattern, replacement);
+    }
+    return text;
+  };
+
+  const setStatus = (value) => {
     const status = statusElement();
-    if (!status || !text) return;
-    status.textContent = String(text) === 'Running...' ? 'Starting engine...' : String(text);
+    if (!status || value === undefined || value === null || value === '') return;
+    status.textContent = localizeStatus(value);
   };
 
   const showFatal = (message) => {
@@ -31,18 +74,39 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   };
 
   const nextBrowserTurn = () => new Promise((resolve) => setTimeout(resolve, 0));
+  const timeout = (promise, ms, label) => Promise.race([
+    Promise.resolve(promise),
+    new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timed out`)), ms))
+  ]);
 
   Module.yandexSetStatus = setStatus;
   Module.setStatus = setStatus;
   Module.monitorRunDependencies = (left) => {
-    if (left > 0 && !String(statusElement()?.textContent || '').startsWith('Unpacking game data')) {
+    if (left > 0 && !String(statusElement()?.textContent || '').includes('Распаковка данных игры')) {
       setStatus(`Preparing game... (${left})`);
     }
   };
-  Module.printErr = (text) => {
+
+  const isExpectedFirstLaunchMessage = (text) =>
+    /LoadPilotProfiles\(\): Can't open file \/persistent\/PilotProfiles_/i.test(text) ||
+    /cXMLDocument\(\): XML file not found: \/persistent\/config\.xml/i.test(text);
+
+  const isUnusedLocaleAssetMessage = (text) =>
+    /lang\/(?:de|pl|es|tr)\//i.test(text) && /(not found|unable to found)/i.test(text);
+
+  Module.printErr = (value) => {
+    const text = String(value || '');
+    // The web VFS intentionally contains only EN/RU. Upstream still has a few
+    // unconditional preload entries for other locales, but those assets are never
+    // selected in the EN/RU runtime. Do not surface those harmless misses as errors.
+    if (isExpectedFirstLaunchMessage(text) || isUnusedLocaleAssetMessage(text)) {
+      console.debug('[AstroMenace] Expected web fallback:', text);
+      return;
+    }
+
     console.error(text);
-    if (!Module.yandexGameReadySent && /(abort|failed|error|corrupt|not found|unable)/i.test(String(text))) {
-      showFatal(String(text));
+    if (!Module.yandexGameReadySent && /(abort|failed|error|corrupt|not found|unable)/i.test(text)) {
+      showFatal(text);
     }
   };
   Module.onAbort = (reason) => showFatal(reason || 'WebAssembly aborted');
@@ -60,18 +124,16 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     }
   });
 
-  Module.yandexSDK = null;
-  Module.yandexPlayer = null;
-  Module.yandexLanguageIndex = /^ru(?:[-_]|$)/i.test(navigator.language || '') ? 1 : 0;
-  Module.yandexGameReadySent = false;
-  Module.yandexPlatformPaused = false;
-  Module.yandexAdInProgress = false;
-  Module.hadLocalSaveAtStartup = false;
+  const setGameLanguage = (sdkLanguage) => {
+    const sdkLang = String(sdkLanguage || '').trim().toLowerCase().split(/[-_]/)[0];
+    const gameLang = RU_FALLBACK_LANGS.has(sdkLang) ? 'ru' : 'en';
+    Module.yandexLanguageCode = gameLang;
+    Module.yandexLanguageIndex = gameLang === 'ru' ? 1 : 0;
+    document.documentElement.lang = gameLang;
+    return { sdkLang, gameLang };
+  };
 
-  const timeout = (promise, ms, label) => Promise.race([
-    Promise.resolve(promise),
-    new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timed out`)), ms))
-  ]);
+  const applyLocalLanguageFallback = () => setGameLanguage(navigator.language || 'en');
 
   const trackAudioContexts = () => {
     const NativeAudioContext = window.AudioContext || window.webkitAudioContext;
@@ -142,9 +204,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
       if (offset + binary.length > compressed.length) {
         throw new Error('embedded gamedata size is invalid');
       }
-      for (let i = 0; i < binary.length; i++) {
-        compressed[offset + i] = binary.charCodeAt(i);
-      }
+      for (let i = 0; i < binary.length; i++) compressed[offset + i] = binary.charCodeAt(i);
       offset += binary.length;
 
       if ((index & 7) === 7 || index === chunks.length - 1) {
@@ -158,13 +218,9 @@ var Module = typeof Module !== 'undefined' ? Module : {};
       throw new Error(`embedded gamedata is truncated (${offset}/${gzipSize})`);
     }
 
-    // Drop the large base64 strings before allocating the uncompressed VFS.
     globalThis.ASTROMENACE_GAMEDATA_GZIP_B64_CHUNKS = null;
-
     setStatus('Unpacking game data...');
-    const stream = new Blob([compressed])
-      .stream()
-      .pipeThrough(new DecompressionStream('gzip'));
+    const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream('gzip'));
     const rawBuffer = await new Response(stream).arrayBuffer();
     compressed = null;
 
@@ -253,15 +309,41 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   const ensureSdkScript = async () => {
     if (location.protocol === 'file:') return false;
     if (typeof YaGames !== 'undefined') return true;
+
     await new Promise((resolve) => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        resolve();
+      };
       const script = document.createElement('script');
       script.src = '/sdk.js';
-      script.onload = () => resolve();
-      script.onerror = () => resolve();
+      script.async = true;
+      script.onload = finish;
+      script.onerror = finish;
       document.head.appendChild(script);
-      setTimeout(resolve, SDK_TIMEOUT_MS);
+      setTimeout(finish, SDK_SCRIPT_TIMEOUT_MS);
     });
     return typeof YaGames !== 'undefined';
+  };
+
+  const initYandexForStartup = async () => {
+    if (location.protocol === 'file:') {
+      applyLocalLanguageFallback();
+      return;
+    }
+
+    setStatus('Connecting to Yandex Games...');
+    if (!(await ensureSdkScript())) throw new Error('Yandex Games SDK did not load');
+
+    const ysdk = await timeout(YaGames.init(), SDK_INIT_TIMEOUT_MS, 'YaGames.init');
+    Module.yandexSDK = ysdk;
+
+    // Requirement 2.14: use the SDK language during launch, before main().
+    const resolved = setGameLanguage(ysdk.environment?.i18n?.lang);
+    registerPlatformEvents(ysdk);
+    console.info(`[Yandex] SDK initialized before main; language ${resolved.sdkLang || 'unknown'} -> ${resolved.gameLang}.`);
   };
 
   const restoreCloudOnlyWhenNoLocalSave = async () => {
@@ -284,28 +366,14 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     }
   };
 
-  const initYandexAfterGameReady = async () => {
+  const initPlayerAfterGameReady = async () => {
+    const ysdk = Module.yandexSDK;
+    if (!ysdk) return;
     try {
-      if (!(await ensureSdkScript())) return;
-      const ysdk = await timeout(YaGames.init(), SDK_TIMEOUT_MS, 'YaGames.init');
-      Module.yandexSDK = ysdk;
-      registerPlatformEvents(ysdk);
-
-      try {
-        Module.yandexPlayer = await timeout(ysdk.getPlayer(), PLAYER_TIMEOUT_MS, 'ysdk.getPlayer');
-        await restoreCloudOnlyWhenNoLocalSave();
-      } catch (error) {
-        console.warn('[Yandex] Player initialization skipped:', error);
-      }
-
-      try {
-        ysdk.features?.LoadingAPI?.ready();
-        console.info('[Yandex] LoadingAPI.ready sent.');
-      } catch (error) {
-        console.warn('[Yandex] LoadingAPI.ready failed:', error);
-      }
+      Module.yandexPlayer = await timeout(ysdk.getPlayer(), PLAYER_TIMEOUT_MS, 'ysdk.getPlayer');
+      await restoreCloudOnlyWhenNoLocalSave();
     } catch (error) {
-      console.warn('[Yandex] SDK initialization skipped:', error);
+      console.warn('[Yandex] Player initialization skipped:', error);
     }
   };
 
@@ -351,15 +419,41 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     Module.yandexGameReadySent = true;
     const loading = loadingElement();
     if (loading) loading.classList.add('hidden');
-    initYandexAfterGameReady();
+
+    // Requirement 1.19.2: C++ calls this after InitMenu(), exactly when the
+    // interactive main menu becomes available.
+    try {
+      Module.yandexSDK?.features?.LoadingAPI?.ready();
+      if (Module.yandexSDK) console.info('[Yandex] LoadingAPI.ready sent.');
+    } catch (error) {
+      console.warn('[Yandex] LoadingAPI.ready failed:', error);
+    }
+    initPlayerAfterGameReady();
   };
 
   trackAudioContexts();
+  applyLocalLanguageFallback();
+
+  Module.preRun = Module.preRun || [];
+
+  // Initialize SDK and resolve language before C++ reads yandexLanguageIndex.
+  // file:// deliberately skips SDK networking and remains directly launchable.
+  Module.preRun.push(() => {
+    addRunDependency('astromenace-yandex-sdk');
+    (async () => {
+      try {
+        await initYandexForStartup();
+      } catch (error) {
+        console.warn('[Yandex] SDK startup initialization failed; continuing with local fallback:', error);
+        applyLocalLanguageFallback();
+      } finally {
+        removeRunDependency('astromenace-yandex-sdk');
+      }
+    })();
+  });
 
   // Install the complete VFS from a normal external script resource. Script
   // tags are allowed from file://, unlike fetch/XHR of index.data/index.wasm.
-  // This is what makes a double-clicked index.html a supported launch path.
-  Module.preRun = Module.preRun || [];
   Module.preRun.push(() => {
     addRunDependency('astromenace-embedded-gamedata');
     (async () => {
@@ -368,23 +462,21 @@ var Module = typeof Module !== 'undefined' ? Module : {};
       } catch (error) {
         console.error('[Startup] Could not install game data:', error);
         showFatal(error?.message || String(error));
-        // Deliberately keep the run dependency on fatal corruption. Starting
-        // C++ without a complete VFS would only turn this into a black screen.
         return;
       }
       removeRunDependency('astromenace-embedded-gamedata');
     })();
   });
 
-  // Local persistence may delay startup briefly, but platform SDK/player/cloud
-  // setup is moved after the menu is ready so network/API issues cannot hang it.
   Module.preRun.push(() => {
     addRunDependency('astromenace-local-save');
     (async () => {
       try {
         setStatus('Loading saved progress...');
         FS.mkdirTree(SAVE_DIR);
-        try { FS.mount(IDBFS, {}, SAVE_DIR); } catch (error) {
+        try {
+          FS.mount(IDBFS, {}, SAVE_DIR);
+        } catch (error) {
           console.warn('[Storage] IDBFS mount warning:', error);
         }
         await syncFs(true, IDB_STARTUP_TIMEOUT_MS);
