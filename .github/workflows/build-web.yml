@@ -33,7 +33,7 @@ jobs:
             sudo apt-get install -y \
               build-essential cmake ninja-build git \
               libsdl2-dev libogg-dev libvorbis-dev \
-              libopenal-dev libalut-dev libfreetype6-dev
+              libopenal-dev libalut-dev libfreetype6-dev libglu1-mesa-dev
 
             rm -rf /tmp/native-astromenace /tmp/native-build
             git clone --depth 1 https://github.com/midzer/astromenace.git /tmp/native-astromenace
