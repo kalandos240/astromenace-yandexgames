@@ -1,6 +1,6 @@
 # Web build status
 
 - Status: **FAILED (Emscripten)**
-- Web exit code: **1**
-- Emscripten: `emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.6 (ce75e06884093bcefb86a6b8fd56a5d62a4cc245)`
+- Web exit code: ****
+- Emscripten: ``
 - See `web/BUILD_LOG.txt`.

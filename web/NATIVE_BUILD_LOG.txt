@@ -297,4 +297,4 @@ Compiled against SDL version 2.30.0
 Linking against SDL version 2.30.0
 vw_OpenVFS(): Can't find VFS file /tmp/yandex-gamedata/models/models.pack
 vw_CreateVFS(): /tmp/yandex-gamedata/models/models.pack file not found or corrupted.
--rw-r--r-- 1 runner runner 16 Aug 11 11:40 /tmp/yandex-vfs/gamedata.vfs
+-rw-r--r-- 1 runner runner 16 Aug 11 13:38 /tmp/yandex-vfs/gamedata.vfs
