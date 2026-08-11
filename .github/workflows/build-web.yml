@@ -7,10 +7,15 @@ on:
     paths:
       - 'src/**'
       - 'web/yandex-pre.js'
+      - 'web/shell.html'
       - '.github/workflows/build-web.yml'
 
 permissions:
   contents: write
+
+concurrency:
+  group: astromenace-web-build
+  cancel-in-progress: true
 
 jobs:
   build-web:
@@ -21,7 +26,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Prepare native VFS pack
+      - name: Prepare optimized native VFS pack
         id: native
         continue-on-error: true
         shell: bash
@@ -35,13 +40,25 @@ jobs:
               libsdl2-dev libogg-dev libvorbis-dev \
               libopenal-dev libalut-dev libfreetype6-dev libglu1-mesa-dev
 
-            rm -rf /tmp/native-astromenace /tmp/native-build
+            rm -rf /tmp/native-astromenace /tmp/native-build /tmp/yandex-gamedata /tmp/yandex-vfs
             git clone --depth 1 https://github.com/midzer/astromenace.git /tmp/native-astromenace
             cmake -S /tmp/native-astromenace -B /tmp/native-build \
               -G Ninja -DCMAKE_BUILD_TYPE=Release
             cmake --build /tmp/native-build --target astromenace
-            test -s /tmp/native-build/gamedata.vfs
-            ls -lh /tmp/native-build/gamedata.vfs
+
+            # models.pack contains source/original model material and is not read by
+            # the game runtime. Keep it in the public source repository for licensing,
+            # but do not ship this ~28 MiB development archive inside Yandex Games.
+            cp -a /tmp/native-astromenace/gamedata /tmp/yandex-gamedata
+            rm -f /tmp/yandex-gamedata/models/models.pack
+
+            mkdir -p /tmp/yandex-vfs
+            /tmp/native-build/astromenace \
+              --pack \
+              --rawdata=/tmp/yandex-gamedata \
+              --dir=/tmp/yandex-vfs
+            test -s /tmp/yandex-vfs/gamedata.vfs
+            ls -lh /tmp/yandex-vfs/gamedata.vfs
           } > native-build.log 2>&1
           code=$?
           tail -n 300 native-build.log > web/NATIVE_BUILD_LOG.txt || true
@@ -68,6 +85,7 @@ jobs:
           source ./emsdk_env.sh
           cd "$GITHUB_WORKSPACE"
 
+          rm -rf dist
           mkdir -p dist web
           mapfile -t SOURCES < <(find src -type f -name '*.cpp' -print | sort)
 
@@ -85,8 +103,9 @@ jobs:
             -sFULL_ES2=1 \
             -sFORCE_FILESYSTEM=1 \
             -sENVIRONMENT=web \
-            --preload-file /tmp/native-build/gamedata.vfs@/gamedata.vfs \
+            --preload-file /tmp/yandex-vfs/gamedata.vfs@/gamedata.vfs \
             --pre-js web/yandex-pre.js \
+            --shell-file web/shell.html \
             -o dist/index.html \
             > web-build.log 2>&1
           build_code=$?
@@ -99,7 +118,13 @@ jobs:
 
           if [[ $build_code -eq 0 ]]; then
             total_bytes="$(find dist -maxdepth 1 -type f -printf '%s\n' | awk '{s+=$1} END {print s+0}')"
+            data_bytes="$(find dist -maxdepth 1 -type f -name '*.data' -printf '%s\n' | awk '{s+=$1} END {print s+0}')"
+            wasm_bytes="$(find dist -maxdepth 1 -type f -name '*.wasm' -printf '%s\n' | awk '{s+=$1} END {print s+0}')"
+            js_bytes="$(find dist -maxdepth 1 -type f -name '*.js' -printf '%s\n' | awk '{s+=$1} END {print s+0}')"
             echo "total_bytes=$total_bytes" >> "$GITHUB_OUTPUT"
+            echo "data_bytes=$data_bytes" >> "$GITHUB_OUTPUT"
+            echo "wasm_bytes=$wasm_bytes" >> "$GITHUB_OUTPUT"
+            echo "js_bytes=$js_bytes" >> "$GITHUB_OUTPUT"
             echo 'success=true' >> "$GITHUB_OUTPUT"
           else
             echo 'success=false' >> "$GITHUB_OUTPUT"
@@ -127,6 +152,9 @@ jobs:
               echo '- Status: **SUCCESS**'
               echo '- Emscripten: `${{ steps.webbuild.outputs.emscripten }}`'
               echo '- Uncompressed dist bytes: **${{ steps.webbuild.outputs.total_bytes }}**'
+              echo '- Asset data bytes: **${{ steps.webbuild.outputs.data_bytes }}**'
+              echo '- WebAssembly bytes: **${{ steps.webbuild.outputs.wasm_bytes }}**'
+              echo '- JavaScript bytes: **${{ steps.webbuild.outputs.js_bytes }}**'
               echo '- Output: GitHub Actions artifact `astromenace-yandexgames-web`'
             } > web/BUILD_STATUS.md
           else
