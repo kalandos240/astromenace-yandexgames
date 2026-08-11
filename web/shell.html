@@ -24,8 +24,11 @@
     }
     #canvas {
       display: block;
-      width: 100vw;
-      height: 100vh;
+      /* AstroMenace's missions are designed for aspect ratios up to 16:9.
+         Fit a 16:9 render surface inside arbitrary Yandex iframe sizes instead
+         of stretching the game and exposing mission areas outside its design. */
+      width: min(100vw, 177.777778vh);
+      height: min(100vh, 56.25vw);
       border: 0;
       outline: 0;
       background: #000;
