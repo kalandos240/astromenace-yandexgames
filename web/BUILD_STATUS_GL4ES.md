@@ -1,17 +1,5 @@
 # Web build status (gl4es)
 
-- Status: **SUCCESS**
-- Run ID: `31501572846`
-- Emscripten: `emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.6 (ce75e06884093bcefb86a6b8fd56a5d62a4cc245)`
-- Lossless TGA bytes saved: **13107485**
-- WAV bytes saved: **7600114**
-- Packed VFS bytes: **95312900**
-- Uncompressed dist bytes: **98646149**
-- Asset data bytes: **95312900**
-- WebAssembly bytes: **3039841**
-- JavaScript bytes: **222138**
-- CSS bytes: **1271**
-- CSP shell audit: **PASS**
-- License/source notices: **INCLUDED**
-- Yandex 100,000,000-byte target: **true**
-- Output: GitHub Actions artifact `astromenace-yandexgames-web-gl4es`
+- Status: **RUNNING**
+- Run ID: `31502401728`
+- Commit: `f2159e5ed02c9ca0bbd5c42f5f15dc80e19e3a7b`
