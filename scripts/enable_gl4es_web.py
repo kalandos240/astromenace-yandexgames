@@ -4,7 +4,9 @@
 The browser build uses gl4es because AstroMenace relies on a sizeable OpenGL
 1.x/2.x compatibility surface. The CI-only patches below also make desktop SDL
 window assumptions browser-safe, lock the web render surface to a stable 16:9
-resolution, and persist completed-mission progress immediately.
+resolution, persist completed-mission progress immediately, and notify the
+Yandex bridge after every successfully completed mission so it can show an
+interstitial between levels.
 
 All edits are applied only to the temporary GitHub Actions worktree. Native
 source behaviour in the repository remains unchanged.
@@ -102,14 +104,19 @@ def patch_mission_save() -> None:
         "    // persist mission progress before returning to the mission menu.\n"
         "    SaveXMLConfigFile();\n"
         "#ifdef __EMSCRIPTEN__\n"
+        "    // Successful mission only: save to Yandex cloud and request the\n"
+        "    // between-level fullscreen ad. Yandex controls whether a particular\n"
+        "    // interstitial is actually shown when calls are too frequent.\n"
         "    EM_ASM({\n"
-        "        if (Module.yandexSyncSave) {\n"
+        "        if (Module.yandexLevelComplete) {\n"
+        "            Module.yandexLevelComplete();\n"
+        "        } else if (Module.yandexSyncSave) {\n"
         "            Module.yandexSyncSave(true);\n"
         "        }\n"
         "    });\n"
         "#endif\n\n"
     )
-    if "persist mission progress before returning to the mission menu" not in text:
+    if "between-level fullscreen ad" not in text:
         marker = (
             "    ChangeGameConfig().Profile[CurrentProfile].LastMission = CurrentMission;\n\n"
             "    ExitGame(Command);\n"
@@ -130,7 +137,7 @@ def main() -> int:
     patch_gl_main()
     patch_video_modes()
     patch_mission_save()
-    print("Enabled gl4es, browser-safe video modes, and immediate web mission saves.")
+    print("Enabled gl4es, browser-safe video modes, mission saves, and level-complete ads.")
     return 0
 
 
