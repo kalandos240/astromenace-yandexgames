@@ -1,5 +1,6 @@
 # Web build status
 
-- Status: **FAILED (native VFS preparation)**
-- Native exit code: **2**
-- See `web/NATIVE_BUILD_LOG.txt`.
+- Status: **FAILED (Emscripten)**
+- Web exit code: **1**
+- Emscripten: `emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.6 (ce75e06884093bcefb86a6b8fd56a5d62a4cc245)`
+- See `web/BUILD_LOG.txt`.
