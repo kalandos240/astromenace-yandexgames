@@ -1,8 +1,5 @@
 # Web build status (gl4es)
 
-- Status: **FAILED (gl4es compilation)**
-- Run ID: `31521993783`
-- Lossless TGA bytes saved: **12986700**
-- WAV bytes saved: **6917876**
-- Packed VFS bytes: **66190956**
-- See `web/GL4ES_BUILD_LOG.txt`.
+- Status: **RUNNING**
+- Run ID: `31531115045`
+- Commit: `885ca99abb4f3e671a51523850d5ba144faddd69`
