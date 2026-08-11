@@ -6,10 +6,12 @@ type-2 and RLE type-10 24/32-bit TGA images. The encoder preserves the original
 header fields, ID bytes, descriptor/orientation and pixel order, replacing a
 file only when RLE is strictly smaller.
 
-For the browser distribution only, PCM WAV clips above 22050 Hz are resampled
-to 22050 Hz while preserving channel count and sample width. The WAV pass is
-self-contained and does not require FFmpeg on the CI runner. Source repository
-and upstream assets remain untouched.
+For the browser distribution only, PCM WAV clips above 16000 Hz are resampled
+to 16000 Hz while preserving channel count and sample width. The 16 kHz cap is
+used only for the generated browser package to leave safe headroom below the
+Yandex Games uncompressed-size limit. The WAV pass is self-contained and does
+not require FFmpeg on the CI runner. Source repository and upstream assets
+remain untouched.
 """
 
 from __future__ import annotations
@@ -152,7 +154,7 @@ def optimize_tgas(root: Path) -> int:
     return saved
 
 
-def optimize_wavs(root: Path, rate: int = 22050) -> int:
+def optimize_wavs(root: Path, rate: int = 16000) -> int:
     # Import the standalone dependency-free PCM optimizer from this script
     # directory. It uses the stdlib wave module and works on stock CI runners.
     from optimize_wav_assets import optimize as optimize_wav
