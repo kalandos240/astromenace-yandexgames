@@ -46,7 +46,11 @@ For `__EMSCRIPTEN__`, `GetConfigPath()` points to:
 
 The game continues to use its normal `gamedata.vfs`. CI creates that VFS with the native AstroMenace packer before the WebAssembly link step.
 
-`gamedata/models/models.pack` is intentionally excluded from the runtime distribution. It contains model source/development material rather than files opened by the game runtime and accounts for roughly 28 MiB of otherwise unnecessary distribution size. The file remains in the public source repository for source/licensing completeness.
+`gamedata/models/models.pack` is **required as an input to the upstream VFS builder**. The packer reads the model data from this archive while creating `gamedata.vfs`; removing it before the packing step creates an invalid/header-only VFS. It is therefore kept during VFS generation.
+
+The browser distribution does **not** ship the raw `models.pack` tree separately. Emscripten preloads only the generated `gamedata.vfs`, so the final Yandex package contains the packed runtime data once rather than both the source archive and the generated VFS.
+
+CI rejects a generated VFS smaller than 1 MiB to catch accidental empty packs before an artifact is published.
 
 ## Current CI
 
