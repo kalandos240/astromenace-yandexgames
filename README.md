@@ -66,7 +66,9 @@ Web-specific C++ changes are guarded with `__EMSCRIPTEN__` where practical, so t
 
 ## Package-size optimization
 
-The original game-data tree contains development/source material that is not required by the runtime. The web build keeps the complete material in this public source repository while excluding non-runtime data from the Yandex distribution package. No gameplay missions, runtime models, textures, sounds or music are intentionally removed by this optimization step.
+AstroMenace's native packer converts the upstream game-data sources into a single runtime `gamedata.vfs`. In particular, `gamedata/models/models.pack` must remain available while the VFS is generated because the upstream packer reads model data from it. The raw source tree is not copied separately into the browser distribution: Emscripten preloads only the generated `gamedata.vfs` alongside the WebAssembly/JavaScript shell.
+
+This keeps the browser package free of duplicate source/runtime data while preserving the complete game content. CI also validates that the generated VFS is non-empty before publishing a web artifact. No gameplay missions, runtime models, textures, sounds or music are intentionally removed from the packaged game.
 
 ## Upstream projects
 
