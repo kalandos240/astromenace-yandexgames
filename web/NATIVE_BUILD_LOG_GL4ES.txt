@@ -1,3 +1,1599 @@
+Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+Get:6 https://packages.microsoft.com/repos/azure-cli noble InRelease [3564 B]
+Hit:2 http://azure.archive.ubuntu.com/ubuntu noble InRelease
+Get:3 http://azure.archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
+Get:4 http://azure.archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
+Get:5 http://azure.archive.ubuntu.com/ubuntu noble-security InRelease [126 kB]
+Get:7 https://dl.google.com/linux/chrome-stable/deb stable InRelease [2548 B]
+Get:8 https://packages.microsoft.com/ubuntu/24.04/prod noble InRelease [3600 B]
+Get:9 https://packages.microsoft.com/repos/azure-cli noble/main amd64 Packages [2375 B]
+Get:10 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [1187 kB]
+Get:11 http://azure.archive.ubuntu.com/ubuntu noble-updates/main Translation-en [281 kB]
+Get:12 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 Components [181 kB]
+Get:13 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages [1682 kB]
+Get:14 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe Translation-en [335 kB]
+Get:15 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Components [388 kB]
+Get:16 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages [1416 kB]
+Get:17 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted Translation-en [321 kB]
+Get:18 http://azure.archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Packages [45.4 kB]
+Get:19 http://azure.archive.ubuntu.com/ubuntu noble-updates/multiverse Translation-en [12.3 kB]
+Get:20 http://azure.archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Components [940 B]
+Get:21 http://azure.archive.ubuntu.com/ubuntu noble-backports/main amd64 Components [5772 B]
+Get:22 http://azure.archive.ubuntu.com/ubuntu noble-backports/universe amd64 Packages [31.0 kB]
+Get:23 http://azure.archive.ubuntu.com/ubuntu noble-backports/universe amd64 Components [12.6 kB]
+Get:24 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 Packages [930 kB]
+Get:25 http://azure.archive.ubuntu.com/ubuntu noble-security/main Translation-en [201 kB]
+Get:26 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 Components [46.4 kB]
+Get:27 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 Packages [1200 kB]
+Get:28 http://azure.archive.ubuntu.com/ubuntu noble-security/universe Translation-en [239 kB]
+Get:29 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 Components [76.2 kB]
+Get:30 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [1320 kB]
+Get:31 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted Translation-en [302 kB]
+Get:32 http://azure.archive.ubuntu.com/ubuntu noble-security/multiverse amd64 Packages [40.3 kB]
+Get:33 http://azure.archive.ubuntu.com/ubuntu noble-security/multiverse Translation-en [10.6 kB]
+Get:34 https://dl.google.com/linux/chrome-stable/deb stable/main amd64 Packages [1412 B]
+Get:35 https://packages.microsoft.com/ubuntu/24.04/prod noble/main armhf Packages [12.2 kB]
+Get:36 https://packages.microsoft.com/ubuntu/24.04/prod noble/main all Packages [643 B]
+Get:37 https://packages.microsoft.com/ubuntu/24.04/prod noble/main amd64 Packages [316 kB]
+Get:38 https://packages.microsoft.com/ubuntu/24.04/prod noble/main arm64 Packages [276 kB]
+Fetched 11.3 MB in 1s (8455 kB/s)
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+git is already the newest version (1:2.54.0-0ppa1~ubuntu24.04.1).
+git set to manually installed.
+The following additional packages will be installed:
+  bzip2-doc cmake-data gir1.2-ibus-1.0 libalut0 libasound2-dev libasyncns0
+  libblkid-dev libbrotli-dev libbz2-dev libdbus-1-dev libdecor-0-0
+  libdecor-0-dev libdecor-0-plugin-1-gtk libdrm-dev libdrm-nouveau2
+  libdrm-radeon1 libegl-dev libegl-mesa0 libegl1 libflac12t64 libgbm-dev
+  libgirepository-2.0-0 libgl-dev libgles-dev libgles1 libgles2 libglib2.0-dev
+  libglib2.0-dev-bin libglu1-mesa libglx-dev libibus-1.0-5 libibus-1.0-dev
+  libice-dev libjsoncpp25 libmount-dev libmp3lame0 libmpg123-0t64
+  libnss-systemd libopenal-data libopenal1 libopengl-dev libopengl0 libopus0
+  libpam-systemd libpciaccess-dev libpng-dev libpng-tools
+  libpthread-stubs0-dev libpulse-dev libpulse-mainloop-glib0 libpulse0
+  librhash0 libsamplerate0 libsamplerate0-dev libsdl2-2.0-0 libselinux1-dev
+  libsepol-dev libsm-dev libsndfile1 libsndio-dev libsndio7.0
+  libsystemd-shared libsystemd0 libudev-dev libudev1 libvorbisenc2
+  libwayland-bin libwayland-dev libwayland-server0 libx11-dev libxau-dev
+  libxcb1-dev libxcursor-dev libxdmcp-dev libxext-dev libxfixes-dev libxi-dev
+  libxinerama-dev libxkbcommon-dev libxrandr-dev libxrender-dev libxss-dev
+  libxt-dev libxv-dev libxv1 libxxf86vm-dev systemd systemd-coredump
+  systemd-dev systemd-resolved systemd-sysv udev uuid-dev x11proto-dev
+  xorg-sgml-doctools xtrans-dev
+Suggested packages:
+  cmake-doc cmake-format elpa-cmake-mode libasound2-doc freetype2-doc
+  gir1.2-glib-2.0-dev libglib2.0-doc libgdk-pixbuf2.0-bin libxml2-utils
+  libice-doc libportaudio2 opus-tools pulseaudio libsm-doc sndiod
+  libwayland-doc libx11-doc libxcb-doc libxext-doc libxt-doc systemd-container
+  systemd-homed systemd-userdbd systemd-boot libqrencode4
+The following NEW packages will be installed:
+  build-essential bzip2-doc cmake cmake-data gir1.2-ibus-1.0 libalut-dev
+  libalut0 libasound2-dev libasyncns0 libblkid-dev libbrotli-dev libbz2-dev
+  libdbus-1-dev libdecor-0-0 libdecor-0-dev libdecor-0-plugin-1-gtk libdrm-dev
+  libdrm-nouveau2 libdrm-radeon1 libegl-dev libegl-mesa0 libegl1 libflac12t64
+  libfreetype-dev libgbm-dev libgirepository-2.0-0 libgl-dev libgles-dev
+  libgles1 libgles2 libglib2.0-dev libglib2.0-dev-bin libglu1-mesa
+  libglu1-mesa-dev libglx-dev libibus-1.0-5 libibus-1.0-dev libice-dev
+  libjsoncpp25 libmount-dev libmp3lame0 libmpg123-0t64 libogg-dev
+  libopenal-data libopenal-dev libopenal1 libopengl-dev libopengl0 libopus0
+  libpciaccess-dev libpng-dev libpng-tools libpthread-stubs0-dev libpulse-dev
+  libpulse-mainloop-glib0 libpulse0 librhash0 libsamplerate0
+  libsamplerate0-dev libsdl2-2.0-0 libsdl2-dev libselinux1-dev libsepol-dev
+  libsm-dev libsndfile1 libsndio-dev libsndio7.0 libudev-dev libvorbis-dev
+  libvorbisenc2 libwayland-bin libwayland-dev libwayland-server0 libx11-dev
+  libxau-dev libxcb1-dev libxcursor-dev libxdmcp-dev libxext-dev libxfixes-dev
+  libxi-dev libxinerama-dev libxkbcommon-dev libxrandr-dev libxrender-dev
+  libxss-dev libxt-dev libxv-dev libxv1 libxxf86vm-dev ninja-build uuid-dev
+  x11proto-dev xorg-sgml-doctools xtrans-dev
+The following packages will be upgraded:
+  libnss-systemd libpam-systemd libsystemd-shared libsystemd0 libudev1 systemd
+  systemd-coredump systemd-dev systemd-resolved systemd-sysv udev
+11 upgraded, 95 newly installed, 0 to remove and 86 not upgraded.
+Need to get 37.8 MB of archives.
+After this operation, 111 MB of additional disk space will be used.
+Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+Get:2 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libnss-systemd amd64 255.4-1ubuntu8.17 [159 kB]
+Get:3 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 systemd-dev all 255.4-1ubuntu8.17 [107 kB]
+Get:4 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 systemd-resolved amd64 255.4-1ubuntu8.17 [297 kB]
+Get:5 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 systemd-coredump amd64 255.4-1ubuntu8.17 [71.7 kB]
+Get:6 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libsystemd-shared amd64 255.4-1ubuntu8.17 [2077 kB]
+Get:7 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libsystemd0 amd64 255.4-1ubuntu8.17 [432 kB]
+Get:8 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 systemd-sysv amd64 255.4-1ubuntu8.17 [11.9 kB]
+Get:9 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libpam-systemd amd64 255.4-1ubuntu8.17 [235 kB]
+Get:10 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 systemd amd64 255.4-1ubuntu8.17 [3475 kB]
+Get:11 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 udev amd64 255.4-1ubuntu8.17 [1875 kB]
+Get:12 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libudev1 amd64 255.4-1ubuntu8.17 [178 kB]
+Get:13 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 build-essential amd64 12.10ubuntu1 [4928 B]
+Get:14 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 bzip2-doc all 1.0.8-5.1build0.1 [499 kB]
+Get:15 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libjsoncpp25 amd64 1.9.5-6build1 [82.8 kB]
+Get:16 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 librhash0 amd64 1.4.3-3build1 [129 kB]
+Get:17 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 cmake-data all 3.28.3-1build7 [2155 kB]
+Get:18 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 cmake amd64 3.28.3-1build7 [11.2 MB]
+Get:19 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libibus-1.0-5 amd64 1.5.29-2 [181 kB]
+Get:20 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 gir1.2-ibus-1.0 amd64 1.5.29-2 [86.3 kB]
+Get:21 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 libopenal-data all 1:1.23.1-4build1 [161 kB]
+Get:22 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 libsndio7.0 amd64 1.9.0-0.3build3 [29.6 kB]
+Get:23 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 libopenal1 amd64 1:1.23.1-4build1 [540 kB]
+Get:24 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 libalut0 amd64 1.1.0-6build1 [23.6 kB]
+Get:25 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 libopenal-dev amd64 1:1.23.1-4build1 [24.5 kB]
+Get:26 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 libalut-dev amd64 1.1.0-6build1 [23.3 kB]
+Get:27 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libasound2-dev amd64 1.2.11-1ubuntu0.3 [115 kB]
+Get:28 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libasyncns0 amd64 0.8-6build4 [11.3 kB]
+Get:29 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libbrotli-dev amd64 1.1.0-2build2 [353 kB]
+Get:30 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libbz2-dev amd64 1.0.8-5.1build0.1 [33.6 kB]
+Get:31 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libdbus-1-dev amd64 1.14.10-4ubuntu4.1 [190 kB]
+Get:32 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libdecor-0-0 amd64 0.2.2-1build2 [16.5 kB]
+Get:33 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libwayland-server0 amd64 1.22.0-2.1build1 [33.9 kB]
+Get:34 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libwayland-bin amd64 1.22.0-2.1build1 [20.6 kB]
+Get:35 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libwayland-dev amd64 1.22.0-2.1build1 [71.3 kB]
+Get:36 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libdecor-0-dev amd64 0.2.2-1build2 [5726 B]
+Get:37 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libdecor-0-plugin-1-gtk amd64 0.2.2-1build2 [22.2 kB]
+Get:38 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libdrm-radeon1 amd64 2.4.125-1ubuntu0.1~24.04.2 [20.8 kB]
+Get:39 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libdrm-nouveau2 amd64 2.4.125-1ubuntu0.1~24.04.2 [17.6 kB]
+Get:40 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libpciaccess-dev amd64 0.17-3ubuntu0.24.04.2 [22.0 kB]
+Get:41 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libdrm-dev amd64 2.4.125-1ubuntu0.1~24.04.2 [314 kB]
+Get:42 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libegl-mesa0 amd64 25.2.8-0ubuntu0.24.04.2 [117 kB]
+Get:43 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libegl1 amd64 1.7.0-1build1 [28.7 kB]
+Get:44 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 xorg-sgml-doctools all 1:1.11-1.1 [10.9 kB]
+Get:45 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 x11proto-dev all 2023.2-1 [602 kB]
+Get:46 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libxau-dev amd64 1:1.0.9-1build6 [9570 B]
+Get:47 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libxdmcp-dev amd64 1:1.1.3-0ubuntu6 [26.5 kB]
+Get:48 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 xtrans-dev all 1.4.0-1 [68.9 kB]
+Get:49 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libpthread-stubs0-dev amd64 0.4-1build3 [4746 B]
+Get:50 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libxcb1-dev amd64 1.15-1ubuntu2 [85.8 kB]
+Get:51 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libx11-dev amd64 2:1.8.7-1build1 [732 kB]
+Get:52 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libglx-dev amd64 1.7.0-1build1 [14.2 kB]
+Get:53 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libgl-dev amd64 1.7.0-1build1 [102 kB]
+Get:54 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libegl-dev amd64 1.7.0-1build1 [18.2 kB]
+Get:55 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libflac12t64 amd64 1.4.3+ds-2.1ubuntu2 [197 kB]
+Get:56 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libpng-dev amd64 1.6.43-5ubuntu0.6 [265 kB]
+Get:57 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libfreetype-dev amd64 2.13.2+dfsg-1ubuntu0.1 [575 kB]
+Get:58 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libgbm-dev amd64 25.2.8-0ubuntu0.24.04.2 [12.8 kB]
+Get:59 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libgirepository-2.0-0 amd64 2.80.0-6ubuntu3.8 [73.6 kB]
+Get:60 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libgles1 amd64 1.7.0-1build1 [11.6 kB]
+Get:61 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libgles2 amd64 1.7.0-1build1 [17.1 kB]
+Get:62 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libgles-dev amd64 1.7.0-1build1 [50.5 kB]
+Get:63 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libglib2.0-dev-bin amd64 2.80.0-6ubuntu3.8 [138 kB]
+Get:64 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 uuid-dev amd64 2.39.3-9ubuntu6.5 [33.5 kB]
+Get:65 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libblkid-dev amd64 2.39.3-9ubuntu6.5 [204 kB]
+Get:66 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libsepol-dev amd64 3.5-2build1 [384 kB]
+Get:67 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libselinux1-dev amd64 3.5-2ubuntu2.1 [164 kB]
+Get:68 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libmount-dev amd64 2.39.3-9ubuntu6.5 [14.9 kB]
+Get:69 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libglib2.0-dev amd64 2.80.0-6ubuntu3.8 [1860 kB]
+Get:70 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libopengl0 amd64 1.7.0-1build1 [32.8 kB]
+Get:71 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libglu1-mesa amd64 9.0.2-1.1build1 [152 kB]
+Get:72 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libopengl-dev amd64 1.7.0-1build1 [3454 B]
+Get:73 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libglu1-mesa-dev amd64 9.0.2-1.1build1 [237 kB]
+Get:74 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 libibus-1.0-dev amd64 1.5.29-2 [187 kB]
+Get:75 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libice-dev amd64 2:1.0.10-1build3 [51.0 kB]
+Get:76 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libmp3lame0 amd64 3.100-6build1 [142 kB]
+Get:77 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libmpg123-0t64 amd64 1.32.5-1ubuntu1.1 [169 kB]
+Get:78 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libogg-dev amd64 1.3.5-3build1 [161 kB]
+Get:79 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libopus0 amd64 1.4-1build1 [208 kB]
+Get:80 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libpng-tools amd64 1.6.43-5ubuntu0.6 [28.5 kB]
+Get:81 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libvorbisenc2 amd64 1.3.7-1build3 [80.8 kB]
+Get:82 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libsndfile1 amd64 1.2.2-1ubuntu5.24.04.1 [209 kB]
+Get:83 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libpulse0 amd64 1:16.1+dfsg1-2ubuntu10.1 [292 kB]
+Get:84 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libpulse-mainloop-glib0 amd64 1:16.1+dfsg1-2ubuntu10.1 [12.2 kB]
+Get:85 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 libpulse-dev amd64 1:16.1+dfsg1-2ubuntu10.1 [75.6 kB]
+Get:86 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libsamplerate0 amd64 0.2.2-4build1 [1344 kB]
+Get:87 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libsamplerate0-dev amd64 0.2.2-4build1 [61.5 kB]
+Get:88 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libsdl2-2.0-0 amd64 2.30.0+dfsg-1ubuntu3.1 [686 kB]
+Get:89 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 libsndio-dev amd64 1.9.0-0.3build3 [17.7 kB]
+Get:90 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libudev-dev amd64 255.4-1ubuntu8.17 [22.0 kB]
+Get:91 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libxrender-dev amd64 1:0.9.10-1.1build1 [26.3 kB]
+Get:92 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libxfixes-dev amd64 1:6.0.0-2build1 [12.1 kB]
+Get:93 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libxcursor-dev amd64 1:1.2.1-1build1 [31.8 kB]
+Get:94 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libxext-dev amd64 2:1.3.4-1build2 [83.5 kB]
+Get:95 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libxi-dev amd64 2:1.8.1-1build1 [194 kB]
+Get:96 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libxinerama-dev amd64 2:1.1.4-3build1 [7988 B]
+Get:97 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libxkbcommon-dev amd64 1.6.0-1build1 [56.3 kB]
+Get:98 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libxrandr-dev amd64 2:1.5.2-2build1 [26.4 kB]
+Get:99 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libxss-dev amd64 1:1.2.3-1build3 [12.1 kB]
+Get:100 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libsm-dev amd64 2:1.2.3-1build3 [17.8 kB]
+Get:101 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libxt-dev amd64 1:1.2.1-1.2build1 [394 kB]
+Get:102 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libxv1 amd64 2:1.0.11-1.1build1 [10.7 kB]
+Get:103 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libxv-dev amd64 2:1.0.11-1.1build1 [33.3 kB]
+Get:104 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libxxf86vm-dev amd64 1:1.1.4-1build4 [13.8 kB]
+Get:105 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 libsdl2-dev amd64 2.30.0+dfsg-1ubuntu3.1 [1141 kB]
+Get:106 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libvorbis-dev amd64 1.3.7-1build3 [342 kB]
+Get:107 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 ninja-build amd64 1.11.1-2 [129 kB]
+Fetched 37.8 MB in 32s (1171 kB/s)
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 202954 files and directories currently installed.)
+Preparing to unpack .../0-libnss-systemd_255.4-1ubuntu8.17_amd64.deb ...
+Unpacking libnss-systemd:amd64 (255.4-1ubuntu8.17) over (255.4-1ubuntu8.16) ...
+Preparing to unpack .../1-systemd-dev_255.4-1ubuntu8.17_all.deb ...
+Unpacking systemd-dev (255.4-1ubuntu8.17) over (255.4-1ubuntu8.16) ...
+Preparing to unpack .../2-systemd-resolved_255.4-1ubuntu8.17_amd64.deb ...
+Unpacking systemd-resolved (255.4-1ubuntu8.17) over (255.4-1ubuntu8.16) ...
+Preparing to unpack .../3-systemd-coredump_255.4-1ubuntu8.17_amd64.deb ...
+Unpacking systemd-coredump (255.4-1ubuntu8.17) over (255.4-1ubuntu8.16) ...
+Preparing to unpack .../4-libsystemd-shared_255.4-1ubuntu8.17_amd64.deb ...
+Unpacking libsystemd-shared:amd64 (255.4-1ubuntu8.17) over (255.4-1ubuntu8.16) ...
+Preparing to unpack .../5-libsystemd0_255.4-1ubuntu8.17_amd64.deb ...
+Unpacking libsystemd0:amd64 (255.4-1ubuntu8.17) over (255.4-1ubuntu8.16) ...
+Setting up libsystemd0:amd64 (255.4-1ubuntu8.17) ...
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 202954 files and directories currently installed.)
+Preparing to unpack .../systemd-sysv_255.4-1ubuntu8.17_amd64.deb ...
+Unpacking systemd-sysv (255.4-1ubuntu8.17) over (255.4-1ubuntu8.16) ...
+Preparing to unpack .../libpam-systemd_255.4-1ubuntu8.17_amd64.deb ...
+Unpacking libpam-systemd:amd64 (255.4-1ubuntu8.17) over (255.4-1ubuntu8.16) ...
+Preparing to unpack .../systemd_255.4-1ubuntu8.17_amd64.deb ...
+Unpacking systemd (255.4-1ubuntu8.17) over (255.4-1ubuntu8.16) ...
+Preparing to unpack .../udev_255.4-1ubuntu8.17_amd64.deb ...
+Unpacking udev (255.4-1ubuntu8.17) over (255.4-1ubuntu8.16) ...
+Preparing to unpack .../libudev1_255.4-1ubuntu8.17_amd64.deb ...
+Unpacking libudev1:amd64 (255.4-1ubuntu8.17) over (255.4-1ubuntu8.16) ...
+Setting up libudev1:amd64 (255.4-1ubuntu8.17) ...
+Selecting previously unselected package build-essential.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 202954 files and directories currently installed.)
+Preparing to unpack .../00-build-essential_12.10ubuntu1_amd64.deb ...
+Unpacking build-essential (12.10ubuntu1) ...
+Selecting previously unselected package bzip2-doc.
+Preparing to unpack .../01-bzip2-doc_1.0.8-5.1build0.1_all.deb ...
+Unpacking bzip2-doc (1.0.8-5.1build0.1) ...
+Selecting previously unselected package libjsoncpp25:amd64.
+Preparing to unpack .../02-libjsoncpp25_1.9.5-6build1_amd64.deb ...
+Unpacking libjsoncpp25:amd64 (1.9.5-6build1) ...
+Selecting previously unselected package librhash0:amd64.
+Preparing to unpack .../03-librhash0_1.4.3-3build1_amd64.deb ...
+Unpacking librhash0:amd64 (1.4.3-3build1) ...
+Selecting previously unselected package cmake-data.
+Preparing to unpack .../04-cmake-data_3.28.3-1build7_all.deb ...
+Unpacking cmake-data (3.28.3-1build7) ...
+Selecting previously unselected package cmake.
+Preparing to unpack .../05-cmake_3.28.3-1build7_amd64.deb ...
+Unpacking cmake (3.28.3-1build7) ...
+Selecting previously unselected package libibus-1.0-5:amd64.
+Preparing to unpack .../06-libibus-1.0-5_1.5.29-2_amd64.deb ...
+Unpacking libibus-1.0-5:amd64 (1.5.29-2) ...
+Selecting previously unselected package gir1.2-ibus-1.0:amd64.
+Preparing to unpack .../07-gir1.2-ibus-1.0_1.5.29-2_amd64.deb ...
+Unpacking gir1.2-ibus-1.0:amd64 (1.5.29-2) ...
+Selecting previously unselected package libopenal-data.
+Preparing to unpack .../08-libopenal-data_1%3a1.23.1-4build1_all.deb ...
+Unpacking libopenal-data (1:1.23.1-4build1) ...
+Selecting previously unselected package libsndio7.0:amd64.
+Preparing to unpack .../09-libsndio7.0_1.9.0-0.3build3_amd64.deb ...
+Unpacking libsndio7.0:amd64 (1.9.0-0.3build3) ...
+Selecting previously unselected package libopenal1:amd64.
+Preparing to unpack .../10-libopenal1_1%3a1.23.1-4build1_amd64.deb ...
+Unpacking libopenal1:amd64 (1:1.23.1-4build1) ...
+Selecting previously unselected package libalut0:amd64.
+Preparing to unpack .../11-libalut0_1.1.0-6build1_amd64.deb ...
+Unpacking libalut0:amd64 (1.1.0-6build1) ...
+Selecting previously unselected package libopenal-dev:amd64.
+Preparing to unpack .../12-libopenal-dev_1%3a1.23.1-4build1_amd64.deb ...
+Unpacking libopenal-dev:amd64 (1:1.23.1-4build1) ...
+Selecting previously unselected package libalut-dev.
+Preparing to unpack .../13-libalut-dev_1.1.0-6build1_amd64.deb ...
+Unpacking libalut-dev (1.1.0-6build1) ...
+Selecting previously unselected package libasound2-dev:amd64.
+Preparing to unpack .../14-libasound2-dev_1.2.11-1ubuntu0.3_amd64.deb ...
+Unpacking libasound2-dev:amd64 (1.2.11-1ubuntu0.3) ...
+Selecting previously unselected package libasyncns0:amd64.
+Preparing to unpack .../15-libasyncns0_0.8-6build4_amd64.deb ...
+Unpacking libasyncns0:amd64 (0.8-6build4) ...
+Selecting previously unselected package libbrotli-dev:amd64.
+Preparing to unpack .../16-libbrotli-dev_1.1.0-2build2_amd64.deb ...
+Unpacking libbrotli-dev:amd64 (1.1.0-2build2) ...
+Selecting previously unselected package libbz2-dev:amd64.
+Preparing to unpack .../17-libbz2-dev_1.0.8-5.1build0.1_amd64.deb ...
+Unpacking libbz2-dev:amd64 (1.0.8-5.1build0.1) ...
+Selecting previously unselected package libdbus-1-dev:amd64.
+Preparing to unpack .../18-libdbus-1-dev_1.14.10-4ubuntu4.1_amd64.deb ...
+Unpacking libdbus-1-dev:amd64 (1.14.10-4ubuntu4.1) ...
+Selecting previously unselected package libdecor-0-0:amd64.
+Preparing to unpack .../19-libdecor-0-0_0.2.2-1build2_amd64.deb ...
+Unpacking libdecor-0-0:amd64 (0.2.2-1build2) ...
+Selecting previously unselected package libwayland-server0:amd64.
+Preparing to unpack .../20-libwayland-server0_1.22.0-2.1build1_amd64.deb ...
+Unpacking libwayland-server0:amd64 (1.22.0-2.1build1) ...
+Selecting previously unselected package libwayland-bin.
+Preparing to unpack .../21-libwayland-bin_1.22.0-2.1build1_amd64.deb ...
+Unpacking libwayland-bin (1.22.0-2.1build1) ...
+Selecting previously unselected package libwayland-dev:amd64.
+Preparing to unpack .../22-libwayland-dev_1.22.0-2.1build1_amd64.deb ...
+Unpacking libwayland-dev:amd64 (1.22.0-2.1build1) ...
+Selecting previously unselected package libdecor-0-dev:amd64.
+Preparing to unpack .../23-libdecor-0-dev_0.2.2-1build2_amd64.deb ...
+Unpacking libdecor-0-dev:amd64 (0.2.2-1build2) ...
+Selecting previously unselected package libdecor-0-plugin-1-gtk:amd64.
+Preparing to unpack .../24-libdecor-0-plugin-1-gtk_0.2.2-1build2_amd64.deb ...
+Unpacking libdecor-0-plugin-1-gtk:amd64 (0.2.2-1build2) ...
+Selecting previously unselected package libdrm-radeon1:amd64.
+Preparing to unpack .../25-libdrm-radeon1_2.4.125-1ubuntu0.1~24.04.2_amd64.deb ...
+Unpacking libdrm-radeon1:amd64 (2.4.125-1ubuntu0.1~24.04.2) ...
+Selecting previously unselected package libdrm-nouveau2:amd64.
+Preparing to unpack .../26-libdrm-nouveau2_2.4.125-1ubuntu0.1~24.04.2_amd64.deb ...
+Unpacking libdrm-nouveau2:amd64 (2.4.125-1ubuntu0.1~24.04.2) ...
+Selecting previously unselected package libpciaccess-dev:amd64.
+Preparing to unpack .../27-libpciaccess-dev_0.17-3ubuntu0.24.04.2_amd64.deb ...
+Unpacking libpciaccess-dev:amd64 (0.17-3ubuntu0.24.04.2) ...
+Selecting previously unselected package libdrm-dev:amd64.
+Preparing to unpack .../28-libdrm-dev_2.4.125-1ubuntu0.1~24.04.2_amd64.deb ...
+Unpacking libdrm-dev:amd64 (2.4.125-1ubuntu0.1~24.04.2) ...
+Selecting previously unselected package libegl-mesa0:amd64.
+Preparing to unpack .../29-libegl-mesa0_25.2.8-0ubuntu0.24.04.2_amd64.deb ...
+Unpacking libegl-mesa0:amd64 (25.2.8-0ubuntu0.24.04.2) ...
+Selecting previously unselected package libegl1:amd64.
+Preparing to unpack .../30-libegl1_1.7.0-1build1_amd64.deb ...
+Unpacking libegl1:amd64 (1.7.0-1build1) ...
+Selecting previously unselected package xorg-sgml-doctools.
+Preparing to unpack .../31-xorg-sgml-doctools_1%3a1.11-1.1_all.deb ...
+Unpacking xorg-sgml-doctools (1:1.11-1.1) ...
+Selecting previously unselected package x11proto-dev.
+Preparing to unpack .../32-x11proto-dev_2023.2-1_all.deb ...
+Unpacking x11proto-dev (2023.2-1) ...
+Selecting previously unselected package libxau-dev:amd64.
+Preparing to unpack .../33-libxau-dev_1%3a1.0.9-1build6_amd64.deb ...
+Unpacking libxau-dev:amd64 (1:1.0.9-1build6) ...
+Selecting previously unselected package libxdmcp-dev:amd64.
+Preparing to unpack .../34-libxdmcp-dev_1%3a1.1.3-0ubuntu6_amd64.deb ...
+Unpacking libxdmcp-dev:amd64 (1:1.1.3-0ubuntu6) ...
+Selecting previously unselected package xtrans-dev.
+Preparing to unpack .../35-xtrans-dev_1.4.0-1_all.deb ...
+Unpacking xtrans-dev (1.4.0-1) ...
+Selecting previously unselected package libpthread-stubs0-dev:amd64.
+Preparing to unpack .../36-libpthread-stubs0-dev_0.4-1build3_amd64.deb ...
+Unpacking libpthread-stubs0-dev:amd64 (0.4-1build3) ...
+Selecting previously unselected package libxcb1-dev:amd64.
+Preparing to unpack .../37-libxcb1-dev_1.15-1ubuntu2_amd64.deb ...
+Unpacking libxcb1-dev:amd64 (1.15-1ubuntu2) ...
+Selecting previously unselected package libx11-dev:amd64.
+Preparing to unpack .../38-libx11-dev_2%3a1.8.7-1build1_amd64.deb ...
+Unpacking libx11-dev:amd64 (2:1.8.7-1build1) ...
+Selecting previously unselected package libglx-dev:amd64.
+Preparing to unpack .../39-libglx-dev_1.7.0-1build1_amd64.deb ...
+Unpacking libglx-dev:amd64 (1.7.0-1build1) ...
+Selecting previously unselected package libgl-dev:amd64.
+Preparing to unpack .../40-libgl-dev_1.7.0-1build1_amd64.deb ...
+Unpacking libgl-dev:amd64 (1.7.0-1build1) ...
+Selecting previously unselected package libegl-dev:amd64.
+Preparing to unpack .../41-libegl-dev_1.7.0-1build1_amd64.deb ...
+Unpacking libegl-dev:amd64 (1.7.0-1build1) ...
+Selecting previously unselected package libflac12t64:amd64.
+Preparing to unpack .../42-libflac12t64_1.4.3+ds-2.1ubuntu2_amd64.deb ...
+Unpacking libflac12t64:amd64 (1.4.3+ds-2.1ubuntu2) ...
+Selecting previously unselected package libpng-dev:amd64.
+Preparing to unpack .../43-libpng-dev_1.6.43-5ubuntu0.6_amd64.deb ...
+Unpacking libpng-dev:amd64 (1.6.43-5ubuntu0.6) ...
+Selecting previously unselected package libfreetype-dev:amd64.
+Preparing to unpack .../44-libfreetype-dev_2.13.2+dfsg-1ubuntu0.1_amd64.deb ...
+Unpacking libfreetype-dev:amd64 (2.13.2+dfsg-1ubuntu0.1) ...
+Selecting previously unselected package libgbm-dev:amd64.
+Preparing to unpack .../45-libgbm-dev_25.2.8-0ubuntu0.24.04.2_amd64.deb ...
+Unpacking libgbm-dev:amd64 (25.2.8-0ubuntu0.24.04.2) ...
+Selecting previously unselected package libgirepository-2.0-0:amd64.
+Preparing to unpack .../46-libgirepository-2.0-0_2.80.0-6ubuntu3.8_amd64.deb ...
+Unpacking libgirepository-2.0-0:amd64 (2.80.0-6ubuntu3.8) ...
+Selecting previously unselected package libgles1:amd64.
+Preparing to unpack .../47-libgles1_1.7.0-1build1_amd64.deb ...
+Unpacking libgles1:amd64 (1.7.0-1build1) ...
+Selecting previously unselected package libgles2:amd64.
+Preparing to unpack .../48-libgles2_1.7.0-1build1_amd64.deb ...
+Unpacking libgles2:amd64 (1.7.0-1build1) ...
+Selecting previously unselected package libgles-dev:amd64.
+Preparing to unpack .../49-libgles-dev_1.7.0-1build1_amd64.deb ...
+Unpacking libgles-dev:amd64 (1.7.0-1build1) ...
+Selecting previously unselected package libglib2.0-dev-bin.
+Preparing to unpack .../50-libglib2.0-dev-bin_2.80.0-6ubuntu3.8_amd64.deb ...
+Unpacking libglib2.0-dev-bin (2.80.0-6ubuntu3.8) ...
+Selecting previously unselected package uuid-dev:amd64.
+Preparing to unpack .../51-uuid-dev_2.39.3-9ubuntu6.5_amd64.deb ...
+Unpacking uuid-dev:amd64 (2.39.3-9ubuntu6.5) ...
+Selecting previously unselected package libblkid-dev:amd64.
+Preparing to unpack .../52-libblkid-dev_2.39.3-9ubuntu6.5_amd64.deb ...
+Unpacking libblkid-dev:amd64 (2.39.3-9ubuntu6.5) ...
+Selecting previously unselected package libsepol-dev:amd64.
+Preparing to unpack .../53-libsepol-dev_3.5-2build1_amd64.deb ...
+Unpacking libsepol-dev:amd64 (3.5-2build1) ...
+Selecting previously unselected package libselinux1-dev:amd64.
+Preparing to unpack .../54-libselinux1-dev_3.5-2ubuntu2.1_amd64.deb ...
+Unpacking libselinux1-dev:amd64 (3.5-2ubuntu2.1) ...
+Selecting previously unselected package libmount-dev:amd64.
+Preparing to unpack .../55-libmount-dev_2.39.3-9ubuntu6.5_amd64.deb ...
+Unpacking libmount-dev:amd64 (2.39.3-9ubuntu6.5) ...
+Selecting previously unselected package libglib2.0-dev:amd64.
+Preparing to unpack .../56-libglib2.0-dev_2.80.0-6ubuntu3.8_amd64.deb ...
+Unpacking libglib2.0-dev:amd64 (2.80.0-6ubuntu3.8) ...
+Selecting previously unselected package libopengl0:amd64.
+Preparing to unpack .../57-libopengl0_1.7.0-1build1_amd64.deb ...
+Unpacking libopengl0:amd64 (1.7.0-1build1) ...
+Selecting previously unselected package libglu1-mesa:amd64.
+Preparing to unpack .../58-libglu1-mesa_9.0.2-1.1build1_amd64.deb ...
+Unpacking libglu1-mesa:amd64 (9.0.2-1.1build1) ...
+Selecting previously unselected package libopengl-dev:amd64.
+Preparing to unpack .../59-libopengl-dev_1.7.0-1build1_amd64.deb ...
+Unpacking libopengl-dev:amd64 (1.7.0-1build1) ...
+Selecting previously unselected package libglu1-mesa-dev:amd64.
+Preparing to unpack .../60-libglu1-mesa-dev_9.0.2-1.1build1_amd64.deb ...
+Unpacking libglu1-mesa-dev:amd64 (9.0.2-1.1build1) ...
+Selecting previously unselected package libibus-1.0-dev:amd64.
+Preparing to unpack .../61-libibus-1.0-dev_1.5.29-2_amd64.deb ...
+Unpacking libibus-1.0-dev:amd64 (1.5.29-2) ...
+Selecting previously unselected package libice-dev:amd64.
+Preparing to unpack .../62-libice-dev_2%3a1.0.10-1build3_amd64.deb ...
+Unpacking libice-dev:amd64 (2:1.0.10-1build3) ...
+Selecting previously unselected package libmp3lame0:amd64.
+Preparing to unpack .../63-libmp3lame0_3.100-6build1_amd64.deb ...
+Unpacking libmp3lame0:amd64 (3.100-6build1) ...
+Selecting previously unselected package libmpg123-0t64:amd64.
+Preparing to unpack .../64-libmpg123-0t64_1.32.5-1ubuntu1.1_amd64.deb ...
+Unpacking libmpg123-0t64:amd64 (1.32.5-1ubuntu1.1) ...
+Selecting previously unselected package libogg-dev:amd64.
+Preparing to unpack .../65-libogg-dev_1.3.5-3build1_amd64.deb ...
+Unpacking libogg-dev:amd64 (1.3.5-3build1) ...
+Selecting previously unselected package libopus0:amd64.
+Preparing to unpack .../66-libopus0_1.4-1build1_amd64.deb ...
+Unpacking libopus0:amd64 (1.4-1build1) ...
+Selecting previously unselected package libpng-tools.
+Preparing to unpack .../67-libpng-tools_1.6.43-5ubuntu0.6_amd64.deb ...
+Unpacking libpng-tools (1.6.43-5ubuntu0.6) ...
+Selecting previously unselected package libvorbisenc2:amd64.
+Preparing to unpack .../68-libvorbisenc2_1.3.7-1build3_amd64.deb ...
+Unpacking libvorbisenc2:amd64 (1.3.7-1build3) ...
+Selecting previously unselected package libsndfile1:amd64.
+Preparing to unpack .../69-libsndfile1_1.2.2-1ubuntu5.24.04.1_amd64.deb ...
+Unpacking libsndfile1:amd64 (1.2.2-1ubuntu5.24.04.1) ...
+Selecting previously unselected package libpulse0:amd64.
+Preparing to unpack .../70-libpulse0_1%3a16.1+dfsg1-2ubuntu10.1_amd64.deb ...
+Unpacking libpulse0:amd64 (1:16.1+dfsg1-2ubuntu10.1) ...
+Selecting previously unselected package libpulse-mainloop-glib0:amd64.
+Preparing to unpack .../71-libpulse-mainloop-glib0_1%3a16.1+dfsg1-2ubuntu10.1_amd64.deb ...
+Unpacking libpulse-mainloop-glib0:amd64 (1:16.1+dfsg1-2ubuntu10.1) ...
+Selecting previously unselected package libpulse-dev:amd64.
+Preparing to unpack .../72-libpulse-dev_1%3a16.1+dfsg1-2ubuntu10.1_amd64.deb ...
+Unpacking libpulse-dev:amd64 (1:16.1+dfsg1-2ubuntu10.1) ...
+Selecting previously unselected package libsamplerate0:amd64.
+Preparing to unpack .../73-libsamplerate0_0.2.2-4build1_amd64.deb ...
+Unpacking libsamplerate0:amd64 (0.2.2-4build1) ...
+Selecting previously unselected package libsamplerate0-dev:amd64.
+Preparing to unpack .../74-libsamplerate0-dev_0.2.2-4build1_amd64.deb ...
+Unpacking libsamplerate0-dev:amd64 (0.2.2-4build1) ...
+Selecting previously unselected package libsdl2-2.0-0:amd64.
+Preparing to unpack .../75-libsdl2-2.0-0_2.30.0+dfsg-1ubuntu3.1_amd64.deb ...
+Unpacking libsdl2-2.0-0:amd64 (2.30.0+dfsg-1ubuntu3.1) ...
+Selecting previously unselected package libsndio-dev:amd64.
+Preparing to unpack .../76-libsndio-dev_1.9.0-0.3build3_amd64.deb ...
+Unpacking libsndio-dev:amd64 (1.9.0-0.3build3) ...
+Selecting previously unselected package libudev-dev:amd64.
+Preparing to unpack .../77-libudev-dev_255.4-1ubuntu8.17_amd64.deb ...
+Unpacking libudev-dev:amd64 (255.4-1ubuntu8.17) ...
+Selecting previously unselected package libxrender-dev:amd64.
+Preparing to unpack .../78-libxrender-dev_1%3a0.9.10-1.1build1_amd64.deb ...
+Unpacking libxrender-dev:amd64 (1:0.9.10-1.1build1) ...
+Selecting previously unselected package libxfixes-dev:amd64.
+Preparing to unpack .../79-libxfixes-dev_1%3a6.0.0-2build1_amd64.deb ...
+Unpacking libxfixes-dev:amd64 (1:6.0.0-2build1) ...
+Selecting previously unselected package libxcursor-dev:amd64.
+Preparing to unpack .../80-libxcursor-dev_1%3a1.2.1-1build1_amd64.deb ...
+Unpacking libxcursor-dev:amd64 (1:1.2.1-1build1) ...
+Selecting previously unselected package libxext-dev:amd64.
+Preparing to unpack .../81-libxext-dev_2%3a1.3.4-1build2_amd64.deb ...
+Unpacking libxext-dev:amd64 (2:1.3.4-1build2) ...
+Selecting previously unselected package libxi-dev:amd64.
+Preparing to unpack .../82-libxi-dev_2%3a1.8.1-1build1_amd64.deb ...
+Unpacking libxi-dev:amd64 (2:1.8.1-1build1) ...
+Selecting previously unselected package libxinerama-dev:amd64.
+Preparing to unpack .../83-libxinerama-dev_2%3a1.1.4-3build1_amd64.deb ...
+Unpacking libxinerama-dev:amd64 (2:1.1.4-3build1) ...
+Selecting previously unselected package libxkbcommon-dev:amd64.
+Preparing to unpack .../84-libxkbcommon-dev_1.6.0-1build1_amd64.deb ...
+Unpacking libxkbcommon-dev:amd64 (1.6.0-1build1) ...
+Selecting previously unselected package libxrandr-dev:amd64.
+Preparing to unpack .../85-libxrandr-dev_2%3a1.5.2-2build1_amd64.deb ...
+Unpacking libxrandr-dev:amd64 (2:1.5.2-2build1) ...
+Selecting previously unselected package libxss-dev:amd64.
+Preparing to unpack .../86-libxss-dev_1%3a1.2.3-1build3_amd64.deb ...
+Unpacking libxss-dev:amd64 (1:1.2.3-1build3) ...
+Selecting previously unselected package libsm-dev:amd64.
+Preparing to unpack .../87-libsm-dev_2%3a1.2.3-1build3_amd64.deb ...
+Unpacking libsm-dev:amd64 (2:1.2.3-1build3) ...
+Selecting previously unselected package libxt-dev:amd64.
+Preparing to unpack .../88-libxt-dev_1%3a1.2.1-1.2build1_amd64.deb ...
+Unpacking libxt-dev:amd64 (1:1.2.1-1.2build1) ...
+Selecting previously unselected package libxv1:amd64.
+Preparing to unpack .../89-libxv1_2%3a1.0.11-1.1build1_amd64.deb ...
+Unpacking libxv1:amd64 (2:1.0.11-1.1build1) ...
+Selecting previously unselected package libxv-dev:amd64.
+Preparing to unpack .../90-libxv-dev_2%3a1.0.11-1.1build1_amd64.deb ...
+Unpacking libxv-dev:amd64 (2:1.0.11-1.1build1) ...
+Selecting previously unselected package libxxf86vm-dev:amd64.
+Preparing to unpack .../91-libxxf86vm-dev_1%3a1.1.4-1build4_amd64.deb ...
+Unpacking libxxf86vm-dev:amd64 (1:1.1.4-1build4) ...
+Selecting previously unselected package libsdl2-dev:amd64.
+Preparing to unpack .../92-libsdl2-dev_2.30.0+dfsg-1ubuntu3.1_amd64.deb ...
+Unpacking libsdl2-dev:amd64 (2.30.0+dfsg-1ubuntu3.1) ...
+Selecting previously unselected package libvorbis-dev:amd64.
+Preparing to unpack .../93-libvorbis-dev_1.3.7-1build3_amd64.deb ...
+Unpacking libvorbis-dev:amd64 (1.3.7-1build3) ...
+Selecting previously unselected package ninja-build.
+Preparing to unpack .../94-ninja-build_1.11.1-2_amd64.deb ...
+Unpacking ninja-build (1.11.1-2) ...
+Setting up libglib2.0-dev-bin (2.80.0-6ubuntu3.8) ...
+Setting up bzip2-doc (1.0.8-5.1build0.1) ...
+Setting up libwayland-server0:amd64 (1.22.0-2.1build1) ...
+Setting up libdrm-nouveau2:amd64 (2.4.125-1ubuntu0.1~24.04.2) ...
+Setting up libpciaccess-dev:amd64 (0.17-3ubuntu0.24.04.2) ...
+Setting up libpng-tools (1.6.43-5ubuntu0.6) ...
+Setting up libgirepository-2.0-0:amd64 (2.80.0-6ubuntu3.8) ...
+Setting up libdrm-radeon1:amd64 (2.4.125-1ubuntu0.1~24.04.2) ...
+Setting up libxkbcommon-dev:amd64 (1.6.0-1build1) ...
+Setting up libpng-dev:amd64 (1.6.43-5ubuntu0.6) ...
+Setting up libibus-1.0-5:amd64 (1.5.29-2) ...
+Setting up systemd-dev (255.4-1ubuntu8.17) ...
+Setting up libogg-dev:amd64 (1.3.5-3build1) ...
+Setting up libmpg123-0t64:amd64 (1.32.5-1ubuntu1.1) ...
+Setting up libpthread-stubs0-dev:amd64 (0.4-1build3) ...
+Setting up libgbm-dev:amd64 (25.2.8-0ubuntu0.24.04.2) ...
+Setting up libopengl0:amd64 (1.7.0-1build1) ...
+Setting up ninja-build (1.11.1-2) ...
+Setting up xtrans-dev (1.4.0-1) ...
+Setting up libwayland-bin (1.22.0-2.1build1) ...
+Setting up libegl-mesa0:amd64 (25.2.8-0ubuntu0.24.04.2) ...
+Setting up libgles2:amd64 (1.7.0-1build1) ...
+Setting up libdbus-1-dev:amd64 (1.14.10-4ubuntu4.1) ...
+Setting up uuid-dev:amd64 (2.39.3-9ubuntu6.5) ...
+Setting up libgles1:amd64 (1.7.0-1build1) ...
+Setting up libopus0:amd64 (1.4-1build1) ...
+Setting up libxv1:amd64 (2:1.0.11-1.1build1) ...
+Setting up libsystemd-shared:amd64 (255.4-1ubuntu8.17) ...
+Setting up libjsoncpp25:amd64 (1.9.5-6build1) ...
+Setting up libudev-dev:amd64 (255.4-1ubuntu8.17) ...
+Setting up libsepol-dev:amd64 (3.5-2build1) ...
+Setting up libsndio7.0:amd64 (1.9.0-0.3build3) ...
+Setting up libasyncns0:amd64 (0.8-6build4) ...
+Setting up librhash0:amd64 (1.4.3-3build1) ...
+Setting up libegl1:amd64 (1.7.0-1build1) ...
+Setting up libdecor-0-0:amd64 (0.2.2-1build2) ...
+Setting up build-essential (12.10ubuntu1) ...
+Setting up libopenal-data (1:1.23.1-4build1) ...
+Setting up xorg-sgml-doctools (1:1.11-1.1) ...
+Setting up cmake-data (3.28.3-1build7) ...
+Setting up libglu1-mesa:amd64 (9.0.2-1.1build1) ...
+Setting up libflac12t64:amd64 (1.4.3+ds-2.1ubuntu2) ...
+Setting up libopengl-dev:amd64 (1.7.0-1build1) ...
+Setting up libasound2-dev:amd64 (1.2.11-1ubuntu0.3) ...
+Setting up libsamplerate0:amd64 (0.2.2-4build1) ...
+Setting up gir1.2-ibus-1.0:amd64 (1.5.29-2) ...
+Setting up libdecor-0-plugin-1-gtk:amd64 (0.2.2-1build2) ...
+Setting up libbrotli-dev:amd64 (1.1.0-2build2) ...
+Setting up libmp3lame0:amd64 (3.100-6build1) ...
+Setting up libvorbisenc2:amd64 (1.3.7-1build3) ...
+Setting up libbz2-dev:amd64 (1.0.8-5.1build0.1) ...
+Setting up libvorbis-dev:amd64 (1.3.7-1build3) ...
+Setting up libblkid-dev:amd64 (2.39.3-9ubuntu6.5) ...
+Setting up libdrm-dev:amd64 (2.4.125-1ubuntu0.1~24.04.2) ...
+Setting up libsndio-dev:amd64 (1.9.0-0.3build3) ...
+Setting up libselinux1-dev:amd64 (3.5-2ubuntu2.1) ...
+Setting up libsamplerate0-dev:amd64 (0.2.2-4build1) ...
+Setting up systemd (255.4-1ubuntu8.17) ...
+Setting up libopenal1:amd64 (1:1.23.1-4build1) ...
+Setting up libwayland-dev:amd64 (1.22.0-2.1build1) ...
+Setting up libfreetype-dev:amd64 (2.13.2+dfsg-1ubuntu0.1) ...
+Setting up libdecor-0-dev:amd64 (0.2.2-1build2) ...
+Setting up udev (255.4-1ubuntu8.17) ...
+Setting up libalut0:amd64 (1.1.0-6build1) ...
+Setting up cmake (3.28.3-1build7) ...
+Setting up libsndfile1:amd64 (1.2.2-1ubuntu5.24.04.1) ...
+Setting up libmount-dev:amd64 (2.39.3-9ubuntu6.5) ...
+Setting up systemd-resolved (255.4-1ubuntu8.17) ...
+Setting up systemd-sysv (255.4-1ubuntu8.17) ...
+Setting up libpulse0:amd64 (1:16.1+dfsg1-2ubuntu10.1) ...
+Setting up systemd-coredump (255.4-1ubuntu8.17) ...
+Setting up libopenal-dev:amd64 (1:1.23.1-4build1) ...
+Setting up libnss-systemd:amd64 (255.4-1ubuntu8.17) ...
+Setting up libglib2.0-dev:amd64 (2.80.0-6ubuntu3.8) ...
+Setting up libpulse-mainloop-glib0:amd64 (1:16.1+dfsg1-2ubuntu10.1) ...
+Setting up libpam-systemd:amd64 (255.4-1ubuntu8.17) ...
+Setting up libsdl2-2.0-0:amd64 (2.30.0+dfsg-1ubuntu3.1) ...
+Setting up libalut-dev (1.1.0-6build1) ...
+Processing triggers for initramfs-tools (0.142ubuntu25.8) ...
+update-initramfs: Generating /boot/initrd.img-6.17.0-1020-azure
+Processing triggers for libc-bin (2.39-0ubuntu8.7) ...
+Processing triggers for man-db (2.12.0-4build2) ...
+Not building database; man-db/auto-update is not 'true'.
+Processing triggers for libglib2.0-0t64:amd64 (2.80.0-6ubuntu3.8) ...
+Processing triggers for dbus (1.14.10-4ubuntu4.1) ...
+Setting up libpulse-dev:amd64 (1:16.1+dfsg1-2ubuntu10.1) ...
+Processing triggers for sgml-base (1.31) ...
+Processing triggers for install-info (7.1-3build2) ...
+Setting up x11proto-dev (2023.2-1) ...
+Setting up libxau-dev:amd64 (1:1.0.9-1build6) ...
+Setting up libice-dev:amd64 (2:1.0.10-1build3) ...
+Setting up libsm-dev:amd64 (2:1.2.3-1build3) ...
+Setting up libibus-1.0-dev:amd64 (1.5.29-2) ...
+Setting up libxdmcp-dev:amd64 (1:1.1.3-0ubuntu6) ...
+Setting up libxcb1-dev:amd64 (1.15-1ubuntu2) ...
+Setting up libx11-dev:amd64 (2:1.8.7-1build1) ...
+Setting up libxfixes-dev:amd64 (1:6.0.0-2build1) ...
+Setting up libxt-dev:amd64 (1:1.2.1-1.2build1) ...
+Setting up libxext-dev:amd64 (2:1.3.4-1build2) ...
+Setting up libglx-dev:amd64 (1.7.0-1build1) ...
+Setting up libxi-dev:amd64 (2:1.8.1-1build1) ...
+Setting up libxrender-dev:amd64 (1:0.9.10-1.1build1) ...
+Setting up libgl-dev:amd64 (1.7.0-1build1) ...
+Setting up libegl-dev:amd64 (1.7.0-1build1) ...
+Setting up libxcursor-dev:amd64 (1:1.2.1-1build1) ...
+Setting up libxxf86vm-dev:amd64 (1:1.1.4-1build4) ...
+Setting up libxss-dev:amd64 (1:1.2.3-1build3) ...
+Setting up libxv-dev:amd64 (2:1.0.11-1.1build1) ...
+Setting up libxrandr-dev:amd64 (2:1.5.2-2build1) ...
+Setting up libglu1-mesa-dev:amd64 (9.0.2-1.1build1) ...
+Setting up libxinerama-dev:amd64 (2:1.1.4-3build1) ...
+Setting up libgles-dev:amd64 (1.7.0-1build1) ...
+Setting up libsdl2-dev:amd64 (2.30.0+dfsg-1ubuntu3.1) ...
+
+Running kernel seems to be up-to-date.
+
+Restarting services...
+ systemctl restart multipathd.service packagekit.service php8.3-fpm.service polkit.service rsyslog.service udisks2.service
+
+Service restarts being deferred:
+ systemctl restart ModemManager.service
+ /etc/needrestart/restart.d/dbus.service
+ systemctl restart docker.service
+ systemctl restart networkd-dispatcher.service
+ systemctl restart systemd-logind.service
+ systemctl restart walinuxagent.service
+
+No containers need to be restarted.
+
+User sessions running outdated binaries:
+ runner @ user manager service: systemd[1278]
+
+No VM guests are running outdated hypervisor (qemu) binaries on this host.
+Cloning into '/tmp/native-astromenace'...
+CMake Deprecation Warning at CMakeLists.txt:1 (CMAKE_MINIMUM_REQUIRED):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Found SDL2: /usr/lib/x86_64-linux-gnu/libSDL2main.a;/usr/lib/x86_64-linux-gnu/libSDL2.so
+-- Found OpenGL: /usr/lib/x86_64-linux-gnu/libOpenGL.so
+-- Found OpenAL: /usr/lib/x86_64-linux-gnu/libopenal.so
+-- Found alut: /usr/lib/x86_64-linux-gnu/libalut.so
+-- Found alut headers: /usr/include/AL
+-- Found ogg: /usr/lib/x86_64-linux-gnu/libogg.so
+-- Found ogg headers: /usr/include
+-- Found vorbis: /usr/lib/x86_64-linux-gnu/libvorbis.so
+-- Found vorbisfile: /usr/lib/x86_64-linux-gnu/libvorbisfile.so
+-- Found vorbisfile headers: /usr/include
+-- Found Freetype: /usr/lib/x86_64-linux-gnu/libfreetype.so (found version "2.13.2")
+-- Found freetype2 headers: /usr/include/freetype2
+-- CMAKE_CXX_FLAGS:  -std=c++11 -fno-exceptions -fno-rtti -Wnon-virtual-dtor -Wshadow -Winit-self -Wcast-align -Winline -Wunreachable-code -Wmissing-include-dirs -Wmain -Wextra -Wall -Weffc++ -Wno-attributes -Wzero-as-null-pointer-constant
+Game data dir: /tmp/native-astromenace/gamedata/
+-- Configuring done (2.1s)
+-- Generating done (0.0s)
+-- Build files have been written to: /tmp/native-build
+[1/117] Building CXX object CMakeFiles/astromenace.dir/src/command.cpp.o
+[2/117] Building CXX object CMakeFiles/astromenace.dir/src/assets/shader.cpp.o
+[3/117] Building CXX object CMakeFiles/astromenace.dir/src/core/audio/audio.cpp.o
+[4/117] Building CXX object CMakeFiles/astromenace.dir/src/assets/loading.cpp.o
+[5/117] Building CXX object CMakeFiles/astromenace.dir/src/assets/audio.cpp.o
+[6/117] Building CXX object CMakeFiles/astromenace.dir/src/assets/model3d.cpp.o
+[7/117] Building CXX object CMakeFiles/astromenace.dir/src/assets/texture.cpp.o
+[8/117] Building CXX object CMakeFiles/astromenace.dir/src/core/audio/openal.cpp.o
+[9/117] Building CXX object CMakeFiles/astromenace.dir/src/core/camera/camera.cpp.o
+[10/117] Building CXX object CMakeFiles/astromenace.dir/src/core/audio/buffer.cpp.o
+[11/117] Building CXX object CMakeFiles/astromenace.dir/src/core/audio/music.cpp.o
+[12/117] Building CXX object CMakeFiles/astromenace.dir/src/core/camera/camera_math.cpp.o
+[13/117] Building CXX object CMakeFiles/astromenace.dir/src/config/config.cpp.o
+[14/117] Building CXX object CMakeFiles/astromenace.dir/src/core/collision_detection/collision_detection.cpp.o
+[15/117] Building CXX object CMakeFiles/astromenace.dir/src/core/audio/sound.cpp.o
+[16/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_draw2d.cpp.o
+[17/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_draw3d.cpp.o
+[18/117] Building CXX object CMakeFiles/astromenace.dir/src/core/font/font.cpp.o
+[19/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_fbo.cpp.o
+[20/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_matrix.cpp.o
+[21/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_texture.cpp.o
+[22/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/extensions.cpp.o
+[23/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_light.cpp.o
+[24/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_glsl.cpp.o
+[25/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_vbo.cpp.o
+[26/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_vao.cpp.o
+[27/117] Building CXX object CMakeFiles/astromenace.dir/src/core/math/math.cpp.o
+[28/117] Building CXX object CMakeFiles/astromenace.dir/src/core/math/matrix44.cpp.o
+[29/117] Building CXX object CMakeFiles/astromenace.dir/src/core/light/light.cpp.o
+[30/117] Building CXX object CMakeFiles/astromenace.dir/src/core/math/matrix33.cpp.o
+[31/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/gl_main.cpp.o
+[32/117] Building CXX object CMakeFiles/astromenace.dir/src/core/graphics/misc.cpp.o
+[33/117] Building CXX object CMakeFiles/astromenace.dir/src/core/math/rand.cpp.o
+[34/117] Building CXX object CMakeFiles/astromenace.dir/src/core/particle_system2d/particle_system2d.cpp.o
+[35/117] Building CXX object CMakeFiles/astromenace.dir/src/core/platform/mouse.cpp.o
+[36/117] Building CXX object CMakeFiles/astromenace.dir/src/core/platform/open_url.cpp.o
+[37/117] Building CXX object CMakeFiles/astromenace.dir/src/core/particle_system/particle_system.cpp.o
+[38/117] Building CXX object CMakeFiles/astromenace.dir/src/core/model3d/model3d.cpp.o
+[39/117] Building CXX object CMakeFiles/astromenace.dir/src/core/texture/texture.cpp.o
+[40/117] Building CXX object CMakeFiles/astromenace.dir/src/core/texture/texture_tga.cpp.o
+[41/117] Building CXX object CMakeFiles/astromenace.dir/src/core/text/text.cpp.o
+[42/117] Building CXX object CMakeFiles/astromenace.dir/src/core/platform/keyboard.cpp.o
+[43/117] Building CXX object CMakeFiles/astromenace.dir/src/core/time_thread/time_thread.cpp.o
+[44/117] Building CXX object CMakeFiles/astromenace.dir/src/core/vfs/vfs.cpp.o
+[45/117] Building CXX object CMakeFiles/astromenace.dir/src/game/camera.cpp.o
+[46/117] Building CXX object CMakeFiles/astromenace.dir/src/core/xml/xml.cpp.o
+[47/117] Building CXX object CMakeFiles/astromenace.dir/src/gfx/skybox.cpp.o
+[48/117] Building CXX object CMakeFiles/astromenace.dir/src/gfx/shadow_map.cpp.o
+[49/117] Building CXX object CMakeFiles/astromenace.dir/src/game/hud.cpp.o
+[50/117] Building CXX object CMakeFiles/astromenace.dir/src/game/game_player_ship.cpp.o
+[51/117] Building CXX object CMakeFiles/astromenace.dir/src/gfx/star_system.cpp.o
+[52/117] Building CXX object CMakeFiles/astromenace.dir/src/game/game.cpp.o
+[53/117] Building CXX object CMakeFiles/astromenace.dir/src/game/weapon_panel.cpp.o
+[54/117] Building CXX object CMakeFiles/astromenace.dir/src/loop_proc.cpp.o
+[55/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_credits.cpp.o
+[56/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/button.cpp.o
+[57/117] Building CXX object CMakeFiles/astromenace.dir/src/main.cpp.o
+[58/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_difficulty.cpp.o
+[59/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_interface.cpp.o
+[60/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu.cpp.o
+[61/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_conf_control.cpp.o
+[62/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_mission.cpp.o
+[63/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_options_adv.cpp.o
+[64/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_options.cpp.o
+[65/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_workshop.cpp.o
+[66/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_profile.cpp.o
+[67/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_top_scores.cpp.o
+[68/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_workshop_workshop.cpp.o
+[69/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/collision_detection.cpp.o
+[70/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_workshop_shipyard.cpp.o
+[71/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/dialog.cpp.o
+[72/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_information.cpp.o
+[73/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/explosion/ground_explosion.cpp.o
+[74/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/ground_object/civilian_building.cpp.o
+[75/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/explosion/explosion.cpp.o
+[76/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/explosion/bullet_explosion.cpp.o
+[77/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/explosion/space_explosion.cpp.o
+[78/117] Building CXX object CMakeFiles/astromenace.dir/src/menu/menu_workshop_weaponry.cpp.o
+[79/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/ground_object/military_building.cpp.o
+[80/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/ground_object/ground_object.cpp.o
+[81/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/ground_object/wheeled.cpp.o
+[82/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/object3_functions.cpp.o
+[83/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/object3d.cpp.o
+[84/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/ground_object/tracked.cpp.o
+[85/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/object3d_manager.cpp.o
+[86/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/object3d_collision.cpp.o
+[87/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_object/big_asteroid.cpp.o
+[88/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/projectile/functions.cpp.o
+[89/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_object/planet.cpp.o
+[90/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_object/planetoids.cpp.o
+[91/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_object/space_debris.cpp.o
+[92/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_object/small_asteroid.cpp.o
+[93/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_object/base_part.cpp.o
+[94/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_object/space_object.cpp.o
+[95/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/projectile/projectile.cpp.o
+[96/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_ship/functions.cpp.o
+[97/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/weapon/functions.cpp.o
+[98/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_ship/earth_space_fighter.cpp.o
+[99/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_ship/alien_space_fighter.cpp.o
+[100/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_ship/pirate_ship.cpp.o
+[101/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_ship/space_ship.cpp.o
+[102/117] Building CXX object CMakeFiles/astromenace.dir/src/platform/mouse.cpp.o
+[103/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/space_ship/alien_space_mothership.cpp.o
+[104/117] Building CXX object CMakeFiles/astromenace.dir/src/platform/joystick.cpp.o
+[105/117] Building CXX object CMakeFiles/astromenace.dir/src/object3d/weapon/weapon.cpp.o
+[106/117] Building CXX object CMakeFiles/astromenace.dir/src/platform/locale.cpp.o
+[107/117] Building CXX object CMakeFiles/astromenace.dir/src/platform/path.cpp.o
+[108/117] Building CXX object CMakeFiles/astromenace.dir/src/script/script.cpp.o
+[109/117] Building CXX object CMakeFiles/astromenace.dir/src/ui/font.cpp.o
+[110/117] Building CXX object CMakeFiles/astromenace.dir/src/ui/cursor.cpp.o
+[111/117] Building CXX object CMakeFiles/astromenace.dir/src/platform/video.cpp.o
+[112/117] Building CXX object CMakeFiles/astromenace.dir/src/ui/fps_counter.cpp.o
+[113/117] Building CXX object CMakeFiles/astromenace.dir/src/utils/fs2vfs.cpp.o
+[114/117] Building CXX object CMakeFiles/astromenace.dir/src/ui/game/stopwatch.cpp.o
+[115/117] Building CXX object CMakeFiles/astromenace.dir/src/ui/game/text.cpp.o
+[116/117] Building CXX object CMakeFiles/astromenace.dir/src/ui/game_speed.cpp.o
+[117/117] Linking CXX executable astromenace
+AstroMenace 1.4.2
+VFS version 221114
+
+Compiled against SDL version 2.30.0
+Linking against SDL version 2.30.0
+VFS file was opened /tmp/native-astromenace/gamedata/models/models.pack
+models/alienmothership/alm-01.vw3d file added to VFS.
+models/alienfighter/al-07.vw3d file added to VFS.
+models/earthfighter/weapon6.vw3d file added to VFS.
+models/earthfighter/weapon5.vw3d file added to VFS.
+models/tracked/tank-06.vw3d file added to VFS.
+models/wheeled/jeep-05.vw3d file added to VFS.
+models/building/bld-05.vw3d file added to VFS.
+models/earthfighter/sf-text06.vw2d file added to VFS.
+models/alienfighter/al-11.vw3d file added to VFS.
+models/gr-02.vw2d file added to VFS.
+models/tracked/apc-03.vw3d file added to VFS.
+models/alienmothership/alm-05.vw3d file added to VFS.
+models/wheeled/apc-02.vw3d file added to VFS.
+models/militarybuilding/aa-gun-02.vw3d file added to VFS.
+models/building/bld-02.vw3d file added to VFS.
+models/alienmothership/alm-06.vw3d file added to VFS.
+models/tracked/apc-aa-02.vw3d file added to VFS.
+models/earthfighter/sf-text04.vw2d file added to VFS.
+models/alienfighter/al-08.vw3d file added to VFS.
+models/alienmothership/alm-text08.vw2d file added to VFS.
+models/alienfighter/al-text04.vw2d file added to VFS.
+models/gr-05.vw2d file added to VFS.
+models/alienfighter/al-02.vw3d file added to VFS.
+models/earthfighter/sf-21.vw3d file added to VFS.
+models/alienmothership/alm-04.vw3d file added to VFS.
+models/earthfighter/sf-text07.vw2d file added to VFS.
+models/alienfighter/al-13.vw3d file added to VFS.
+models/earthfighter/sf-illum03.vw2d file added to VFS.
+models/earthfighter/sf-20.vw3d file added to VFS.
+models/earthfighter/sf-09.vw3d file added to VFS.
+models/pirateship/gunship-03.vw3d file added to VFS.
+models/militarybuilding/aa-gun-04.vw3d file added to VFS.
+models/tracked/tank-07.vw3d file added to VFS.
+models/earthfighter/sf-illum01.vw2d file added to VFS.
+models/earthfighter/sf-06.vw3d file added to VFS.
+models/gr-01.vw2d file added to VFS.
+models/alienfighter/al-14.vw3d file added to VFS.
+models/militarybuilding/artiler-gun-02.vw3d file added to VFS.
+models/gr-06.vw2d file added to VFS.
+models/building/bld-10.vw3d file added to VFS.
+models/earthfighter/weapon3.vw3d file added to VFS.
+models/alienfighter/al-16.vw3d file added to VFS.
+models/earthfighter/sf-text05.vw2d file added to VFS.
+models/building/bld-04.vw3d file added to VFS.
+models/alienfighter/al-12.vw3d file added to VFS.
+models/earthfighter/sf-text08.vw2d file added to VFS.
+models/earthfighter/sf-illum02.vw2d file added to VFS.
+models/alienmothership/alm-text03.vw2d file added to VFS.
+models/militarybuilding/aa-gun-03.vw3d file added to VFS.
+models/earthfighter/weapon15.vw3d file added to VFS.
+models/earthfighter/sf-15.vw3d file added to VFS.
+models/earthfighter/sf-03.vw3d file added to VFS.
+models/tracked/apc-aa-01.vw3d file added to VFS.
+models/earthfighter/weapon7.vw3d file added to VFS.
+models/alienmothership/alm-03.vw3d file added to VFS.
+models/alienfighter/al-03.vw3d file added to VFS.
+models/tracked/tank-10.vw3d file added to VFS.
+models/wheeled/jeep-02.vw3d file added to VFS.
+models/earthfighter/sf-08.vw3d file added to VFS.
+models/pirateship/bomber-05.vw3d file added to VFS.
+models/earthfighter/weapon9.vw3d file added to VFS.
+models/alienfighter/al-06.vw3d file added to VFS.
+models/alienmothership/alm-illum08.vw2d file added to VFS.
+models/tracked/tank-05.vw3d file added to VFS.
+models/earthfighter/weapon1.vw3d file added to VFS.
+models/building/bld-01.vw3d file added to VFS.
+models/earthfighter/weapon4.vw3d file added to VFS.
+models/earthfighter/sf-10.vw3d file added to VFS.
+models/pirateship/bomber-06.vw3d file added to VFS.
+models/earthfighter/weapon8.vw3d file added to VFS.
+models/alienfighter/al-01.vw3d file added to VFS.
+models/alienfighter/al-17.vw3d file added to VFS.
+models/earthfighter/sf-14.vw3d file added to VFS.
+models/alienfighter/al-10.vw3d file added to VFS.
+models/building/bld-09.vw3d file added to VFS.
+models/pirateship/bomber-04.vw3d file added to VFS.
+models/wheeled/jeep-03.vw3d file added to VFS.
+models/earthfighter/sf-16.vw3d file added to VFS.
+models/earthfighter/sf-12.vw3d file added to VFS.
+models/gr-03.vw2d file added to VFS.
+models/alienmothership/alm-07.vw3d file added to VFS.
+models/earthfighter/weapon11.vw3d file added to VFS.
+models/pirateship/gunship-02.vw3d file added to VFS.
+models/earthfighter/weapon12.vw3d file added to VFS.
+models/militarybuilding/artiler-gun-01.vw3d file added to VFS.
+models/earthfighter/sf-18.vw3d file added to VFS.
+models/alienmothership/alm-illum02.vw2d file added to VFS.
+models/alienfighter/al-15.vw3d file added to VFS.
+models/earthfighter/sf-illum04.vw2d file added to VFS.
+models/alienmothership/alm-illum04.vw2d file added to VFS.
+models/building/bld-07.vw3d file added to VFS.
+models/earthfighter/sf-05.vw3d file added to VFS.
+models/alienmothership/alm-text02.vw2d file added to VFS.
+models/tracked/tank-08.vw3d file added to VFS.
+models/alienmothership/alm-text04.vw2d file added to VFS.
+models/earthfighter/weapon2.vw3d file added to VFS.
+models/building/bld.vw2d file added to VFS.
+models/building/bld-03.vw3d file added to VFS.
+models/militarybuilding/aa-gun-01.vw3d file added to VFS.
+models/wheeled/jeep-01.vw3d file added to VFS.
+models/wheeled/r-launcher-01.vw3d file added to VFS.
+models/building/bld-08.vw3d file added to VFS.
+models/pirateship/gunship-01.vw3d file added to VFS.
+models/earthfighter/weapon10.vw3d file added to VFS.
+models/earthfighter/sf-01.vw3d file added to VFS.
+models/gr-07.vw2d file added to VFS.
+models/earthfighter/sf-19.vw3d file added to VFS.
+models/alienfighter/al-05.vw3d file added to VFS.
+models/earthfighter/sf-07.vw3d file added to VFS.
+models/building/bld_illum.vw2d file added to VFS.
+models/alienmothership/alm-02.vw3d file added to VFS.
+models/pirateship/bomber-02.vw3d file added to VFS.
+models/tracked/tank-09.vw3d file added to VFS.
+models/earthfighter/sf-text10.vw2d file added to VFS.
+models/alienfighter/al-09.vw3d file added to VFS.
+models/gr-04.vw2d file added to VFS.
+models/earthfighter/weapon13.vw3d file added to VFS.
+models/earthfighter/sf-04.vw3d file added to VFS.
+models/alienfighter/al-04.vw3d file added to VFS.
+models/tracked/engineering-01.vw3d file added to VFS.
+models/wheeled/apc-04.vw3d file added to VFS.
+models/earthfighter/sf-text00.vw2d file added to VFS.
+models/pirateship/gunship-04.vw3d file added to VFS.
+models/building/bld-06.vw3d file added to VFS.
+models/militarybuilding/aa-gun-05.vw3d file added to VFS.
+models/building/bld-11.vw3d file added to VFS.
+models/pirateship/bomber-03.vw3d file added to VFS.
+models/tracked/tank-01.vw3d file added to VFS.
+models/wheeled/jeep-04.vw3d file added to VFS.
+models/tracked/tank-03.vw3d file added to VFS.
+models/tracked/tank-11.vw3d file added to VFS.
+models/earthfighter/sf-22.vw3d file added to VFS.
+models/earthfighter/weapon14.vw3d file added to VFS.
+models/track.vw2d file added to VFS.
+models/pirateship/bomber-07.vw3d file added to VFS.
+models/alienmothership/alm-08.vw3d file added to VFS.
+models/alienmothership/alm-illum03.vw2d file added to VFS.
+models/earthfighter/sf-text09.vw2d file added to VFS.
+models/earthfighter/sf-13.vw3d file added to VFS.
+models/earthfighter/sf-02.vw3d file added to VFS.
+models/earthfighter/sf-11.vw3d file added to VFS.
+models/tracked/apc-01.vw3d file added to VFS.
+models/alienfighter/al-illum04.vw2d file added to VFS.
+models/earthfighter/sf-17.vw3d file added to VFS.
+All VFS files closed.
+lang/ru/voice/EngineMalfunction.wav file added to VFS.
+lang/ru/voice/WeaponDamaged.wav file added to VFS.
+lang/ru/voice/MissileDetected.wav file added to VFS.
+lang/ru/voice/PrepareForAction.wav file added to VFS.
+lang/ru/voice/Attention.wav file added to VFS.
+lang/ru/voice/WeaponDestroyed.wav file added to VFS.
+lang/ru/voice/WeaponMalfunction.wav file added to VFS.
+lang/ru/voice/PowerSupplyReestablished.wav file added to VFS.
+lang/ru/voice/ReactorMalfunction.wav file added to VFS.
+lang/ru/voice/Warning.wav file added to VFS.
+lang/ru/menu/button_weaponry_in.tga file added to VFS.
+lang/ru/menu/button_weaponry_out.tga file added to VFS.
+lang/ru/game/pause.tga file added to VFS.
+lang/ru/game/mission.tga file added to VFS.
+lang/ru/game/missionfailed.tga file added to VFS.
+loading/loading_back.tga file added to VFS.
+menu/weapon_empty_icon.tga file added to VFS.
+menu/system_engine1.tga file added to VFS.
+menu/system_engine2.tga file added to VFS.
+menu/system_engine3.tga file added to VFS.
+menu/system_engine4.tga file added to VFS.
+menu/system_target1.tga file added to VFS.
+menu/system_target2.tga file added to VFS.
+menu/system_target3.tga file added to VFS.
+menu/system_target4.tga file added to VFS.
+menu/system_power1.tga file added to VFS.
+menu/system_power2.tga file added to VFS.
+menu/system_power3.tga file added to VFS.
+menu/system_power4.tga file added to VFS.
+menu/system_protect1.tga file added to VFS.
+menu/system_protect2.tga file added to VFS.
+menu/system_protect3.tga file added to VFS.
+menu/system_protect4.tga file added to VFS.
+menu/system_mechan1.tga file added to VFS.
+menu/system_mechan2.tga file added to VFS.
+menu/system_mechan3.tga file added to VFS.
+menu/system_mechan4.tga file added to VFS.
+menu/system_empty.tga file added to VFS.
+glsl/light.vert file added to VFS.
+glsl/light.frag file added to VFS.
+glsl/light_shadowmap.vert file added to VFS.
+glsl/light_shadowmap.frag file added to VFS.
+glsl/particle.frag file added to VFS.
+glsl/light_explosion.frag file added to VFS.
+glsl/light_explosion.vert file added to VFS.
+glsl/particle.vert file added to VFS.
+menu/cursor.tga file added to VFS.
+lang/en/voice/EngineMalfunction.wav file added to VFS.
+lang/en/voice/WeaponDamaged.wav file added to VFS.
+lang/en/voice/MissileDetected.wav file added to VFS.
+lang/en/voice/PrepareForAction.wav file added to VFS.
+lang/en/voice/Attention.wav file added to VFS.
+lang/en/voice/WeaponDestroyed.wav file added to VFS.
+lang/en/voice/WeaponMalfunction.wav file added to VFS.
+lang/en/voice/PowerSupplyReestablished.wav file added to VFS.
+lang/en/voice/ReactorMalfunction.wav file added to VFS.
+lang/en/voice/Warning.wav file added to VFS.
+lang/en/menu/button_weaponry_in.tga file added to VFS.
+lang/en/menu/button_weaponry_out.tga file added to VFS.
+lang/en/game/pause.tga file added to VFS.
+lang/en/game/mission.tga file added to VFS.
+lang/en/game/missionfailed.tga file added to VFS.
+sfx/weaponfire12.wav file added to VFS.
+sfx/drag_offslot.wav file added to VFS.
+sfx/menu_click.wav file added to VFS.
+sfx/drag_error.wav file added to VFS.
+sfx/menu_onbutton.wav file added to VFS.
+sfx/weapon1probl.wav file added to VFS.
+sfx/weaponfire3.wav file added to VFS.
+sfx/gausshit.wav file added to VFS.
+sfx/menu_online.wav file added to VFS.
+sfx/weaponfire5.wav file added to VFS.
+sfx/weapon4probl.wav file added to VFS.
+sfx/drag_release.wav file added to VFS.
+sfx/menu_selectline.wav file added to VFS.
+sfx/weaponfire1.wav file added to VFS.
+sfx/weaponfire14.wav file added to VFS.
+sfx/weaponfire13.wav file added to VFS.
+sfx/weaponfire16.wav file added to VFS.
+sfx/weaponfire17.wav file added to VFS.
+sfx/explosion4.wav file added to VFS.
+sfx/weapon3probl.wav file added to VFS.
+sfx/plasmahit.wav file added to VFS.
+sfx/weaponfire19.wav file added to VFS.
+sfx/menu_nclick.wav file added to VFS.
+sfx/drag_onslot.wav file added to VFS.
+sfx/weaponfire10.wav file added to VFS.
+sfx/ionhit.wav file added to VFS.
+sfx/weaponfire6.wav file added to VFS.
+sfx/weaponfire7.wav file added to VFS.
+sfx/weaponfire15.wav file added to VFS.
+sfx/explosion2.wav file added to VFS.
+sfx/weaponfire8.wav file added to VFS.
+sfx/weaponfire2.wav file added to VFS.
+sfx/menu_onbutton2.wav file added to VFS.
+sfx/weaponfire18.wav file added to VFS.
+sfx/menu_new.wav file added to VFS.
+sfx/weaponfire4.wav file added to VFS.
+sfx/antimaterhit.wav file added to VFS.
+sfx/weapon5probl.wav file added to VFS.
+sfx/explosion3.wav file added to VFS.
+sfx/kinetichit.wav file added to VFS.
+sfx/weaponfire9.wav file added to VFS.
+sfx/menu_taping.wav file added to VFS.
+sfx/game_showmenu.wav file added to VFS.
+sfx/game_hidemenu.wav file added to VFS.
+sfx/weaponfire11.wav file added to VFS.
+sfx/weapon2probl.wav file added to VFS.
+sfx/explosion1.wav file added to VFS.
+sfx/lowlife.wav file added to VFS.
+models/mine/mine2i.tga file added to VFS.
+models/mine/mine1.tga file added to VFS.
+models/mine/mine3i.tga file added to VFS.
+models/mine/mine3.tga file added to VFS.
+models/mine/mine-04.vw3d file added to VFS.
+models/mine/mine-01.vw3d file added to VFS.
+models/mine/mine2.tga file added to VFS.
+models/mine/mine-03.vw3d file added to VFS.
+models/mine/mine1i.tga file added to VFS.
+models/mine/mine-02.vw3d file added to VFS.
+models/mine/mine4i.tga file added to VFS.
+models/mine/mine4.tga file added to VFS.
+models/planet/planet5.vw3d file added to VFS.
+models/planet/aplanet.vw3d file added to VFS.
+models/planet/dplanet.vw3d file added to VFS.
+models/planet/m_class7.tga file added to VFS.
+models/planet/a_class4.tga file added to VFS.
+models/planet/d_class3.tga file added to VFS.
+models/planet/planet6.vw3d file added to VFS.
+models/planet/q_class2.tga file added to VFS.
+models/planet/gplanet.vw3d file added to VFS.
+models/planet/moon.vw3d file added to VFS.
+models/planet/clouds.tga file added to VFS.
+models/planet/asteroid.tga file added to VFS.
+models/spacebase/4/1.vw3d file added to VFS.
+models/spacebase/3/1.vw3d file added to VFS.
+models/spacebase/7/1.vw3d file added to VFS.
+models/spacebase/1/2.vw3d file added to VFS.
+models/spacebase/1/4.vw3d file added to VFS.
+models/spacebase/1/3.vw3d file added to VFS.
+models/spacebase/1/1.vw3d file added to VFS.
+models/spacebase/1/5.vw3d file added to VFS.
+models/spacebase/metal.tga file added to VFS.
+models/spacebase/5/1.vw3d file added to VFS.
+models/spacebase/6/2.vw3d file added to VFS.
+models/spacebase/6/4.vw3d file added to VFS.
+models/spacebase/6/3.vw3d file added to VFS.
+models/spacebase/6/1.vw3d file added to VFS.
+models/spacebase/6/5.vw3d file added to VFS.
+models/spacebase/8/2.vw3d file added to VFS.
+models/spacebase/8/4.vw3d file added to VFS.
+models/spacebase/8/3.vw3d file added to VFS.
+models/spacebase/8/1.vw3d file added to VFS.
+models/spacebase/8/5.vw3d file added to VFS.
+models/spacebase/allalpha.tga file added to VFS.
+models/spacebase/2/2.vw3d file added to VFS.
+models/spacebase/2/4.vw3d file added to VFS.
+models/spacebase/2/3.vw3d file added to VFS.
+models/spacebase/2/1.vw3d file added to VFS.
+models/spacebase/2/5.vw3d file added to VFS.
+models/turret/turret-02.vw3d file added to VFS.
+models/turret/turret-01.vw3d file added to VFS.
+models/turret/turrets.tga file added to VFS.
+models/space/asteroid-0118.vw3d file added to VFS.
+models/space/asteroid-0116.vw3d file added to VFS.
+models/space/asteroid-011.vw3d file added to VFS.
+models/space/bigasteroid-03.vw3d file added to VFS.
+models/space/asteroid-018.vw3d file added to VFS.
+models/space/asteroid-017.vw3d file added to VFS.
+models/space/asteroid-016.vw3d file added to VFS.
+models/space/bigasteroid-02.vw3d file added to VFS.
+models/space/bigasteroid-05.vw3d file added to VFS.
+models/space/asteroid-01.tga file added to VFS.
+models/space/asteroid-0110.vw3d file added to VFS.
+models/space/asteroid-0115.vw3d file added to VFS.
+models/space/asteroid-0112.vw3d file added to VFS.
+models/space/asteroid-0117.vw3d file added to VFS.
+models/space/asteroid-012.vw3d file added to VFS.
+models/space/asteroid-019.vw3d file added to VFS.
+models/space/bigasteroid-01.vw3d file added to VFS.
+models/space/asteroid-013.vw3d file added to VFS.
+models/space/asteroid-0119.vw3d file added to VFS.
+models/space/asteroid-0114.vw3d file added to VFS.
+models/space/asteroid-014.vw3d file added to VFS.
+models/space/asteroid-0113.vw3d file added to VFS.
+models/space/asteroid-015.vw3d file added to VFS.
+models/space/bigasteroid-04.vw3d file added to VFS.
+models/space/asteroid-010.vw3d file added to VFS.
+models/space/asteroid-0111.vw3d file added to VFS.
+models/earthfighter/lnch1.vw3d file added to VFS.
+models/earthfighter/lnch2.vw3d file added to VFS.
+models/earthfighter/lnch3.vw3d file added to VFS.
+models/earthfighter/lnch4.vw3d file added to VFS.
+models/earthfighter/rockets.tga file added to VFS.
+models/earthfighter/torpedo.vw3d file added to VFS.
+models/earthfighter/swarm.vw3d file added to VFS.
+models/earthfighter/lnch34.tga file added to VFS.
+models/earthfighter/missile.vw3d file added to VFS.
+models/earthfighter/nuke.vw3d file added to VFS.
+models/earthfighter/lnch12.tga file added to VFS.
+menu/weapon4_icon.tga file added to VFS.
+menu/ammo.tga file added to VFS.
+menu/weapon17_icon.tga file added to VFS.
+menu/workshop_panel1.tga file added to VFS.
+menu/weapon18_icon.tga file added to VFS.
+menu/weapon14_icon.tga file added to VFS.
+menu/weapon19_icon.tga file added to VFS.
+menu/weapon13_icon.tga file added to VFS.
+menu/panel800_444_back.tga file added to VFS.
+menu/button384_back.tga file added to VFS.
+menu/panel444_333_back.tga file added to VFS.
+menu/weapon2_icon.tga file added to VFS.
+menu/button_dialog128_in.tga file added to VFS.
+menu/weapon6_icon.tga file added to VFS.
+menu/arrow_list_up.tga file added to VFS.
+menu/arrow_list_down.tga file added to VFS.
+menu/workshop_panel5.tga file added to VFS.
+menu/workshop_panel3.tga file added to VFS.
+menu/dialog768_600.tga file added to VFS.
+menu/dialog512_256.tga file added to VFS.
+menu/perc_none.tga file added to VFS.
+menu/weapon5_icon.tga file added to VFS.
+menu/panel444_333_border.tga file added to VFS.
+menu/button_dialog200_out.tga file added to VFS.
+menu/workshop_panel4.tga file added to VFS.
+menu/weapon12_icon.tga file added to VFS.
+menu/whitepoint.tga file added to VFS.
+menu/weapon16_icon.tga file added to VFS.
+menu/weapon11_icon.tga file added to VFS.
+menu/back_spot2.tga file added to VFS.
+menu/button256_off.tga file added to VFS.
+menu/blackpoint.tga file added to VFS.
+menu/checkbox_main.tga file added to VFS.
+menu/button_dialog200_off.tga file added to VFS.
+menu/workshop_panel1+.tga file added to VFS.
+menu/weapon10_icon.tga file added to VFS.
+menu/perc.tga file added to VFS.
+menu/workshop_panel2.tga file added to VFS.
+menu/dialog512_512.tga file added to VFS.
+menu/button_dialog200_in.tga file added to VFS.
+menu/button384_out.tga file added to VFS.
+menu/button384_in.tga file added to VFS.
+menu/weapon15_icon.tga file added to VFS.
+menu/workshop_panel2+.tga file added to VFS.
+menu/line.tga file added to VFS.
+menu/button256_out.tga file added to VFS.
+menu/weapon3_icon.tga file added to VFS.
+menu/button256_in.tga file added to VFS.
+menu/back_spot.tga file added to VFS.
+menu/button256_back.tga file added to VFS.
+menu/weapon_on_icon.tga file added to VFS.
+menu/weapon8_icon.tga file added to VFS.
+menu/astromenace.tga file added to VFS.
+menu/weapon9_icon.tga file added to VFS.
+menu/weapon1_icon.tga file added to VFS.
+menu/checkbox_in.tga file added to VFS.
+menu/weapon7_icon.tga file added to VFS.
+menu/button_dialog128_out.tga file added to VFS.
+menu/button_dialog128_off.tga file added to VFS.
+game/ammo.tga file added to VFS.
+game/weapon_panel_left.tga file added to VFS.
+game/game_panel.tga file added to VFS.
+game/weapon_ammo.tga file added to VFS.
+game/game_panel2.tga file added to VFS.
+game/energy.tga file added to VFS.
+game/nums.tga file added to VFS.
+game/game_num.tga file added to VFS.
+game/weapon_panel_right.tga file added to VFS.
+game/game_panel_el.tga file added to VFS.
+game/weapon_energy.tga file added to VFS.
+gfx/flare2.tga file added to VFS.
+gfx/flare.tga file added to VFS.
+gfx/flare1.tga file added to VFS.
+gfx/flare3.tga file added to VFS.
+loading/viewizardlogo.tga file added to VFS.
+loading/loading03.tga file added to VFS.
+loading/loading_line.tga file added to VFS.
+loading/loading01.tga file added to VFS.
+loading/loading02.tga file added to VFS.
+loading/loading04.tga file added to VFS.
+lang/de/voice/EngineMalfunction.wav file added to VFS.
+lang/de/voice/WeaponDamaged.wav file added to VFS.
+lang/de/voice/MissileDetected.wav file added to VFS.
+lang/de/voice/PrepareForAction.wav file added to VFS.
+lang/de/voice/Attention.wav file added to VFS.
+lang/de/voice/WeaponDestroyed.wav file added to VFS.
+lang/de/voice/WeaponMalfunction.wav file added to VFS.
+lang/de/voice/PowerSupplyReestablished.wav file added to VFS.
+lang/de/voice/ReactorMalfunction.wav file added to VFS.
+lang/de/voice/Warning.wav file added to VFS.
+lang/de/menu/button_weaponry_in.tga file added to VFS.
+lang/de/menu/button_weaponry_out.tga file added to VFS.
+lang/de/game/pause.tga file added to VFS.
+lang/de/game/mission.tga file added to VFS.
+lang/de/game/missionfailed.tga file added to VFS.
+menu/cursor_shadow.tga file added to VFS.
+music/boss-intro.ogg file added to VFS.
+music/menu.ogg file added to VFS.
+music/boss-loop.ogg file added to VFS.
+music/game.ogg file added to VFS.
+music/missionfailed.ogg file added to VFS.
+script/mission6.xml file added to VFS.
+script/list.xml file added to VFS.
+script/mission14.xml file added to VFS.
+script/mission8.xml file added to VFS.
+script/mission9_icon.tga file added to VFS.
+script/mission15_icon.tga file added to VFS.
+script/mission3.xml file added to VFS.
+script/mission7.xml file added to VFS.
+script/mission12.xml file added to VFS.
+script/mission5.xml file added to VFS.
+script/mission1.xml file added to VFS.
+script/mission10_icon.tga file added to VFS.
+script/mission13_icon.tga file added to VFS.
+script/menu3.xml file added to VFS.
+script/mission5_icon.tga file added to VFS.
+script/mission13.xml file added to VFS.
+script/mission14_icon.tga file added to VFS.
+script/mission6_icon.tga file added to VFS.
+script/mission3_icon.tga file added to VFS.
+script/mission11.xml file added to VFS.
+script/mission4.xml file added to VFS.
+script/mission2.xml file added to VFS.
+script/mission11_icon.tga file added to VFS.
+script/mission4_icon.tga file added to VFS.
+script/mission8_icon.tga file added to VFS.
+script/mission7_icon.tga file added to VFS.
+script/aimode.xml file added to VFS.
+script/mission10.xml file added to VFS.
+script/mission2_icon.tga file added to VFS.
+script/mission12_icon.tga file added to VFS.
+script/menu2.xml file added to VFS.
+script/mission15.xml file added to VFS.
+script/mission1_icon.tga file added to VFS.
+script/mission9.xml file added to VFS.
+script/menu1.xml file added to VFS.
+skybox/1/skybox_front5.tga file added to VFS.
+skybox/1/skybox_left2.tga file added to VFS.
+skybox/1/skybox_right1.tga file added to VFS.
+skybox/1/skybox_back6.tga file added to VFS.
+skybox/1/skybox_bottom4.tga file added to VFS.
+skybox/1/skybox_top3.tga file added to VFS.
+skybox/tile_back.tga file added to VFS.
+skybox/tile_stars.tga file added to VFS.
+skybox/2/skybox_front5.tga file added to VFS.
+skybox/2/skybox_left2.tga file added to VFS.
+skybox/2/skybox_right1.tga file added to VFS.
+skybox/2/skybox_back6.tga file added to VFS.
+skybox/2/skybox_bottom4.tga file added to VFS.
+skybox/2/skybox_top3.tga file added to VFS.
+font/LiberationMono-Bold.ttf file added to VFS.
+font/LiberationSans-Bold.ttf file added to VFS.
+font/LiberationSerif-Bold.ttf file added to VFS.
+font/FreeMonoBold.otf file added to VFS.
+font/FreeSansBold.otf file added to VFS.
+font/FreeSerifBold.otf file added to VFS.
+font/LinBiolinum_RB.otf file added to VFS.
+font/LinLibertine_RB.otf file added to VFS.
+lang/text.csv file added to VFS.
+gfx/trail1.tga file added to VFS.
+gfx/trail2.tga file added to VFS.
+gfx/trail3.tga file added to VFS.
+gfx/trail4.tga file added to VFS.
+gfx/trail5.tga file added to VFS.
+models/normalmap/alien_mothership_nm.tga file added to VFS.
+models/normalmap/m_class7_nm.tga file added to VFS.
+models/normalmap/d_class3_nm.tga file added to VFS.
+models/normalmap/a_class4_nm.tga file added to VFS.
+models/normalmap/planet_asteroids_nm.tga file added to VFS.
+models/normalmap/q_class2_nm.tga file added to VFS.
+models/normalmap/bomber_nm.tga file added to VFS.
+models/normalmap/buildings_nm.tga file added to VFS.
+lang/pl/menu/button_weaponry_in.tga file added to VFS.
+lang/pl/menu/button_weaponry_out.tga file added to VFS.
+VFS file was created /tmp/native-build/gamedata.vfs
+TGA files examined: 185
+TGA files RLE-compressed: 178
+TGA bytes before: 57348299
+TGA bytes after: 44240814
+TGA bytes saved: 13107485
+TGA reduction: 22.86%
+Skipped already RLE: 6
+Skipped no saving: 1
+Largest RLE savings:
+      612651      722172 ->     109521  menu/panel444_333_border.tga
+      592250     2182652 ->    1590402  menu/dialog768_600.tga
+      546273     1670812 ->    1124539  menu/panel800_444_back.tga
+      452090      786476 ->     334386  loading/viewizardlogo.tga
+      435262     1572908 ->    1137646  models/planet/m_class7.tga
+      371424      524332 ->     152908  models/planet/asteroid.tga
+      358661     1572908 ->    1214247  models/normalmap/m_class7_nm.tga
+      333989      524332 ->     190343  menu/astromenace.tga
+      317554     1272428 ->     954874  menu/dialog512_512.tga
+      286773     1572908 ->    1286135  loading/loading02.tga
+      281785      786476 ->     504691  skybox/1/skybox_front5.tga
+      251343      356284 ->     104941  game/game_panel2.tga
+      248051      393260 ->     145209  models/normalmap/planet_asteroids_nm.tga
+      234587      786476 ->     551889  skybox/2/skybox_left2.tga
+      233289      723052 ->     489763  menu/dialog512_256.tga
+      231880      786476 ->     554596  skybox/2/skybox_back6.tga
+      229309      786476 ->     557167  skybox/1/skybox_left2.tga
+      225960      786476 ->     560516  models/earthfighter/lnch34.tga
+      222666      786476 ->     563810  skybox/1/skybox_bottom4.tga
+      221367      262188 ->      40821  menu/weapon_empty_icon.tga
+      209262      786476 ->     577214  skybox/1/skybox_back6.tga
+      204880      303148 ->      98268  game/game_panel.tga
+      198238      262188 ->      63950  game/game_panel_el.tga
+      177816      196652 ->      18836  menu/button256_back.tga
+      177790      196652 ->      18862  models/mine/mine3i.tga
+AstroMenace 1.4.2
+VFS version 221114
+
+Compiled against SDL version 2.30.0
+Linking against SDL version 2.30.0
+VFS file was opened /tmp/yandex-gamedata/models/models.pack
+models/alienmothership/alm-01.vw3d file added to VFS.
+models/alienfighter/al-07.vw3d file added to VFS.
+models/earthfighter/weapon6.vw3d file added to VFS.
+models/earthfighter/weapon5.vw3d file added to VFS.
+models/tracked/tank-06.vw3d file added to VFS.
+models/wheeled/jeep-05.vw3d file added to VFS.
+models/building/bld-05.vw3d file added to VFS.
+models/earthfighter/sf-text06.vw2d file added to VFS.
+models/alienfighter/al-11.vw3d file added to VFS.
+models/gr-02.vw2d file added to VFS.
+models/tracked/apc-03.vw3d file added to VFS.
+models/alienmothership/alm-05.vw3d file added to VFS.
+models/wheeled/apc-02.vw3d file added to VFS.
+models/militarybuilding/aa-gun-02.vw3d file added to VFS.
+models/building/bld-02.vw3d file added to VFS.
+models/alienmothership/alm-06.vw3d file added to VFS.
+models/tracked/apc-aa-02.vw3d file added to VFS.
+models/earthfighter/sf-text04.vw2d file added to VFS.
+models/alienfighter/al-08.vw3d file added to VFS.
+models/alienmothership/alm-text08.vw2d file added to VFS.
+models/alienfighter/al-text04.vw2d file added to VFS.
+models/gr-05.vw2d file added to VFS.
+models/alienfighter/al-02.vw3d file added to VFS.
+models/earthfighter/sf-21.vw3d file added to VFS.
+models/alienmothership/alm-04.vw3d file added to VFS.
+models/earthfighter/sf-text07.vw2d file added to VFS.
+models/alienfighter/al-13.vw3d file added to VFS.
+models/earthfighter/sf-illum03.vw2d file added to VFS.
+models/earthfighter/sf-20.vw3d file added to VFS.
+models/earthfighter/sf-09.vw3d file added to VFS.
+models/pirateship/gunship-03.vw3d file added to VFS.
+models/militarybuilding/aa-gun-04.vw3d file added to VFS.
+models/tracked/tank-07.vw3d file added to VFS.
+models/earthfighter/sf-illum01.vw2d file added to VFS.
+models/earthfighter/sf-06.vw3d file added to VFS.
+models/gr-01.vw2d file added to VFS.
+models/alienfighter/al-14.vw3d file added to VFS.
+models/militarybuilding/artiler-gun-02.vw3d file added to VFS.
+models/gr-06.vw2d file added to VFS.
+models/building/bld-10.vw3d file added to VFS.
+models/earthfighter/weapon3.vw3d file added to VFS.
+models/alienfighter/al-16.vw3d file added to VFS.
+models/earthfighter/sf-text05.vw2d file added to VFS.
+models/building/bld-04.vw3d file added to VFS.
+models/alienfighter/al-12.vw3d file added to VFS.
+models/earthfighter/sf-text08.vw2d file added to VFS.
+models/earthfighter/sf-illum02.vw2d file added to VFS.
+models/alienmothership/alm-text03.vw2d file added to VFS.
+models/militarybuilding/aa-gun-03.vw3d file added to VFS.
+models/earthfighter/weapon15.vw3d file added to VFS.
+models/earthfighter/sf-15.vw3d file added to VFS.
+models/earthfighter/sf-03.vw3d file added to VFS.
+models/tracked/apc-aa-01.vw3d file added to VFS.
+models/earthfighter/weapon7.vw3d file added to VFS.
+models/alienmothership/alm-03.vw3d file added to VFS.
+models/alienfighter/al-03.vw3d file added to VFS.
+models/tracked/tank-10.vw3d file added to VFS.
+models/wheeled/jeep-02.vw3d file added to VFS.
+models/earthfighter/sf-08.vw3d file added to VFS.
+models/pirateship/bomber-05.vw3d file added to VFS.
+models/earthfighter/weapon9.vw3d file added to VFS.
+models/alienfighter/al-06.vw3d file added to VFS.
+models/alienmothership/alm-illum08.vw2d file added to VFS.
+models/tracked/tank-05.vw3d file added to VFS.
+models/earthfighter/weapon1.vw3d file added to VFS.
+models/building/bld-01.vw3d file added to VFS.
+models/earthfighter/weapon4.vw3d file added to VFS.
+models/earthfighter/sf-10.vw3d file added to VFS.
+models/pirateship/bomber-06.vw3d file added to VFS.
+models/earthfighter/weapon8.vw3d file added to VFS.
+models/alienfighter/al-01.vw3d file added to VFS.
+models/alienfighter/al-17.vw3d file added to VFS.
+models/earthfighter/sf-14.vw3d file added to VFS.
+models/alienfighter/al-10.vw3d file added to VFS.
+models/building/bld-09.vw3d file added to VFS.
+models/pirateship/bomber-04.vw3d file added to VFS.
+models/wheeled/jeep-03.vw3d file added to VFS.
+models/earthfighter/sf-16.vw3d file added to VFS.
+models/earthfighter/sf-12.vw3d file added to VFS.
+models/gr-03.vw2d file added to VFS.
+models/alienmothership/alm-07.vw3d file added to VFS.
+models/earthfighter/weapon11.vw3d file added to VFS.
+models/pirateship/gunship-02.vw3d file added to VFS.
+models/earthfighter/weapon12.vw3d file added to VFS.
+models/militarybuilding/artiler-gun-01.vw3d file added to VFS.
+models/earthfighter/sf-18.vw3d file added to VFS.
+models/alienmothership/alm-illum02.vw2d file added to VFS.
+models/alienfighter/al-15.vw3d file added to VFS.
+models/earthfighter/sf-illum04.vw2d file added to VFS.
+models/alienmothership/alm-illum04.vw2d file added to VFS.
+models/building/bld-07.vw3d file added to VFS.
+models/earthfighter/sf-05.vw3d file added to VFS.
+models/alienmothership/alm-text02.vw2d file added to VFS.
+models/tracked/tank-08.vw3d file added to VFS.
+models/alienmothership/alm-text04.vw2d file added to VFS.
+models/earthfighter/weapon2.vw3d file added to VFS.
+models/building/bld.vw2d file added to VFS.
+models/building/bld-03.vw3d file added to VFS.
+models/militarybuilding/aa-gun-01.vw3d file added to VFS.
+models/wheeled/jeep-01.vw3d file added to VFS.
+models/wheeled/r-launcher-01.vw3d file added to VFS.
+models/building/bld-08.vw3d file added to VFS.
+models/pirateship/gunship-01.vw3d file added to VFS.
+models/earthfighter/weapon10.vw3d file added to VFS.
+models/earthfighter/sf-01.vw3d file added to VFS.
+models/gr-07.vw2d file added to VFS.
+models/earthfighter/sf-19.vw3d file added to VFS.
+models/alienfighter/al-05.vw3d file added to VFS.
+models/earthfighter/sf-07.vw3d file added to VFS.
+models/building/bld_illum.vw2d file added to VFS.
+models/alienmothership/alm-02.vw3d file added to VFS.
+models/pirateship/bomber-02.vw3d file added to VFS.
+models/tracked/tank-09.vw3d file added to VFS.
+models/earthfighter/sf-text10.vw2d file added to VFS.
+models/alienfighter/al-09.vw3d file added to VFS.
+models/gr-04.vw2d file added to VFS.
+models/earthfighter/weapon13.vw3d file added to VFS.
+models/earthfighter/sf-04.vw3d file added to VFS.
+models/alienfighter/al-04.vw3d file added to VFS.
+models/tracked/engineering-01.vw3d file added to VFS.
+models/wheeled/apc-04.vw3d file added to VFS.
+models/earthfighter/sf-text00.vw2d file added to VFS.
+models/pirateship/gunship-04.vw3d file added to VFS.
+models/building/bld-06.vw3d file added to VFS.
+models/militarybuilding/aa-gun-05.vw3d file added to VFS.
+models/building/bld-11.vw3d file added to VFS.
+models/pirateship/bomber-03.vw3d file added to VFS.
+models/tracked/tank-01.vw3d file added to VFS.
+models/wheeled/jeep-04.vw3d file added to VFS.
+models/tracked/tank-03.vw3d file added to VFS.
+models/tracked/tank-11.vw3d file added to VFS.
+models/earthfighter/sf-22.vw3d file added to VFS.
+models/earthfighter/weapon14.vw3d file added to VFS.
+models/track.vw2d file added to VFS.
+models/pirateship/bomber-07.vw3d file added to VFS.
+models/alienmothership/alm-08.vw3d file added to VFS.
+models/alienmothership/alm-illum03.vw2d file added to VFS.
+models/earthfighter/sf-text09.vw2d file added to VFS.
+models/earthfighter/sf-13.vw3d file added to VFS.
+models/earthfighter/sf-02.vw3d file added to VFS.
+models/earthfighter/sf-11.vw3d file added to VFS.
+models/tracked/apc-01.vw3d file added to VFS.
+models/alienfighter/al-illum04.vw2d file added to VFS.
+models/earthfighter/sf-17.vw3d file added to VFS.
+All VFS files closed.
+lang/ru/voice/EngineMalfunction.wav file added to VFS.
+lang/ru/voice/WeaponDamaged.wav file added to VFS.
+lang/ru/voice/MissileDetected.wav file added to VFS.
+lang/ru/voice/PrepareForAction.wav file added to VFS.
+lang/ru/voice/Attention.wav file added to VFS.
+lang/ru/voice/WeaponDestroyed.wav file added to VFS.
+lang/ru/voice/WeaponMalfunction.wav file added to VFS.
+lang/ru/voice/PowerSupplyReestablished.wav file added to VFS.
+lang/ru/voice/ReactorMalfunction.wav file added to VFS.
+lang/ru/voice/Warning.wav file added to VFS.
+lang/ru/menu/button_weaponry_in.tga file added to VFS.
+lang/ru/menu/button_weaponry_out.tga file added to VFS.
+lang/ru/game/pause.tga file added to VFS.
+lang/ru/game/mission.tga file added to VFS.
+lang/ru/game/missionfailed.tga file added to VFS.
+loading/loading_back.tga file added to VFS.
+menu/weapon_empty_icon.tga file added to VFS.
+menu/system_engine1.tga file added to VFS.
+menu/system_engine2.tga file added to VFS.
+menu/system_engine3.tga file added to VFS.
+menu/system_engine4.tga file added to VFS.
+menu/system_target1.tga file added to VFS.
+menu/system_target2.tga file added to VFS.
+menu/system_target3.tga file added to VFS.
+menu/system_target4.tga file added to VFS.
+menu/system_power1.tga file added to VFS.
+menu/system_power2.tga file added to VFS.
+menu/system_power3.tga file added to VFS.
+menu/system_power4.tga file added to VFS.
+menu/system_protect1.tga file added to VFS.
+menu/system_protect2.tga file added to VFS.
+menu/system_protect3.tga file added to VFS.
+menu/system_protect4.tga file added to VFS.
+menu/system_mechan1.tga file added to VFS.
+menu/system_mechan2.tga file added to VFS.
+menu/system_mechan3.tga file added to VFS.
+menu/system_mechan4.tga file added to VFS.
+menu/system_empty.tga file added to VFS.
+glsl/light.vert file added to VFS.
+glsl/light.frag file added to VFS.
+glsl/light_shadowmap.vert file added to VFS.
+glsl/light_shadowmap.frag file added to VFS.
+glsl/particle.frag file added to VFS.
+glsl/light_explosion.frag file added to VFS.
+glsl/light_explosion.vert file added to VFS.
+glsl/particle.vert file added to VFS.
+menu/cursor.tga file added to VFS.
+lang/en/voice/EngineMalfunction.wav file added to VFS.
+lang/en/voice/WeaponDamaged.wav file added to VFS.
+lang/en/voice/MissileDetected.wav file added to VFS.
+lang/en/voice/PrepareForAction.wav file added to VFS.
+lang/en/voice/Attention.wav file added to VFS.
+lang/en/voice/WeaponDestroyed.wav file added to VFS.
+lang/en/voice/WeaponMalfunction.wav file added to VFS.
+lang/en/voice/PowerSupplyReestablished.wav file added to VFS.
+lang/en/voice/ReactorMalfunction.wav file added to VFS.
+lang/en/voice/Warning.wav file added to VFS.
+lang/en/menu/button_weaponry_in.tga file added to VFS.
+lang/en/menu/button_weaponry_out.tga file added to VFS.
+lang/en/game/pause.tga file added to VFS.
+lang/en/game/mission.tga file added to VFS.
+lang/en/game/missionfailed.tga file added to VFS.
+sfx/weaponfire12.wav file added to VFS.
+sfx/drag_offslot.wav file added to VFS.
+sfx/menu_click.wav file added to VFS.
+sfx/drag_error.wav file added to VFS.
+sfx/menu_onbutton.wav file added to VFS.
+sfx/weapon1probl.wav file added to VFS.
+sfx/weaponfire3.wav file added to VFS.
+sfx/gausshit.wav file added to VFS.
+sfx/menu_online.wav file added to VFS.
+sfx/weaponfire5.wav file added to VFS.
+sfx/weapon4probl.wav file added to VFS.
+sfx/drag_release.wav file added to VFS.
+sfx/menu_selectline.wav file added to VFS.
+sfx/weaponfire1.wav file added to VFS.
+sfx/weaponfire14.wav file added to VFS.
 sfx/weaponfire13.wav file added to VFS.
 sfx/weaponfire16.wav file added to VFS.
 sfx/weaponfire17.wav file added to VFS.
@@ -296,5 +1892,5 @@ models/normalmap/buildings_nm.tga file added to VFS.
 lang/pl/menu/button_weaponry_in.tga file added to VFS.
 lang/pl/menu/button_weaponry_out.tga file added to VFS.
 VFS file was created /tmp/yandex-vfs/gamedata.vfs
-Packed gamedata.vfs: 116020499 bytes
--rw-r--r-- 1 runner runner 111M Aug 11 12:55 /tmp/yandex-vfs/gamedata.vfs
+Packed gamedata.vfs: 102913014 bytes
+-rw-r--r-- 1 runner runner 99M Aug 11 13:07 /tmp/yandex-vfs/gamedata.vfs

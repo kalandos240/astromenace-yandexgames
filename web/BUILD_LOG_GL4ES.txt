@@ -6,7 +6,7 @@ cache:INFO:  - ok
 ports:INFO: retrieving port: freetype from https://github.com/freetype/freetype/archive/VER-2-13-3.zip
 ports:INFO: unpacking port: freetype
 cache:INFO: generating port: sysroot/lib/wasm32-emscripten/lto/libfreetype.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libfreetype.a" for subsequent builds)
-system_libs:INFO: compiled 42 inputs in 4.76s
+system_libs:INFO: compiled 42 inputs in 5.05s
 cache:INFO:  - ok
 ports:INFO: retrieving port: ogg from https://github.com/xiph/ogg/releases/download/v1.3.5/libogg-1.3.5.zip
 ports:INFO: unpacking port: ogg
@@ -16,18 +16,18 @@ cache:INFO:  - ok
 ports:INFO: retrieving port: vorbis from https://github.com/xiph/vorbis/releases/download/v1.3.7/libvorbis-1.3.7.zip
 ports:INFO: unpacking port: vorbis
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libvorbis.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libvorbis.a" for subsequent builds)
-system_libs:INFO: compiled 22 inputs in 1.89s
+system_libs:INFO: compiled 22 inputs in 1.91s
 cache:INFO:  - ok
 ports:INFO: retrieving port: sdl2 from https://github.com/libsdl-org/SDL/archive/release-2.32.10.zip
 ports:INFO: unpacking port: sdl2
 cache:INFO: generating port: sysroot/lib/wasm32-emscripten/lto/libSDL2.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libSDL2.a" for subsequent builds)
-system_libs:INFO: compiled 119 inputs in 9.00s
+system_libs:INFO: compiled 119 inputs in 9.22s
 cache:INFO:  - ok
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libGL-getprocaddr.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libGL-getprocaddr.a" for subsequent builds)
 system_libs:INFO: compiled 4 inputs in 0.21s
 cache:INFO:  - ok
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libal.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libal.a" for subsequent builds)
-system_libs:INFO: compiled 1 inputs in 0.11s
+system_libs:INFO: compiled 1 inputs in 0.16s
 cache:INFO:  - ok
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libhtml5.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libhtml5.a" for subsequent builds)
 system_libs:INFO: compiled 5 inputs in 0.28s
@@ -39,20 +39,20 @@ cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libnoex
 system_libs:INFO: compiled 1 inputs in 0.11s
 cache:INFO:  - ok
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libc.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libc.a" for subsequent builds)
-system_libs:INFO: compiled 1075 inputs in 7.72s
+system_libs:INFO: compiled 1075 inputs in 8.19s
 cache:INFO:  - ok
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libdlmalloc.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libdlmalloc.a" for subsequent builds)
-system_libs:INFO: compiled 2 inputs in 0.36s
+system_libs:INFO: compiled 2 inputs in 0.40s
 cache:INFO:  - ok
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libclang_rt.builtins.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libclang_rt.builtins.a" for subsequent builds)
-system_libs:INFO: compiled 184 inputs in 1.79s
+system_libs:INFO: compiled 184 inputs in 1.85s
 cache:INFO:  - ok
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libc++-noexcept.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libc++-noexcept.a" for subsequent builds)
-system_libs:INFO: compiled 57 inputs in 15.85s
+system_libs:INFO: compiled 57 inputs in 15.88s
 cache:INFO:  - ok
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libc++abi-noexcept.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libc++abi-noexcept.a" for subsequent builds)
-system_libs:INFO: compiled 17 inputs in 2.21s
+system_libs:INFO: compiled 17 inputs in 2.24s
 cache:INFO:  - ok
 cache:INFO: generating system library: sysroot/lib/wasm32-emscripten/lto/libsockets.a... (this will be cached in "/tmp/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/lto/libsockets.a" for subsequent builds)
-system_libs:INFO: compiled 27 inputs in 0.57s
+system_libs:INFO: compiled 27 inputs in 0.59s
 cache:INFO:  - ok
