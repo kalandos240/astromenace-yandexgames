@@ -19,7 +19,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: astromenace-web-gl4es-build-v6
+  group: astromenace-web-gl4es-build-v7
   cancel-in-progress: true
 
 jobs:
@@ -269,9 +269,11 @@ jobs:
               raise SystemExit('Inline <style> block found in generated index.html')
           if re.search(r'\son[a-z]+\s*=', html, re.I):
               raise SystemExit('Inline event handler found in generated index.html')
-          for match in re.finditer(r'<script\b([^>]*)>', html, re.I):
-              if not re.search(r'\bsrc\s*=', match.group(1), re.I):
-                  raise SystemExit('Inline <script> block found in generated index.html')
+          scripts = re.findall(r'<script\b([^>]*)>', html, re.I)
+          if not scripts:
+              raise SystemExit('Generated index.html contains no runtime script tag')
+          if any(not re.search(r'\bsrc\s*=', attrs, re.I) for attrs in scripts):
+              raise SystemExit('Inline <script> block found in generated index.html')
           print('CSP shell audit: PASS')
           PY
 
