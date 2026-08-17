@@ -1,0 +1,82 @@
+name: Package Playgama build
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'playgama/**'
+      - '.github/workflows/package-playgama.yml'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download latest verified AstroMenace offline artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          artifact_id="$(curl -fsSL \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts?per_page=100" \
+            | jq -r '.artifacts[] | select(.name == "astromenace-yandexgames-fast-offline" and .expired == false) | .id' \
+            | head -n 1)"
+          test -n "${artifact_id}"
+          curl -fL --retry 3 \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" \
+            -o /tmp/astromenace-artifact.zip
+          rm -rf dist-playgama
+          mkdir dist-playgama
+          unzip -q /tmp/astromenace-artifact.zip -d dist-playgama
+          test -s dist-playgama/index.html
+          test -s dist-playgama/index.js
+          test -s dist-playgama/gamedata.js
+
+      - name: Install Playgama Bridge integration
+        run: |
+          set -euo pipefail
+          python3 playgama/package_playgama.py dist-playgama \
+            --adapter playgama/playgama-yandex-compat.js \
+            --config playgama/playgama-bridge-config.json
+
+      - name: Validate Playgama package
+        run: |
+          set -euo pipefail
+          grep -q 'https://bridge.playgama.com/v1/stable/playgama-bridge.js' dist-playgama/index.html
+          grep -q 'playgama-yandex-compat.js' dist-playgama/index.html
+          if grep -Eq '<script[^>]+src="?/sdk\.js' dist-playgama/index.html; then exit 1; fi
+          grep -a -q 'astromenaceSave' dist-playgama/index.js
+          grep -a -q 'getPlayer' dist-playgama/index.js
+          grep -a -q 'getData' dist-playgama/index.js
+          grep -a -q 'setData' dist-playgama/index.js
+          grep -a -q 'showFullscreenAdv' dist-playgama/index.js
+          node --check dist-playgama/playgama-yandex-compat.js
+          python3 -m json.tool dist-playgama/playgama-bridge-config.json >/dev/null
+          unpacked_bytes="$(du -sb dist-playgama | cut -f1)"
+          echo "Unpacked Playgama bytes: ${unpacked_bytes}"
+          test "${unpacked_bytes}" -lt 300000000
+
+      - name: Create Playgama ZIP
+        run: |
+          set -euo pipefail
+          (cd dist-playgama && zip -9 -X -r ../astromenace-playgama.zip .)
+          unzip -t astromenace-playgama.zip
+          ls -lh astromenace-playgama.zip
+
+      - name: Upload Playgama build
+        uses: actions/upload-artifact@v4
+        with:
+          name: astromenace-playgama
+          path: astromenace-playgama.zip
+          if-no-files-found: error
+          retention-days: 90
