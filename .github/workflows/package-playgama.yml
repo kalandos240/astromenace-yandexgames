@@ -1,4 +1,4 @@
-name: Package Playgama build
+name: Package Playgama v2 build
 
 on:
   workflow_dispatch:
@@ -14,69 +14,105 @@ permissions:
 jobs:
   package:
     runs-on: ubuntu-latest
+    env:
+      PINNED_ARTIFACT_ID: '9119584924'
+      PINNED_ARTIFACT_SHA256: '59625416555b481c0a779280ee51e622c2b4a8ba9bc84f6838238f7b26b49782'
+      PINNED_INDEX_JS_SHA256: '37a851b7b5462170e1ec7d77869146a2a07d19ab260c9e1fcd42ecbdccc34bf0'
+      PINNED_GAMEDATA_JS_SHA256: '1f14f374b60489722789f478c3dd6bc8009171893125e2127363bc64c34aa58e'
+
     steps:
-      - name: Checkout repository
+      - name: Checkout Playgama packaging files
         uses: actions/checkout@v4
 
-      - name: Download latest verified AstroMenace offline artifact
+      - name: Download pinned verified AstroMenace runtime
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          artifact_id="$(curl -fsSL \
+          curl -fL --retry 3 --retry-all-errors \
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts?per_page=100" \
-            | jq -r '.artifacts[] | select(.name == "astromenace-yandexgames-fast-offline" and .expired == false) | .id' \
-            | head -n 1)"
-          test -n "${artifact_id}"
-          curl -fL --retry 3 \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" \
-            -o /tmp/astromenace-artifact.zip
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${PINNED_ARTIFACT_ID}/zip" \
+            -o /tmp/astromenace-pinned.zip
+          echo "${PINNED_ARTIFACT_SHA256}  /tmp/astromenace-pinned.zip" | sha256sum -c -
+
           rm -rf dist-playgama
           mkdir dist-playgama
-          unzip -q /tmp/astromenace-artifact.zip -d dist-playgama
+          unzip -q /tmp/astromenace-pinned.zip -d dist-playgama
+
           test -s dist-playgama/index.html
           test -s dist-playgama/index.js
           test -s dist-playgama/gamedata.js
+          test -s dist-playgama/astromenace.css
+          echo "${PINNED_INDEX_JS_SHA256}  dist-playgama/index.js" | sha256sum -c -
+          echo "${PINNED_GAMEDATA_JS_SHA256}  dist-playgama/gamedata.js" | sha256sum -c -
 
-      - name: Install Playgama Bridge integration
+      - name: Install Playgama Bridge v2 integration
         run: |
           set -euo pipefail
           python3 playgama/package_playgama.py dist-playgama \
             --adapter playgama/playgama-yandex-compat.js \
             --config playgama/playgama-bridge-config.json
 
-      - name: Validate Playgama package
+      - name: Validate Playgama v2 package
         run: |
           set -euo pipefail
-          grep -q 'https://bridge.playgama.com/v1/stable/playgama-bridge.js' dist-playgama/index.html
+          test -s dist-playgama/index.html
+          test -s dist-playgama/playgama-yandex-compat.js
+          test -s dist-playgama/playgama-bridge-config.json
+          test -s dist-playgama/PLAYGAMA-INTEGRATION.txt
+
+          grep -q 'https://bridge.playgama.com/v2/stable/playgama-bridge.js' dist-playgama/index.html
           grep -q 'playgama-yandex-compat.js' dist-playgama/index.html
+          grep -q 'Playgama Bridge v2' dist-playgama/playgama-yandex-compat.js
+          grep -q 'Playgama full-viewport space background v1' dist-playgama/astromenace.css
+          grep -q 'background-size: cover' dist-playgama/astromenace.css
+
+          if grep -q 'bridge.playgama.com/v1/' dist-playgama/index.html; then exit 1; fi
           if grep -Eq '<script[^>]+src="?/sdk\.js' dist-playgama/index.html; then exit 1; fi
+          if grep -q 'showRewardedVideo' dist-playgama/playgama-yandex-compat.js; then exit 1; fi
+
+          jq -e '.advertisement.interstitial.disable == false' dist-playgama/playgama-bridge-config.json >/dev/null
+          jq -e '.advertisement.rewarded.disable == true' dist-playgama/playgama-bridge-config.json >/dev/null
+          jq -e '.advertisement.banner.disable == true' dist-playgama/playgama-bridge-config.json >/dev/null
+          jq -e '.device.supportedOrientations == ["landscape"]' dist-playgama/playgama-bridge-config.json >/dev/null
+
+          # The Playgama packager must never mutate the already-tested game runtime.
+          echo "${PINNED_INDEX_JS_SHA256}  dist-playgama/index.js" | sha256sum -c -
+          echo "${PINNED_GAMEDATA_JS_SHA256}  dist-playgama/gamedata.js" | sha256sum -c -
+
           grep -a -q 'astromenaceSave' dist-playgama/index.js
           grep -a -q 'getPlayer' dist-playgama/index.js
           grep -a -q 'getData' dist-playgama/index.js
           grep -a -q 'setData' dist-playgama/index.js
           grep -a -q 'showFullscreenAdv' dist-playgama/index.js
+          ! grep -a -q 'showRewardedVideo' dist-playgama/index.js
+
           node --check dist-playgama/playgama-yandex-compat.js
           python3 -m json.tool dist-playgama/playgama-bridge-config.json >/dev/null
+
           unpacked_bytes="$(du -sb dist-playgama | cut -f1)"
+          file_count="$(find dist-playgama -type f | wc -l)"
           echo "Unpacked Playgama bytes: ${unpacked_bytes}"
+          echo "File count: ${file_count}"
           test "${unpacked_bytes}" -lt 300000000
+          test "${file_count}" -lt 500
 
       - name: Create Playgama ZIP
         run: |
           set -euo pipefail
-          (cd dist-playgama && zip -9 -X -r ../astromenace-playgama.zip .)
-          unzip -t astromenace-playgama.zip
-          ls -lh astromenace-playgama.zip
+          (cd dist-playgama && zip -9 -X -r ../astromenace-playgama-v2.zip .)
+          unzip -t astromenace-playgama-v2.zip
+          zipinfo -1 astromenace-playgama-v2.zip | grep -qx 'index.html'
+          zipinfo -1 astromenace-playgama-v2.zip | grep -qx 'index.js'
+          zipinfo -1 astromenace-playgama-v2.zip | grep -qx 'gamedata.js'
+          sha256sum astromenace-playgama-v2.zip
+          ls -lh astromenace-playgama-v2.zip
 
-      - name: Upload Playgama build
+      - name: Upload Playgama v2 build
         uses: actions/upload-artifact@v4
         with:
-          name: astromenace-playgama
-          path: astromenace-playgama.zip
+          name: astromenace-playgama-v2
+          path: astromenace-playgama-v2.zip
           if-no-files-found: error
           retention-days: 90
