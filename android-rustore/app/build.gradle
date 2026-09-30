@@ -9,6 +9,10 @@ def yandexInterstitialAdUnitId =
 
 android {
     namespace 'com.kalandos240.astromenace'
+
+    buildFeatures {
+        resValues = true
+    }
     compileSdk 36
 
     defaultConfig {
