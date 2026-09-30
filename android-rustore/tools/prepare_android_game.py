@@ -260,7 +260,12 @@ globalThis.ASTROMENACE_ANDROID=true;
     if (gameplayBridgeInstalled || !globalThis.Module) return;
     const start = globalThis.Module.yandexGameplayStart;
     const stop = globalThis.Module.yandexGameplayStop;
-    if (typeof start !== "function" || typeof stop !== "function") return;
+    const levelComplete = globalThis.Module.yandexLevelComplete;
+    if (
+      typeof start !== "function" ||
+      typeof stop !== "function" ||
+      typeof levelComplete !== "function"
+    ) return;
 
     globalThis.Module.yandexGameplayStart = function(...args) {
       try { globalThis.AndroidHost?.gameplayControls?.(true); } catch (_) {}
@@ -268,13 +273,16 @@ globalThis.ASTROMENACE_ANDROID=true;
     };
     globalThis.Module.yandexGameplayStop = function(...args) {
       try { globalThis.AndroidHost?.gameplayControls?.(false); } catch (_) {}
-      const result = stop.apply(this, args);
-      try { globalThis.AndroidHost?.requestInterstitial?.("gameplay-stop"); } catch (_) {}
+      return stop.apply(this, args);
+    };
+    globalThis.Module.yandexLevelComplete = async function(...args) {
+      const result = await levelComplete.apply(this, args);
+      try { globalThis.AndroidHost?.requestInterstitial?.("level-complete"); } catch (_) {}
       return result;
     };
     gameplayBridgeInstalled = true;
     try { globalThis.AndroidHost?.gameplayControls?.(false); } catch (_) {}
-    console.info("[Android] gameplay controls bridge installed");
+    console.info("[Android] gameplay/level-complete bridge installed");
   };
   setInterval(installGameplayBridge, 100);
 })();
