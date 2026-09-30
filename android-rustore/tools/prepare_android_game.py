@@ -269,6 +269,27 @@ globalThis.ASTROMENACE_ANDROID=true;
       try { globalThis.AndroidHost?.hideKeyboard?.(); } catch (_) {}
     }
   };
+
+  let gameplayBridgeInstalled = false;
+  const installGameplayBridge = () => {
+    if (gameplayBridgeInstalled || !globalThis.Module) return;
+    const start = globalThis.Module.yandexGameplayStart;
+    const stop = globalThis.Module.yandexGameplayStop;
+    if (typeof start !== "function" || typeof stop !== "function") return;
+
+    globalThis.Module.yandexGameplayStart = function(...args) {
+      try { globalThis.AndroidHost?.gameplayControls?.(true); } catch (_) {}
+      return start.apply(this, args);
+    };
+    globalThis.Module.yandexGameplayStop = function(...args) {
+      try { globalThis.AndroidHost?.gameplayControls?.(false); } catch (_) {}
+      return stop.apply(this, args);
+    };
+    gameplayBridgeInstalled = true;
+    try { globalThis.AndroidHost?.gameplayControls?.(false); } catch (_) {}
+    console.info("[Android] gameplay controls bridge installed");
+  };
+  setInterval(installGameplayBridge, 100);
 })();
 </script>
 '''
