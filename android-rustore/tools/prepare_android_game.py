@@ -225,129 +225,9 @@ globalThis.ASTROMENACE_ANDROID=true;
   const canvas = document.getElementById("canvas");
   if (!canvas) return;
 
-  const keyboardInput = document.createElement("input");
-  keyboardInput.id = "astromenace-mobile-keyboard";
-  keyboardInput.type = "text";
-  keyboardInput.inputMode = "text";
-  keyboardInput.autocomplete = "off";
-  keyboardInput.autocorrect = "off";
-  keyboardInput.autocapitalize = "off";
-  keyboardInput.spellcheck = false;
-  keyboardInput.enterKeyHint = "done";
-  keyboardInput.setAttribute("aria-label", "Pilot name");
-  keyboardInput.style.cssText =
-    "position:fixed;left:2px;bottom:2px;width:2px;height:2px;" +
-    "opacity:.01;border:0;padding:0;margin:0;background:transparent;" +
-    "color:transparent;caret-color:transparent;z-index:2147483647;";
-  document.body.appendChild(keyboardInput);
-
-  let previousValue = "";
-  let openingKeyboard = false;
-
-  const defineNumber = (event, name, value) => {
-    try {
-      Object.defineProperty(event, name, { configurable: true, get: () => value });
-    } catch (_) {}
-  };
-
-  const dispatchKeyboard = (type, key, code, keyCode, charCode = 0) => {
-    const event = new KeyboardEvent(type, {
-      key,
-      code,
-      bubbles: true,
-      cancelable: true,
-      repeat: false
-    });
-    defineNumber(event, "keyCode", keyCode);
-    defineNumber(event, "which", type === "keypress" ? charCode : keyCode);
-    defineNumber(event, "charCode", type === "keypress" ? charCode : 0);
-    canvas.dispatchEvent(event);
-  };
-
-  const emitCharacter = (character) => {
-    const codePoint = character.codePointAt(0) || 0;
-    dispatchKeyboard("keydown", character, "", codePoint, 0);
-    dispatchKeyboard("keypress", character, "", codePoint, codePoint);
-    dispatchKeyboard("keyup", character, "", codePoint, 0);
-    console.info("[AndroidInput] char", character);
-  };
-
-  const emitBackspace = () => {
-    dispatchKeyboard("keydown", "Backspace", "Backspace", 8, 0);
-    dispatchKeyboard("keyup", "Backspace", "Backspace", 8, 0);
-    console.info("[AndroidInput] backspace");
-  };
-
-  const emitEnter = () => {
-    dispatchKeyboard("keydown", "Enter", "Enter", 13, 0);
-    dispatchKeyboard("keyup", "Enter", "Enter", 13, 0);
-    console.info("[AndroidInput] enter");
-  };
-
-  const syncInputValue = () => {
-    const current = keyboardInput.value;
-    let prefix = 0;
-    while (
-      prefix < previousValue.length &&
-      prefix < current.length &&
-      previousValue[prefix] === current[prefix]
-    ) {
-      prefix += 1;
-    }
-
-    let previousSuffix = previousValue.length;
-    let currentSuffix = current.length;
-    while (
-      previousSuffix > prefix &&
-      currentSuffix > prefix &&
-      previousValue[previousSuffix - 1] === current[currentSuffix - 1]
-    ) {
-      previousSuffix -= 1;
-      currentSuffix -= 1;
-    }
-
-    const removed = previousValue.slice(prefix, previousSuffix);
-    const inserted = current.slice(prefix, currentSuffix);
-
-    for (const _ of Array.from(removed)) emitBackspace();
-    for (const character of Array.from(inserted)) emitCharacter(character);
-
-    previousValue = current;
-  };
-
-  keyboardInput.addEventListener("input", syncInputValue);
-
-  for (const type of ["keypress", "keyup"]) {
-    keyboardInput.addEventListener(type, (event) => event.stopPropagation());
-  }
-
-  keyboardInput.addEventListener("keydown", (event) => {
-    event.stopPropagation();
-
-    if (event.key === "Enter") {
-      event.preventDefault();
-      emitEnter();
-      keyboardInput.blur();
-      try { globalThis.AndroidHost?.hideKeyboard?.(); } catch (_) {}
-      return;
-    }
-
-    if (event.key === "Backspace" && keyboardInput.value === previousValue) {
-      // Some Android IMEs produce a key event without an input event at an
-      // already-empty editing buffer. Forward it so the game can still erase.
-      emitBackspace();
-    }
-  });
-
   const showKeyboard = () => {
-    if (openingKeyboard) return;
-    openingKeyboard = true;
-    previousValue = "";
-    keyboardInput.value = "";
-    keyboardInput.focus({ preventScroll: true });
     try { globalThis.AndroidHost?.showKeyboard?.(); } catch (_) {}
-    setTimeout(() => { openingKeyboard = false; }, 250);
-    console.info("[AndroidInput] profile keyboard requested");
+    console.info("[AndroidInput] native profile keyboard requested");
   };
 
   canvas.addEventListener("pointerup", (event) => {
@@ -357,28 +237,23 @@ globalThis.ASTROMENACE_ANDROID=true;
     const normalizedX = (event.clientX - rect.left) / rect.width;
     const normalizedY = (event.clientY - rect.top) / rect.height;
 
-    // New Pilot Profile input is at y ~= 230 in AstroMenace's 768px
-    // virtual menu. Restrict this to a narrow band so ordinary menu
-    // buttons do not summon the keyboard.
     if (
       normalizedX >= 0.18 && normalizedX <= 0.72 &&
       normalizedY >= 0.295 && normalizedY <= 0.345
     ) {
-      setTimeout(showKeyboard, 30);
+      setTimeout(showKeyboard, 20);
     }
   }, true);
 
   globalThis.__astroMobileKeyboard = {
     show: showKeyboard,
     hide: () => {
-      keyboardInput.blur();
       try { globalThis.AndroidHost?.hideKeyboard?.(); } catch (_) {}
     }
   };
 })();
 </script>
 '''
-
 html = index_html.read_text(encoding="utf-8")
 html = html.replace('  <script src="gamedata.js" charset="utf-8"></script>' + chr(10), "")
 html = html.replace(
