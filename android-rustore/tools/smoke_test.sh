@@ -42,35 +42,40 @@ done
 if [ "$menu_visible" = "1" ]; then
   # SwiftShader is much slower than a real phone while AstroMenace finishes
   # first-frame OpenGL/menu setup. Wait for the visible menu before taps.
-  sleep 25
+  sleep 15
 fi
-
-adb exec-out screencap -p > "$OUT/screen-before-input.png" || true
 
 SIZE="$(adb shell wm size | tr -d '\r' | sed -n 's/.*: \([0-9][0-9]*\)x\([0-9][0-9]*\).*/\1 \2/p' | tail -n 1)"
 WIDTH="$(printf '%s' "$SIZE" | awk '{print $1}')"
 HEIGHT="$(printf '%s' "$SIZE" | awk '{print $2}')"
 
+if [ "$menu_visible" = "1" ] && [ -n "${WIDTH:-}" ] && [ -n "${HEIGHT:-}" ]; then
+  # On overloaded CI emulators Pixel Launcher can raise its own ANR dialog
+  # above the foreground game. Tap "Wait" if it is present; on a normal
+  # device this tap is harmless and does not target any AstroMenace button.
+  adb shell input tap "$((WIDTH * 35 / 100))" "$((HEIGHT * 63 / 100))" || true
+  sleep 2
+fi
+
+adb exec-out screencap -p > "$OUT/screen-before-input.png" || true
 adb exec-out screencap -p > "$OUT/screen.png" || true
 
 if [ "$menu_visible" = "1" ] && [ -n "${WIDTH:-}" ] && [ -n "${HEIGHT:-}" ]; then
   # Open Start Game -> profile screen, tap the pilot-name input and exercise
-  # the real Android IME path. Coordinates are normalized against the
-  # edge-to-edge canvas, so this also covers the full-screen mobile layout.
-  adb shell input tap "$((WIDTH * 50 / 100))" "$((HEIGHT * 20 / 100))" || true
-  sleep 4
-  # Fresh profiles show the built-in "tips and tricks" dialog once. Android
-  # Back is mapped to Escape by the app, so dismiss that modal before tapping
-  # the name field.
-  adb shell input keyevent 4 || true
-  sleep 2
+  # the real Android IME path. Start Game is centered around 26% screen height
+  # in the stretched edge-to-edge Android layout.
+  adb shell input tap "$((WIDTH * 50 / 100))" "$((HEIGHT * 26 / 100))" || true
+  sleep 5
   adb exec-out screencap -p > "$OUT/screen-profile-before-keyboard.png" || true
-  adb shell input tap "$((WIDTH * 35 / 100))" "$((HEIGHT * 32 / 100))" || true
-  sleep 1
+
+  # New Pilot Profile text field: internal 1228x768 coordinates roughly
+  # X=242..832, Y=224..254, mapped to the full-screen canvas.
+  adb shell input tap "$((WIDTH * 35 / 100))" "$((HEIGHT * 31 / 100))" || true
+  sleep 2
   adb shell input text MobilePilot || true
   sleep 1
   adb shell input keyevent 66 || true
-  sleep 2
+  sleep 3
   adb logcat -d > "$OUT/logcat-after-input.txt"
 
   if ! grep -q 'AstroMenaceAndroid.*SOFT_KEYBOARD_SHOW' "$OUT/logcat-after-input.txt"; then
