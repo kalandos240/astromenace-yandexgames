@@ -392,6 +392,7 @@ void OptionsMenu(float ContentTransp, float &ButtonTransp1, float &LastButtonUpd
 
 
     X = GameConfig().InternalWidth / 2 + 166;
+#if !defined(ASTROMENACE_ANDROID_BUILD)
     if (DrawButton200_2(X, Y+28, vw_GetTextUTF32("Config Controls"), ContentTransp, false)) {
         if (MenuStatus == eMenuStatus::GAME) {
             SetOptionsMenu(eMenuStatus::CONFCONTROL);
@@ -400,6 +401,8 @@ void OptionsMenu(float ContentTransp, float &ButtonTransp1, float &LastButtonUpd
             cCommand::GetInstance().Set(eCommand::SWITCH_TO_CONFCONTROL);
         }
     }
+#endif
+
 
 
 
