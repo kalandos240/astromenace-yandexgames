@@ -127,13 +127,9 @@ public final class MainActivity extends Activity {
                 float normalizedY = event.getY() / touchedView.getHeight();
 
                 if (normalizedX >= 0.18f && normalizedX <= 0.72f
-                        && normalizedY >= 0.295f && normalizedY <= 0.345f
+                        && normalizedY >= 0.285f && normalizedY <= 0.350f
                         && pageReady) {
-                    view.post(() -> view.evaluateJavascript(
-                            "window.__astroMobileKeyboard&&"
-                                    + "window.__astroMobileKeyboard.show&&"
-                                    + "window.__astroMobileKeyboard.show();",
-                            null));
+                    view.post(MainActivity.this::showNativeKeyboard);
                     Log.i(TAG, "PROFILE_NAME_TAP");
                 }
             }
@@ -620,13 +616,14 @@ public final class MainActivity extends Activity {
     private void gameReady() {
         runOnUiThread(() -> {
             if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
+            if (controlsLayer != null) controlsLayer.setVisibility(View.GONE);
             Log.i(TAG, "GAME_READY");
         });
     }
 
     private void menuVisible() {
         runOnUiThread(() -> {
-            if (controlsLayer != null) controlsLayer.setVisibility(View.VISIBLE);
+            if (controlsLayer != null) controlsLayer.setVisibility(View.GONE);
             if (webView != null) {
                 webView.evaluateJavascript(
                         "(()=>{const c=document.getElementById('canvas');"
@@ -637,6 +634,18 @@ public final class MainActivity extends Activity {
                         null);
             }
             Log.i(TAG, "MENU_VISIBLE");
+        });
+    }
+
+    private void setGameplayControlsVisible(boolean visible) {
+        runOnUiThread(() -> {
+            if (controlsLayer != null) {
+                controlsLayer.setVisibility(visible ? View.VISIBLE : View.GONE);
+            }
+            if (!visible) {
+                hideNativeKeyboard();
+            }
+            Log.i(TAG, visible ? "GAMEPLAY_CONTROLS_SHOW" : "GAMEPLAY_CONTROLS_HIDE");
         });
     }
 
@@ -664,6 +673,11 @@ public final class MainActivity extends Activity {
         @JavascriptInterface
         public void menuVisible() {
             MainActivity.this.menuVisible();
+        }
+
+        @JavascriptInterface
+        public void gameplayControls(boolean visible) {
+            MainActivity.this.setGameplayControlsVisible(visible);
         }
 
         @JavascriptInterface
