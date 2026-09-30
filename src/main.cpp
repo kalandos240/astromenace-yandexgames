@@ -93,6 +93,22 @@ void RecreateGameWindow()
  */
 static bool VideoConfig(bool FirstStart)
 {
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+    // Android owns the render target. Ignore stale desktop/browser width and
+    // height saved in config so SDL/WebGL really renders at the adaptive
+    // phone/tablet resolution selected by the native host.
+    const auto &AndroidRenderModes = DetectFullscreenSize();
+    if (AndroidRenderModes.empty()) {
+        std::cerr << __func__ << "(): Android render target is unavailable.\n";
+        return false;
+    }
+    ChangeGameConfig().DisplayIndex = 0;
+    ChangeGameConfig().Width = AndroidRenderModes.back().Width;
+    ChangeGameConfig().Height = AndroidRenderModes.back().Height;
+    ChangeGameConfig().Fullscreen = false;
+    return true;
+#endif
+
     // prevent out of range index usage
     if (GameConfig().DisplayIndex) {
         int tmpDisplaysCount = SDL_GetNumVideoDisplays();
