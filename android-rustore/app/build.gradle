@@ -1,0 +1,56 @@
+plugins {
+    id 'com.android.application'
+}
+
+def keystorePath = System.getenv('ASTROMENACE_KEYSTORE_PATH')
+def hasReleaseSigning = keystorePath != null && !keystorePath.isBlank()
+
+android {
+    namespace 'com.kalandos240.astromenace'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'com.kalandos240.astromenace'
+        minSdk 26
+        targetSdk 36
+        versionCode 1
+        versionName '1.0.0'
+    }
+
+    if (hasReleaseSigning) {
+        signingConfigs {
+            release {
+                storeFile file(keystorePath)
+                storePassword System.getenv('ASTROMENACE_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ASTROMENACE_KEY_ALIAS')
+                keyPassword System.getenv('ASTROMENACE_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+        }
+        release {
+            minifyEnabled false
+            shrinkResources false
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    packaging {
+        resources {
+            excludes += ['/META-INF/{AL2.0,LGPL2.1}']
+        }
+    }
+}
