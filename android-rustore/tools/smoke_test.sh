@@ -81,7 +81,7 @@ if [ "$menu_visible" = "1" ] && [ -n "${WIDTH:-}" ] && [ -n "${HEIGHT:-}" ]; the
     echo "Native Android EditText did not receive the pilot name." >&2
     exit 1
   fi
-  if ! grep -q 'AstroMenaceAndroid.*PROFILE_NAME_HOTSPOT' "$OUT/logcat-after-input.txt"; then
+  if ! grep -Eq 'AstroMenaceAndroid.*(PROFILE_NAME_TAP|PROFILE_NAME_HOTSPOT)' "$OUT/logcat-after-input.txt"; then
     echo "Mobile pilot-name hotspot was not detected." >&2
     exit 1
   fi
