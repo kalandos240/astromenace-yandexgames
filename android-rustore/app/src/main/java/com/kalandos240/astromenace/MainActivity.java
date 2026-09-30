@@ -484,23 +484,16 @@ public final class MainActivity extends Activity {
         }
 
         // Profile navigation buttons at the bottom leave the profile context.
-        if (isProfileKeyboardArmed() && normalizedY >= 0.82f) {
+        if (isProfileKeyboardArmed() && normalizedY >= 0.87f) {
             disarmProfileKeyboard("profile-navigation");
         }
 
-        // The native pause button arms the quit flow. AstroMenace's YES button
-        // in the confirmation dialog is around x=0.37..0.48, y=0.58..0.63.
-        // The original desktop quit path terminates the Emscripten main loop;
-        // close the Android Activity after forwarding the click instead of
-        // leaving a permanently frozen WebView frame.
+        // In-game QUIT is handled by AstroMenace itself and returns to the
+        // main menu. Do not terminate the Android Activity here.
         if (pauseFlowActive
                 && normalizedX >= 0.34f && normalizedX <= 0.50f
                 && normalizedY >= 0.54f && normalizedY <= 0.68f) {
-            Log.i(TAG, "CONFIRMED_QUIT_TAP");
-            pauseFlowActive = false;
-            if (webView != null) {
-                webView.postDelayed(this::finishCleanlyAfterGameQuit, 700L);
-            }
+            Log.i(TAG, "CONFIRMED_QUIT_TO_MENU_TAP");
         }
     }
 
