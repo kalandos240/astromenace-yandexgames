@@ -105,7 +105,7 @@ sleep 2
 adb shell am start -W -n com.kalandos240.astromenace.debug/com.kalandos240.astromenace.MainActivity --ez astromenace_smoke true >/dev/null
 sleep 4
 adb logcat -d > "$OUT/logcat-after-resume.txt"
-if grep -Eq 'AstroMenaceAndroid.*(STARTUP_ERROR|RENDER_PROCESS_GONE)|FATAL EXCEPTION.*com.kalandos240.astromenace' "$OUT/logcat-after-resume.txt"; then
+if grep -Eq 'AstroMenaceAndroid.*(STARTUP_ERROR|RENDER_PROCESS_GONE)|FATAL EXCEPTION.*com.kalandos240.astromenace|ANR in com.kalandos240.astromenace' "$OUT/logcat-after-resume.txt"; then
   echo "Crash/render failure after Android background/resume." >&2
   exit 1
 fi
@@ -122,6 +122,12 @@ adb logcat -d > "$OUT/logcat.txt"
 if ! grep -q 'AstroMenaceAndroid.*FULLSCREEN_CANVAS_PASS' "$OUT/logcat.txt"; then
   echo "Android canvas did not validate as full-screen." >&2
   grep 'AstroMenaceAndroid.*FULLSCREEN_CANVAS' "$OUT/logcat.txt" || true
+  exit 1
+fi
+
+if grep -Eq 'FATAL EXCEPTION.*com.kalandos240.astromenace|ANR in com.kalandos240.astromenace|AstroMenaceAndroid.*(STARTUP_ERROR|RENDER_PROCESS_GONE)' "$OUT/logcat.txt"; then
+  echo "Android runtime regression detected." >&2
+  grep -E 'FATAL EXCEPTION.*com.kalandos240.astromenace|ANR in com.kalandos240.astromenace|AstroMenaceAndroid.*(STARTUP_ERROR|RENDER_PROCESS_GONE)' "$OUT/logcat.txt" || true
   exit 1
 fi
 
