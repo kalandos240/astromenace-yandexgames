@@ -306,8 +306,9 @@ public final class MainActivity extends Activity {
                 float normalizedY = event.getY() / touchedView.getHeight();
 
                 // Main-menu Start Game button.
-                if (normalizedX >= 0.24f && normalizedX <= 0.76f
-                        && normalizedY >= 0.20f && normalizedY <= 0.31f) {
+                if (!profileKeyboardArmed
+                        && normalizedX >= 0.24f && normalizedX <= 0.76f
+                        && normalizedY >= 0.20f && normalizedY <= 0.295f) {
                     profileKeyboardArmed = true;
                     Log.i(TAG, "PROFILE_KEYBOARD_ARMED");
                 } else if (profileKeyboardArmed
@@ -316,9 +317,9 @@ public final class MainActivity extends Activity {
                         && pageReady) {
                     view.post(MainActivity.this::showNativeKeyboard);
                     Log.i(TAG, "PROFILE_NAME_TAP");
-                } else if (profileKeyboardArmed && normalizedY >= 0.38f) {
+                } else if (profileKeyboardArmed && normalizedY >= 0.87f) {
                     profileKeyboardArmed = false;
-                    Log.i(TAG, "PROFILE_KEYBOARD_DISARMED navigation");
+                    Log.i(TAG, "PROFILE_KEYBOARD_DISARMED profile-navigation");
                 }
             }
 
