@@ -2,7 +2,10 @@ package com.kalandos240.astromenace;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
@@ -53,6 +56,7 @@ public final class MainActivity extends Activity {
             "https://appassets.androidplatform.net/assets/game/index.html";
     private static final long DOUBLE_BACK_EXIT_MS = 1400L;
     private static final long INTERSTITIAL_COOLDOWN_MS = 120_000L;
+    private static final long INTERSTITIAL_SAFE_POINT_DELAY_MS = 1_600L;
 
     private WebView webView;
     private FrameLayout controlsLayer;
@@ -61,6 +65,9 @@ public final class MainActivity extends Activity {
     private String imePreviousValue = "";
     private boolean imeInternalChange;
     private boolean pageReady;
+    private boolean gameplayActive;
+    private boolean profileKeyboardArmed;
+    private int safePointGeneration;
     private long lastBackAt;
 
     private InterstitialAdLoader interstitialAdLoader;
@@ -74,6 +81,7 @@ public final class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        getWindow().setFormat(PixelFormat.RGBA_8888);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
         configureCutout();
 
@@ -164,7 +172,16 @@ public final class MainActivity extends Activity {
     }
 
     private void requestInterstitialAtSafePoint(String reason) {
-        runOnUiThread(() -> {
+        final int generation = ++safePointGeneration;
+        Log.d(TAG, "YANDEX_AD_SAFE_POINT_SCHEDULED reason=" + reason);
+
+        View scheduler = webView != null ? webView : getWindow().getDecorView();
+        scheduler.postDelayed(() -> {
+            if (generation != safePointGeneration || gameplayActive || isFinishing()) {
+                Log.d(TAG, "YANDEX_AD_SKIP unsafe-transition reason=" + reason);
+                return;
+            }
+
             long now = SystemClock.elapsedRealtime();
 
             if (adShowing) {
@@ -186,11 +203,6 @@ public final class MainActivity extends Activity {
 
             hideNativeKeyboard();
             if (controlsLayer != null) controlsLayer.setVisibility(View.GONE);
-            if (webView != null && pageReady) {
-                webView.evaluateJavascript(
-                        "window.__astroAndroidInput&&window.__astroAndroidInput.pause();",
-                        null);
-            }
 
             InterstitialAd ad = interstitialAd;
             adShowing = true;
@@ -231,7 +243,7 @@ public final class MainActivity extends Activity {
                 Log.e(TAG, "YANDEX_AD_SHOW_EXCEPTION", error);
                 finishInterstitial(ad);
             }
-        });
+        }, INTERSTITIAL_SAFE_POINT_DELAY_MS);
     }
 
     private void finishInterstitial(InterstitialAd finishedAd) {
@@ -270,25 +282,41 @@ public final class MainActivity extends Activity {
         view.setVerticalScrollBarEnabled(false);
         view.setHapticFeedbackEnabled(false);
 
-        // Canvas-based SDL games are not native text editors, so Android will
-        // not open an IME by itself. Detect taps on AstroMenace's pilot-name
-        // field at the native WebView layer and ask the injected HTML bridge
-        // to focus its tiny text editor. Returning false preserves the same
-        // touch for SDL/menu handling.
+        // Mobile gameplay is controlled exclusively by the native joystick
+        // and action buttons. Direct canvas touches are swallowed while a
+        // mission is active so SDL cannot interpret a finger as mouse steering.
+        //
+        // The native keyboard is armed only after the Start Game button opens
+        // the profile screen. This prevents workshop/system buttons at similar
+        // coordinates from ever opening Android's IME.
         view.setOnTouchListener((touchedView, event) -> {
+            if (gameplayActive) {
+                return true;
+            }
+
             if (event.getActionMasked() == MotionEvent.ACTION_UP
                     && touchedView.getWidth() > 0
                     && touchedView.getHeight() > 0) {
                 float normalizedX = event.getX() / touchedView.getWidth();
                 float normalizedY = event.getY() / touchedView.getHeight();
 
-                if (normalizedX >= 0.18f && normalizedX <= 0.72f
+                // Main-menu Start Game button.
+                if (normalizedX >= 0.24f && normalizedX <= 0.76f
+                        && normalizedY >= 0.20f && normalizedY <= 0.31f) {
+                    profileKeyboardArmed = true;
+                    Log.i(TAG, "PROFILE_KEYBOARD_ARMED");
+                } else if (profileKeyboardArmed
+                        && normalizedX >= 0.18f && normalizedX <= 0.72f
                         && normalizedY >= 0.285f && normalizedY <= 0.350f
                         && pageReady) {
                     view.post(MainActivity.this::showNativeKeyboard);
                     Log.i(TAG, "PROFILE_NAME_TAP");
+                } else if (profileKeyboardArmed && normalizedY >= 0.38f) {
+                    profileKeyboardArmed = false;
+                    Log.i(TAG, "PROFILE_KEYBOARD_DISARMED navigation");
                 }
             }
+
             return false;
         });
 
@@ -304,6 +332,8 @@ public final class MainActivity extends Activity {
         settings.setSupportZoom(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
+        settings.setOffscreenPreRaster(true);
+        settings.setTextZoom(100);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             view.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false);
@@ -415,7 +445,9 @@ public final class MainActivity extends Activity {
                     || (event != null
                     && event.getKeyCode() == android.view.KeyEvent.KEYCODE_ENTER)) {
                 tapKey("Enter", "Enter", 13);
+                profileKeyboardArmed = false;
                 hideNativeKeyboard();
+                Log.i(TAG, "PROFILE_KEYBOARD_DISARMED submitted");
                 return true;
             }
             return false;
@@ -556,26 +588,16 @@ public final class MainActivity extends Activity {
     }
 
     private void installTouchControls(FrameLayout root) {
-        int size = dp(62);
-        int gap = dp(4);
-        int left = dp(20);
-        int bottom = dp(20);
+        int joystickSize = dp(176);
 
-        addHoldButton(root, "▲", "ArrowUp", "ArrowUp", 38,
-                left + size + gap, bottom + (size + gap) * 2,
-                size, size, Gravity.START | Gravity.BOTTOM);
-
-        addHoldButton(root, "▼", "ArrowDown", "ArrowDown", 40,
-                left + size + gap, bottom,
-                size, size, Gravity.START | Gravity.BOTTOM);
-
-        addHoldButton(root, "◀", "ArrowLeft", "ArrowLeft", 37,
-                left, bottom + size + gap,
-                size, size, Gravity.START | Gravity.BOTTOM);
-
-        addHoldButton(root, "▶", "ArrowRight", "ArrowRight", 39,
-                left + (size + gap) * 2, bottom + size + gap,
-                size, size, Gravity.START | Gravity.BOTTOM);
+        JoystickView joystick = new JoystickView(this);
+        FrameLayout.LayoutParams joystickParams = new FrameLayout.LayoutParams(
+                joystickSize,
+                joystickSize,
+                Gravity.START | Gravity.BOTTOM);
+        joystickParams.leftMargin = dp(22);
+        joystickParams.bottomMargin = dp(20);
+        root.addView(joystick, joystickParams);
 
         addHoldButton(root, "АТАКА 1", "z", "KeyZ", 90,
                 dp(118), dp(30), dp(96), dp(72),
@@ -585,14 +607,141 @@ public final class MainActivity extends Activity {
                 dp(20), dp(126), dp(86), dp(64),
                 Gravity.END | Gravity.BOTTOM);
 
-        TextView pause = createButton("II", dp(50), dp(50));
+        TextView pause = createButton("II", dp(54), dp(54));
         FrameLayout.LayoutParams pauseParams =
-                new FrameLayout.LayoutParams(dp(50), dp(50), Gravity.TOP | Gravity.START);
+                new FrameLayout.LayoutParams(dp(54), dp(54), Gravity.TOP | Gravity.START);
         pauseParams.leftMargin = dp(16);
         pauseParams.topMargin = dp(16);
         pause.setLayoutParams(pauseParams);
-        pause.setOnClickListener(v -> tapKey("Escape", "Escape", 27));
+        pause.setContentDescription("Пауза");
+        pause.setOnClickListener(v -> {
+            tapKey("Escape", "Escape", 27);
+            Log.i(TAG, "PAUSE_BUTTON_TAPPED");
+        });
         root.addView(pause);
+    }
+
+    private final class JoystickView extends View {
+        private final Paint basePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint rimPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint knobPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+        private float centerX;
+        private float centerY;
+        private float baseRadius;
+        private float knobRadius;
+        private float knobX;
+        private float knobY;
+
+        private boolean leftPressed;
+        private boolean rightPressed;
+        private boolean upPressed;
+        private boolean downPressed;
+
+        JoystickView(Context context) {
+            super(context);
+            setClickable(true);
+            setFocusable(false);
+
+            basePaint.setColor(Color.argb(92, 18, 32, 52));
+            rimPaint.setStyle(Paint.Style.STROKE);
+            rimPaint.setStrokeWidth(dp(2));
+            rimPaint.setColor(Color.argb(180, 175, 210, 255));
+            knobPaint.setColor(Color.argb(170, 105, 155, 210));
+        }
+
+        @Override
+        protected void onSizeChanged(int width, int height, int oldWidth, int oldHeight) {
+            centerX = width * 0.5f;
+            centerY = height * 0.5f;
+            baseRadius = Math.min(width, height) * 0.40f;
+            knobRadius = baseRadius * 0.42f;
+            knobX = centerX;
+            knobY = centerY;
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            canvas.drawCircle(centerX, centerY, baseRadius, basePaint);
+            canvas.drawCircle(centerX, centerY, baseRadius, rimPaint);
+            canvas.drawCircle(knobX, knobY, knobRadius, knobPaint);
+        }
+
+        @Override
+        public boolean onTouchEvent(MotionEvent event) {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                case MotionEvent.ACTION_MOVE:
+                    updateJoystick(event.getX(), event.getY());
+                    return true;
+
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    releaseJoystick();
+                    performClick();
+                    return true;
+
+                default:
+                    return true;
+            }
+        }
+
+        @Override
+        public boolean performClick() {
+            super.performClick();
+            return true;
+        }
+
+        private void updateJoystick(float touchX, float touchY) {
+            float dx = touchX - centerX;
+            float dy = touchY - centerY;
+            float distance = (float) Math.sqrt(dx * dx + dy * dy);
+
+            if (distance > baseRadius && distance > 0.0f) {
+                float scale = baseRadius / distance;
+                dx *= scale;
+                dy *= scale;
+            }
+
+            knobX = centerX + dx;
+            knobY = centerY + dy;
+
+            float threshold = baseRadius * 0.24f;
+            setDirections(
+                    dx < -threshold,
+                    dx > threshold,
+                    dy < -threshold,
+                    dy > threshold);
+
+            invalidate();
+        }
+
+        private void releaseJoystick() {
+            knobX = centerX;
+            knobY = centerY;
+            setDirections(false, false, false, false);
+            invalidate();
+        }
+
+        private void setDirections(boolean left, boolean right, boolean up, boolean down) {
+            if (left != leftPressed) {
+                leftPressed = left;
+                sendKey(left, "ArrowLeft", "ArrowLeft", 37);
+            }
+            if (right != rightPressed) {
+                rightPressed = right;
+                sendKey(right, "ArrowRight", "ArrowRight", 39);
+            }
+            if (up != upPressed) {
+                upPressed = up;
+                sendKey(up, "ArrowUp", "ArrowUp", 38);
+            }
+            if (down != downPressed) {
+                downPressed = down;
+                sendKey(down, "ArrowDown", "ArrowDown", 40);
+            }
+        }
     }
 
     private void addHoldButton(
@@ -759,6 +908,8 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        safePointGeneration++;
+
         if (interstitialAd != null) {
             interstitialAd.setAdEventListener(null);
             interstitialAd = null;
@@ -785,6 +936,9 @@ public final class MainActivity extends Activity {
 
     private void menuVisible() {
         runOnUiThread(() -> {
+            gameplayActive = false;
+            safePointGeneration++;
+            profileKeyboardArmed = false;
             if (controlsLayer != null) controlsLayer.setVisibility(View.GONE);
             if (webView != null) {
                 webView.evaluateJavascript(
@@ -801,13 +955,22 @@ public final class MainActivity extends Activity {
 
     private void setGameplayControlsVisible(boolean visible) {
         runOnUiThread(() -> {
+            gameplayActive = visible;
+            if (visible) {
+                safePointGeneration++;
+                profileKeyboardArmed = false;
+            }
+
             if (controlsLayer != null) {
                 controlsLayer.setVisibility(visible ? View.VISIBLE : View.GONE);
             }
-            if (!visible) {
+            if (!visible && imeInput != null && imeInput.hasFocus()) {
                 hideNativeKeyboard();
             }
-            Log.i(TAG, visible ? "GAMEPLAY_CONTROLS_SHOW" : "GAMEPLAY_CONTROLS_HIDE");
+
+            Log.i(TAG, visible
+                    ? "GAMEPLAY_CONTROLS_SHOW joystick-only"
+                    : "GAMEPLAY_CONTROLS_HIDE");
         });
     }
 
