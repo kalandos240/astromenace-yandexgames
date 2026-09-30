@@ -60,6 +60,37 @@ public final class MainActivity extends Activity {
         controlsLayer = new FrameLayout(this);
         controlsLayer.setVisibility(View.GONE);
         installTouchControls(controlsLayer);
+
+        // The native mobile controls layer sits above the WebView. Intercept
+        // only the pilot-name field band here; the AstroMenace profile menu
+        // continuously accepts SDL text input, so this tap does not need to
+        // reach the canvas. All other touches remain untouched.
+        controlsLayer.setOnTouchListener((layer, event) -> {
+            if (event.getActionMasked() != MotionEvent.ACTION_DOWN
+                    || layer.getWidth() <= 0
+                    || layer.getHeight() <= 0
+                    || !pageReady) {
+                return false;
+            }
+
+            float normalizedX = event.getX() / layer.getWidth();
+            float normalizedY = event.getY() / layer.getHeight();
+
+            if (normalizedX >= 0.18f && normalizedX <= 0.72f
+                    && normalizedY >= 0.295f && normalizedY <= 0.345f) {
+                if (webView != null) {
+                    webView.evaluateJavascript(
+                            "window.__astroMobileKeyboard&&"
+                                    + "window.__astroMobileKeyboard.show&&"
+                                    + "window.__astroMobileKeyboard.show();",
+                            null);
+                }
+                Log.i(TAG, "PROFILE_NAME_HOTSPOT");
+                return true;
+            }
+            return false;
+        });
+
         root.addView(controlsLayer, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
