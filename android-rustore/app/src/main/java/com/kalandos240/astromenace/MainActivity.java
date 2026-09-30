@@ -91,6 +91,32 @@ public final class MainActivity extends Activity {
         view.setVerticalScrollBarEnabled(false);
         view.setHapticFeedbackEnabled(false);
 
+        // Canvas-based SDL games are not native text editors, so Android will
+        // not open an IME by itself. Detect taps on AstroMenace's pilot-name
+        // field at the native WebView layer and ask the injected HTML bridge
+        // to focus its tiny text editor. Returning false preserves the same
+        // touch for SDL/menu handling.
+        view.setOnTouchListener((touchedView, event) -> {
+            if (event.getActionMasked() == MotionEvent.ACTION_UP
+                    && touchedView.getWidth() > 0
+                    && touchedView.getHeight() > 0) {
+                float normalizedX = event.getX() / touchedView.getWidth();
+                float normalizedY = event.getY() / touchedView.getHeight();
+
+                if (normalizedX >= 0.18f && normalizedX <= 0.72f
+                        && normalizedY >= 0.295f && normalizedY <= 0.345f
+                        && pageReady) {
+                    view.post(() -> view.evaluateJavascript(
+                            "window.__astroMobileKeyboard&&"
+                                    + "window.__astroMobileKeyboard.show&&"
+                                    + "window.__astroMobileKeyboard.show();",
+                            null));
+                    Log.i(TAG, "PROFILE_NAME_TAP");
+                }
+            }
+            return false;
+        });
+
         WebSettings settings = view.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
