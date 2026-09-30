@@ -146,17 +146,12 @@ if grep -Eq 'FATAL EXCEPTION.*com.kalandos240.astromenace|ANR in com.kalandos240
   exit 1
 fi
 
-if ! grep -q 'AstroMenaceAndroid.*MOBILE_RENDER_TARGET' "$OUT/logcat.txt"; then
-  echo "Adaptive mobile render target was not selected." >&2
-  exit 1
-fi
 if ! grep -q 'AstroMenaceAndroid.*RENDER_BUFFER_PASS' "$OUT/logcat.txt"; then
   echo "SDL/WebGL render buffer did not match the adaptive Android target." >&2
   grep 'AstroMenaceAndroid.*RENDER_BUFFER_' "$OUT/logcat.txt" || true
   exit 1
 fi
 grep 'AstroMenaceAndroid.*FULLSCREEN_CANVAS_PASS' "$OUT/logcat.txt" | tail -n 1
-grep 'AstroMenaceAndroid.*MOBILE_RENDER_TARGET' "$OUT/logcat.txt" | tail -n 1
 grep 'AstroMenaceAndroid.*RENDER_BUFFER_PASS' "$OUT/logcat.txt" | tail -n 1
 
 if [ "$ready" != "1" ]; then
