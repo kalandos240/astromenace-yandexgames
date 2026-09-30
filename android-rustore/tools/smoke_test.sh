@@ -72,6 +72,10 @@ if [ "$ready" = "1" ] && [ -n "${WIDTH:-}" ] && [ -n "${HEIGHT:-}" ]; then
     echo "Android profile keyboard was not requested." >&2
     exit 1
   fi
+  if ! grep -q 'AstroMenaceAndroid.*NATIVE_IME_TEXT_CHANGE' "$OUT/logcat-after-input.txt"; then
+    echo "Native Android EditText did not receive the pilot name." >&2
+    exit 1
+  fi
   if ! grep -q 'AstroMenaceAndroid.*PROFILE_NAME_HOTSPOT' "$OUT/logcat-after-input.txt"; then
     echo "Mobile pilot-name hotspot was not detected." >&2
     exit 1
@@ -85,6 +89,12 @@ fi
 
 adb shell dumpsys meminfo com.kalandos240.astromenace.debug > "$OUT/meminfo.txt" || true
 adb logcat -d > "$OUT/logcat.txt"
+
+if ! grep -q 'AstroMenaceAndroid.*FULLSCREEN_CANVAS_PASS' "$OUT/logcat.txt"; then
+  echo "Android canvas did not validate as full-screen." >&2
+  grep 'AstroMenaceAndroid.*FULLSCREEN_CANVAS' "$OUT/logcat.txt" || true
+  exit 1
+fi
 
 if [ "$ready" != "1" ]; then
   echo "AstroMenace did not reach GAME_READY."
