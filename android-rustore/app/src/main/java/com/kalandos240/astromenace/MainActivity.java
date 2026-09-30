@@ -62,7 +62,6 @@ public final class MainActivity extends Activity {
 
     private WebView webView;
     private FrameLayout controlsLayer;
-    private JoystickView joystickView;
     private TextView loadingOverlay;
     private EditText imeInput;
     private String imePreviousValue = "";
@@ -662,16 +661,26 @@ public final class MainActivity extends Activity {
     }
 
     private void installTouchControls(FrameLayout root) {
-        int joystickSize = dp(176);
+        int size = dp(62);
+        int gap = dp(4);
+        int left = dp(20);
+        int bottom = dp(20);
 
-        joystickView = new JoystickView(this);
-        FrameLayout.LayoutParams joystickParams = new FrameLayout.LayoutParams(
-                joystickSize,
-                joystickSize,
-                Gravity.START | Gravity.BOTTOM);
-        joystickParams.leftMargin = dp(22);
-        joystickParams.bottomMargin = dp(20);
-        root.addView(joystickView, joystickParams);
+        addHoldButton(root, "▲", "ArrowUp", "ArrowUp", 38,
+                left + size + gap, bottom + (size + gap) * 2,
+                size, size, Gravity.START | Gravity.BOTTOM);
+
+        addHoldButton(root, "▼", "ArrowDown", "ArrowDown", 40,
+                left + size + gap, bottom,
+                size, size, Gravity.START | Gravity.BOTTOM);
+
+        addHoldButton(root, "◀", "ArrowLeft", "ArrowLeft", 37,
+                left, bottom + size + gap,
+                size, size, Gravity.START | Gravity.BOTTOM);
+
+        addHoldButton(root, "▶", "ArrowRight", "ArrowRight", 39,
+                left + (size + gap) * 2, bottom + size + gap,
+                size, size, Gravity.START | Gravity.BOTTOM);
 
         addHoldButton(root, "АТАКА 1", "z", "KeyZ", 90,
                 dp(118), dp(30), dp(96), dp(72),
@@ -694,145 +703,6 @@ public final class MainActivity extends Activity {
             Log.i(TAG, "PAUSE_BUTTON_TAPPED");
         });
         root.addView(pause);
-    }
-
-    private final class JoystickView extends View {
-        private final Paint basePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private final Paint rimPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private final Paint knobPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
-        private float centerX;
-        private float centerY;
-        private float baseRadius;
-        private float knobRadius;
-        private float knobX;
-        private float knobY;
-
-        private boolean leftPressed;
-        private boolean rightPressed;
-        private boolean upPressed;
-        private boolean downPressed;
-
-        JoystickView(Context context) {
-            super(context);
-            setClickable(true);
-            setFocusable(false);
-
-            basePaint.setColor(Color.argb(92, 18, 32, 52));
-            rimPaint.setStyle(Paint.Style.STROKE);
-            rimPaint.setStrokeWidth(dp(2));
-            rimPaint.setColor(Color.argb(180, 175, 210, 255));
-            knobPaint.setColor(Color.argb(170, 105, 155, 210));
-        }
-
-        @Override
-        protected void onSizeChanged(int width, int height, int oldWidth, int oldHeight) {
-            centerX = width * 0.5f;
-            centerY = height * 0.5f;
-            baseRadius = Math.min(width, height) * 0.40f;
-            knobRadius = baseRadius * 0.42f;
-            knobX = centerX;
-            knobY = centerY;
-        }
-
-        @Override
-        protected void onDraw(Canvas canvas) {
-            super.onDraw(canvas);
-            canvas.drawCircle(centerX, centerY, baseRadius, basePaint);
-            canvas.drawCircle(centerX, centerY, baseRadius, rimPaint);
-            canvas.drawCircle(knobX, knobY, knobRadius, knobPaint);
-        }
-
-        @Override
-        public boolean onTouchEvent(MotionEvent event) {
-            switch (event.getActionMasked()) {
-                case MotionEvent.ACTION_DOWN:
-                case MotionEvent.ACTION_MOVE:
-                    updateJoystick(event.getX(), event.getY());
-                    return true;
-
-                case MotionEvent.ACTION_UP:
-                case MotionEvent.ACTION_CANCEL:
-                    releaseJoystick();
-                    performClick();
-                    return true;
-
-                default:
-                    return true;
-            }
-        }
-
-        @Override
-        public boolean performClick() {
-            super.performClick();
-            return true;
-        }
-
-        private void updateJoystick(float touchX, float touchY) {
-            float dx = touchX - centerX;
-            float dy = touchY - centerY;
-            float distance = (float) Math.sqrt(dx * dx + dy * dy);
-
-            if (distance > baseRadius && distance > 0.0f) {
-                float scale = baseRadius / distance;
-                dx *= scale;
-                dy *= scale;
-            }
-
-            knobX = centerX + dx;
-            knobY = centerY + dy;
-
-            float threshold = baseRadius * 0.24f;
-            setDirections(
-                    dx < -threshold,
-                    dx > threshold,
-                    dy < -threshold,
-                    dy > threshold);
-
-            invalidate();
-        }
-
-        private void releaseJoystick() {
-            knobX = centerX;
-            knobY = centerY;
-            setDirections(false, false, false, false);
-            invalidate();
-        }
-
-        private void setDirections(boolean left, boolean right, boolean up, boolean down) {
-            boolean changed = left != leftPressed
-                    || right != rightPressed
-                    || up != upPressed
-                    || down != downPressed;
-            if (changed && (left || right || up || down)) {
-                Log.i(TAG, "JOYSTICK_ACTIVE left=" + left
-                        + " right=" + right
-                        + " up=" + up
-                        + " down=" + down);
-            }
-
-            if (left != leftPressed) {
-                leftPressed = left;
-                sendKey(left, "ArrowLeft", "ArrowLeft", 37);
-            }
-            if (right != rightPressed) {
-                rightPressed = right;
-                sendKey(right, "ArrowRight", "ArrowRight", 39);
-            }
-            if (up != upPressed) {
-                upPressed = up;
-                sendKey(up, "ArrowUp", "ArrowUp", 38);
-            }
-            if (down != downPressed) {
-                downPressed = down;
-                sendKey(down, "ArrowDown", "ArrowDown", 40);
-            }
-        }
-
-        private void smokeExercise() {
-            setDirections(false, true, true, false);
-            postDelayed(() -> setDirections(false, false, false, false), 120L);
-        }
     }
 
     private void addHoldButton(
@@ -1061,7 +931,7 @@ public final class MainActivity extends Activity {
                 hideNativeKeyboard();
 
                 // 3) Direct gameplay canvas touches are blocked while the
-                // native joystick is active.
+                // native arrow controls are active.
                 setGameplayControlsVisible(true);
                 gameplayTouchBlockLogged = false;
                 MotionEvent gameDown = MotionEvent.obtain(
@@ -1077,15 +947,18 @@ public final class MainActivity extends Activity {
                 gameDown.recycle();
                 gameUp.recycle();
 
-                if (joystickView != null) joystickView.smokeExercise();
-
+                sendKey(true, "ArrowRight", "ArrowRight", 39);
+                sendKey(true, "ArrowUp", "ArrowUp", 38);
+                Log.i(TAG, "ARROW_CONTROLS_ACTIVE");
                 webView.postDelayed(() -> {
+                    sendKey(false, "ArrowRight", "ArrowRight", 39);
+                    sendKey(false, "ArrowUp", "ArrowUp", 38);
                     Log.i(TAG, gameplayTouchBlockLogged
                             ? "SMOKE_GAMEPLAY_TOUCH_BLOCK_PASS"
                             : "SMOKE_GAMEPLAY_TOUCH_BLOCK_FAIL");
 
                     // 4) Pause menu must hide gameplay controls and allow
-                    // normal canvas/menu touches, then restore joystick input.
+                    // normal canvas/menu touches, then restore arrow controls.
                     setEngineGameplayState(true);
                     setPauseMenuState(true);
                     boolean pausePass = !gameplayActive
@@ -1171,9 +1044,6 @@ public final class MainActivity extends Activity {
                 if (controlsLayer != null) {
                     controlsLayer.setVisibility(View.GONE);
                 }
-                if (joystickView != null) {
-                    joystickView.releaseJoystick();
-                }
             } else if (engineGameplayActive) {
                 setGameplayControlsVisible(true);
             }
@@ -1203,7 +1073,7 @@ public final class MainActivity extends Activity {
             }
 
             Log.i(TAG, visible
-                    ? "GAMEPLAY_CONTROLS_SHOW joystick-only"
+                    ? "GAMEPLAY_CONTROLS_SHOW arrows-only"
                     : "GAMEPLAY_CONTROLS_HIDE");
         });
     }
