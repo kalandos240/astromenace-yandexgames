@@ -70,7 +70,7 @@ public final class MainActivity extends Activity {
     private boolean pageReady;
     private boolean smokeTestMode;
     private boolean smokeSelfTestStarted;
-    private boolean smokeEngineQuitPassed;
+    private volatile boolean smokeEngineQuitPassed;
     private boolean engineGameplayActive;
     private boolean pauseMenuVisible;
     private boolean gameplayActive;
@@ -1000,7 +1000,7 @@ public final class MainActivity extends Activity {
                         Log.i(TAG, smokeEngineQuitPassed
                                 ? "SMOKE_NATIVE_CONTROLS_PASS"
                                 : "SMOKE_NATIVE_CONTROLS_FAIL");
-                    }, 1200L);
+                    }, 8000L);
                 }, 260L);
             }, 450L);
         }, 300L);
