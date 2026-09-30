@@ -58,7 +58,6 @@ public final class MainActivity extends Activity {
     private static final long INTERSTITIAL_COOLDOWN_MS = 120_000L;
     private static final long INTERSTITIAL_SAFE_POINT_DELAY_MS = 1_600L;
     private static final long PROFILE_KEYBOARD_ARM_MS = 45_000L;
-    private static final long MENU_POINTER_MOVE_INTERVAL_MS = 16L;
 
     private WebView webView;
     private FrameLayout controlsLayer;
@@ -72,7 +71,6 @@ public final class MainActivity extends Activity {
     private boolean profileKeyboardArmed;
     private long profileKeyboardArmedUntil;
     private boolean pauseFlowActive;
-    private long lastMenuPointerMoveAt;
     private int safePointGeneration;
     private long lastBackAt;
 
@@ -296,15 +294,8 @@ public final class MainActivity extends Activity {
         // the profile screen. This prevents workshop/system buttons at similar
         // coordinates from ever opening Android's IME.
         view.setOnTouchListener((touchedView, event) -> {
-            if (touchedView.getWidth() <= 0 || touchedView.getHeight() <= 0) {
-                return true;
-            }
-
-            float normalizedX = Math.max(0.0f, Math.min(1.0f, event.getX() / touchedView.getWidth()));
-            float normalizedY = Math.max(0.0f, Math.min(1.0f, event.getY() / touchedView.getHeight()));
-
-            // During missions the WebView canvas never receives direct touch
-            // steering. Only the native joystick and fire buttons control the ship.
+            // In missions, only the native joystick and action buttons control
+            // the ship. All direct canvas touches are swallowed.
             if (gameplayActive) {
                 if (event.getActionMasked() == MotionEvent.ACTION_UP && !gameplayTouchBlockLogged) {
                     gameplayTouchBlockLogged = true;
@@ -313,32 +304,18 @@ public final class MainActivity extends Activity {
                 return true;
             }
 
-            // Menus/workshop use explicit SDL-compatible mouse events instead
-            // of WebView's device-dependent touch-to-mouse emulation. This also
-            // preserves drag-and-drop in the workshop.
-            switch (event.getActionMasked()) {
-                case MotionEvent.ACTION_DOWN:
-                    sendCanvasPointer("down", normalizedX, normalizedY);
-                    break;
-                case MotionEvent.ACTION_MOVE:
-                    long now = SystemClock.elapsedRealtime();
-                    if (now - lastMenuPointerMoveAt >= MENU_POINTER_MOVE_INTERVAL_MS) {
-                        lastMenuPointerMoveAt = now;
-                        sendCanvasPointer("move", normalizedX, normalizedY);
-                    }
-                    break;
-                case MotionEvent.ACTION_UP:
-                    sendCanvasPointer("up", normalizedX, normalizedY);
-                    handleMenuTap(normalizedX, normalizedY);
-                    break;
-                case MotionEvent.ACTION_CANCEL:
-                    sendCanvasPointer("cancel", normalizedX, normalizedY);
-                    break;
-                default:
-                    break;
+            // Menus and workshop keep WebView's native touch->mouse handling,
+            // which Emscripten/SDL already supports reliably on real devices.
+            if (event.getActionMasked() == MotionEvent.ACTION_UP
+                    && touchedView.getWidth() > 0
+                    && touchedView.getHeight() > 0) {
+                float normalizedX = Math.max(0.0f,
+                        Math.min(1.0f, event.getX() / touchedView.getWidth()));
+                float normalizedY = Math.max(0.0f,
+                        Math.min(1.0f, event.getY() / touchedView.getHeight()));
+                handleMenuTap(normalizedX, normalizedY);
             }
-
-            return true;
+            return false;
         });
 
         WebSettings settings = view.getSettings();
@@ -428,17 +405,6 @@ public final class MainActivity extends Activity {
         });
 
         return view;
-    }
-
-    private void sendCanvasPointer(String phase, float normalizedX, float normalizedY) {
-        if (!pageReady || webView == null) return;
-        webView.evaluateJavascript(
-                "window.__astroAndroidInput&&window.__astroAndroidInput.pointer&&"
-                        + "window.__astroAndroidInput.pointer("
-                        + quoteJs(phase) + ","
-                        + normalizedX + ","
-                        + normalizedY + ");",
-                null);
     }
 
     private boolean isProfileKeyboardArmed() {
@@ -676,19 +642,6 @@ public final class MainActivity extends Activity {
                 + "down:function(key,code,kc){emit('keydown',key,code,kc);},"
                 + "up:function(key,code,kc){emit('keyup',key,code,kc);},"
                 + "text:function(ch){emitText(ch);},"
-                + "pointer:function(phase,nx,ny){"
-                + "var canvas=document.getElementById('canvas');if(!canvas)return;"
-                + "var r=canvas.getBoundingClientRect();"
-                + "var x=r.left+Math.max(0,Math.min(1,nx))*r.width;"
-                + "var y=r.top+Math.max(0,Math.min(1,ny))*r.height;"
-                + "function fire(type,buttons){"
-                + "var e=new MouseEvent(type,{clientX:x,clientY:y,button:0,buttons:buttons,bubbles:true,cancelable:true,view:window});"
-                + "canvas.dispatchEvent(e);}"
-                + "if(phase==='down'){fire('mousemove',0);fire('mousedown',1);}"
-                + "else if(phase==='move'){fire('mousemove',1);}"
-                + "else if(phase==='up'){fire('mousemove',1);fire('mouseup',0);}"
-                + "else if(phase==='cancel'){fire('mouseup',0);}"
-                + "},"
                 + "pause:function(){window.dispatchEvent(new Event('blur'));},"
                 + "resume:function(){window.dispatchEvent(new Event('focus'));}"
                 + "};"
