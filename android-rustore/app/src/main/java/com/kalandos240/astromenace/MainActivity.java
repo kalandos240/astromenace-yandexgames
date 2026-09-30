@@ -7,6 +7,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
@@ -36,11 +37,22 @@ import android.window.OnBackInvokedDispatcher;
 
 import androidx.webkit.WebViewAssetLoader;
 
+import com.yandex.mobile.ads.common.AdError;
+import com.yandex.mobile.ads.common.AdRequest;
+import com.yandex.mobile.ads.common.AdRequestError;
+import com.yandex.mobile.ads.common.ImpressionData;
+import com.yandex.mobile.ads.common.YandexAds;
+import com.yandex.mobile.ads.interstitial.InterstitialAd;
+import com.yandex.mobile.ads.interstitial.InterstitialAdEventListener;
+import com.yandex.mobile.ads.interstitial.InterstitialAdLoadListener;
+import com.yandex.mobile.ads.interstitial.InterstitialAdLoader;
+
 public final class MainActivity extends Activity {
     private static final String TAG = "AstroMenaceAndroid";
     private static final String APP_URL =
             "https://appassets.androidplatform.net/assets/game/index.html";
     private static final long DOUBLE_BACK_EXIT_MS = 1400L;
+    private static final long INTERSTITIAL_COOLDOWN_MS = 120_000L;
 
     private WebView webView;
     private FrameLayout controlsLayer;
@@ -50,6 +62,13 @@ public final class MainActivity extends Activity {
     private boolean imeInternalChange;
     private boolean pageReady;
     private long lastBackAt;
+
+    private InterstitialAdLoader interstitialAdLoader;
+    private InterstitialAd interstitialAd;
+    private boolean adSdkInitialized;
+    private boolean adLoadInProgress;
+    private boolean adShowing;
+    private long nextInterstitialAt;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,8 +116,145 @@ public final class MainActivity extends Activity {
         root.post(this::hideSystemUi);
         installBackHandler();
 
+        nextInterstitialAt = SystemClock.elapsedRealtime() + INTERSTITIAL_COOLDOWN_MS;
+        initializeYandexMobileAds();
+
         Log.i(TAG, "STARTING " + APP_URL);
         webView.loadUrl(APP_URL);
+    }
+
+    private void initializeYandexMobileAds() {
+        YandexAds.initialize(this, () -> {
+            adSdkInitialized = true;
+            Log.i(TAG, "YANDEX_ADS_SDK_INITIALIZED");
+            interstitialAdLoader = new InterstitialAdLoader(this);
+            loadInterstitialAd();
+        });
+    }
+
+    private void loadInterstitialAd() {
+        if (!adSdkInitialized
+                || interstitialAdLoader == null
+                || interstitialAd != null
+                || adLoadInProgress
+                || isFinishing()) {
+            return;
+        }
+
+        adLoadInProgress = true;
+        String adUnitId = getString(R.string.yandex_interstitial_ad_unit_id);
+        Log.i(TAG, "YANDEX_AD_LOAD_REQUESTED unit=" + adUnitId);
+
+        AdRequest request = new AdRequest.Builder(adUnitId).build();
+        interstitialAdLoader.loadAd(request, new InterstitialAdLoadListener() {
+            @Override
+            public void onAdLoaded(InterstitialAd ad) {
+                adLoadInProgress = false;
+                interstitialAd = ad;
+                Log.i(TAG, "YANDEX_AD_LOADED");
+            }
+
+            @Override
+            public void onAdFailedToLoad(AdRequestError error) {
+                adLoadInProgress = false;
+                interstitialAd = null;
+                Log.w(TAG, "YANDEX_AD_LOAD_FAILED: " + error);
+            }
+        });
+    }
+
+    private void requestInterstitialAtSafePoint(String reason) {
+        runOnUiThread(() -> {
+            long now = SystemClock.elapsedRealtime();
+
+            if (adShowing) {
+                Log.d(TAG, "YANDEX_AD_SKIP already-showing reason=" + reason);
+                return;
+            }
+
+            if (now < nextInterstitialAt) {
+                Log.d(TAG, "YANDEX_AD_SKIP cooldown reason=" + reason
+                        + " remainingMs=" + (nextInterstitialAt - now));
+                return;
+            }
+
+            if (interstitialAd == null) {
+                Log.d(TAG, "YANDEX_AD_SKIP not-loaded reason=" + reason);
+                loadInterstitialAd();
+                return;
+            }
+
+            hideNativeKeyboard();
+            if (controlsLayer != null) controlsLayer.setVisibility(View.GONE);
+            if (webView != null && pageReady) {
+                webView.evaluateJavascript(
+                        "window.__astroAndroidInput&&window.__astroAndroidInput.pause();",
+                        null);
+            }
+
+            InterstitialAd ad = interstitialAd;
+            adShowing = true;
+            nextInterstitialAt = now + INTERSTITIAL_COOLDOWN_MS;
+
+            ad.setAdEventListener(new InterstitialAdEventListener() {
+                @Override
+                public void onAdShown() {
+                    Log.i(TAG, "YANDEX_AD_SHOWN reason=" + reason);
+                }
+
+                @Override
+                public void onAdFailedToShow(AdError error) {
+                    Log.w(TAG, "YANDEX_AD_SHOW_FAILED: " + error);
+                    finishInterstitial(ad);
+                }
+
+                @Override
+                public void onAdDismissed() {
+                    Log.i(TAG, "YANDEX_AD_DISMISSED");
+                    finishInterstitial(ad);
+                }
+
+                @Override
+                public void onAdClicked() {
+                    Log.i(TAG, "YANDEX_AD_CLICKED");
+                }
+
+                @Override
+                public void onAdImpression(ImpressionData impressionData) {
+                    Log.i(TAG, "YANDEX_AD_IMPRESSION");
+                }
+            });
+
+            try {
+                ad.show(this);
+            } catch (RuntimeException error) {
+                Log.e(TAG, "YANDEX_AD_SHOW_EXCEPTION", error);
+                finishInterstitial(ad);
+            }
+        });
+    }
+
+    private void finishInterstitial(InterstitialAd finishedAd) {
+        runOnUiThread(() -> {
+            try {
+                finishedAd.setAdEventListener(null);
+            } catch (RuntimeException ignored) {
+            }
+
+            if (interstitialAd == finishedAd) {
+                interstitialAd = null;
+            }
+            adShowing = false;
+
+            hideSystemUi();
+            if (webView != null && pageReady) {
+                webView.evaluateJavascript(
+                        "window.__astroAndroidInput&&window.__astroAndroidInput.resume();",
+                        null);
+            }
+
+            loadInterstitialAd();
+        });
     }
 
     private WebView createGameWebView() {
@@ -603,6 +759,12 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (interstitialAd != null) {
+            interstitialAd.setAdEventListener(null);
+            interstitialAd = null;
+        }
+        interstitialAdLoader = null;
+
         if (webView != null) {
             webView.loadUrl("about:blank");
             webView.stopLoading();
@@ -678,6 +840,12 @@ public final class MainActivity extends Activity {
         @JavascriptInterface
         public void gameplayControls(boolean visible) {
             MainActivity.this.setGameplayControlsVisible(visible);
+        }
+
+        @JavascriptInterface
+        public void requestInterstitial(String reason) {
+            MainActivity.this.requestInterstitialAtSafePoint(
+                    reason == null ? "unknown" : reason);
         }
 
         @JavascriptInterface
