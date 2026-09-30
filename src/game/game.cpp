@@ -45,6 +45,24 @@
 #include "../game/hud.h"
 #include "../game.h" // FIXME "game.h" should be replaced by individual headers
 #include "SDL2/SDL.h"
+
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+#include <emscripten.h>
+EM_JS(void, AstroMenaceAndroidGameplayState, (int Active), {
+    try {
+        if (globalThis.AndroidHost && typeof globalThis.AndroidHost.gameplayState === "function") {
+            globalThis.AndroidHost.gameplayState(!!Active);
+        }
+    } catch (_) {}
+});
+EM_JS(void, AstroMenaceAndroidPauseMenuState, (int Visible), {
+    try {
+        if (globalThis.AndroidHost && typeof globalThis.AndroidHost.pauseMenuState === "function") {
+            globalThis.AndroidHost.pauseMenuState(!!Visible);
+        }
+    } catch (_) {}
+});
+#endif
 #include <sstream>
 #include <iomanip>
 
@@ -185,6 +203,12 @@ void InitGame()
     GameUndestroyableWeapon = GameConfig().Profile[CurrentProfile].UndestroyableWeapon;
     GameWeaponTargetingMode = GameConfig().Profile[CurrentProfile].WeaponTargetingMode;
     GameSpaceShipControlMode = GameConfig().Profile[CurrentProfile].SpaceShipControlMode;
+
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+    ChangeGameConfig().MouseControl = false;
+    AstroMenaceAndroidGameplayState(1);
+    AstroMenaceAndroidPauseMenuState(0);
+#endif
 
     GameEngineSystem = GameConfig().Profile[CurrentProfile].EngineSystem;
     // for sim ship control mode, we need limit ship movements to engine capabilities
