@@ -45,9 +45,20 @@ if [ "$menu_visible" = "1" ]; then
   sleep 15
 fi
 
-SIZE="$(adb shell wm size | tr -d '\r' | sed -n 's/.*: \([0-9][0-9]*\)x\([0-9][0-9]*\).*/\1 \2/p' | tail -n 1)"
+adb exec-out screencap -p > "$OUT/screen-before-input.png" || true
+SIZE="$(python3 - "$OUT/screen-before-input.png" <<'PY'
+import struct, sys
+with open(sys.argv[1], "rb") as f:
+    header = f.read(24)
+if len(header) < 24 or header[:8] != b"\x89PNG\r\n\x1a\n":
+    raise SystemExit(1)
+w, h = struct.unpack(">II", header[16:24])
+print(w, h)
+PY
+)"
 WIDTH="$(printf '%s' "$SIZE" | awk '{print $1}')"
 HEIGHT="$(printf '%s' "$SIZE" | awk '{print $2}')"
+echo "Landscape screenshot size: ${WIDTH}x${HEIGHT}"
 
 if [ "$menu_visible" = "1" ] && [ -n "${WIDTH:-}" ] && [ -n "${HEIGHT:-}" ]; then
   # On overloaded CI emulators Pixel Launcher can raise its own ANR dialog
@@ -57,7 +68,6 @@ if [ "$menu_visible" = "1" ] && [ -n "${WIDTH:-}" ] && [ -n "${HEIGHT:-}" ]; the
   sleep 2
 fi
 
-adb exec-out screencap -p > "$OUT/screen-before-input.png" || true
 adb exec-out screencap -p > "$OUT/screen.png" || true
 
 if [ "$menu_visible" = "1" ] && [ -n "${WIDTH:-}" ] && [ -n "${HEIGHT:-}" ]; then
