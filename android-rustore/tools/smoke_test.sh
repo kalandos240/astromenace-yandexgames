@@ -11,6 +11,11 @@ adb logcat -c
 # Prevent Android's one-time immersive-mode education card from covering
 # the game and intercepting the automated touch/keyboard validation.
 adb shell settings put secure immersive_mode_confirmations confirmed || true
+# The CI Pixel Launcher frequently triggers its own ANR under SwiftShader and
+# places a system dialog above the game. Hide unrelated system error dialogs
+# so input validation targets AstroMenace only.
+adb shell settings put global hide_error_dialogs 1 || true
+adb shell settings put global show_first_crash_dialog 0 || true
 adb shell am force-stop com.kalandos240.astromenace.debug || true
 adb shell am start -W -n com.kalandos240.astromenace.debug/com.kalandos240.astromenace.MainActivity
 
@@ -59,14 +64,6 @@ PY
 WIDTH="$(printf '%s' "$SIZE" | awk '{print $1}')"
 HEIGHT="$(printf '%s' "$SIZE" | awk '{print $2}')"
 echo "Landscape screenshot size: ${WIDTH}x${HEIGHT}"
-
-if [ "$menu_visible" = "1" ] && [ -n "${WIDTH:-}" ] && [ -n "${HEIGHT:-}" ]; then
-  # On overloaded CI emulators Pixel Launcher can raise its own ANR dialog
-  # above the foreground game. Tap "Wait" if it is present; on a normal
-  # device this tap is harmless and does not target any AstroMenace button.
-  adb shell input tap "$((WIDTH * 35 / 100))" "$((HEIGHT * 63 / 100))" || true
-  sleep 2
-fi
 
 adb exec-out screencap -p > "$OUT/screen.png" || true
 
