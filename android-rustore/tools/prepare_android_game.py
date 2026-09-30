@@ -225,6 +225,18 @@ globalThis.ASTROMENACE_ANDROID=true;
   const canvas = document.getElementById("canvas");
   if (!canvas) return;
 
+  // Set the backing buffer before Emscripten/SDL initializes. The Android host
+  // selects a conservative 720p/768p target based on device capacity.
+  try {
+    const renderWidth = Number(globalThis.AndroidHost?.renderWidth?.() || 1280);
+    const renderHeight = Number(globalThis.AndroidHost?.renderHeight?.() || 720);
+    if (renderWidth >= 1280 && renderHeight >= 720) {
+      canvas.width = renderWidth;
+      canvas.height = renderHeight;
+      console.info("[Android] initial render buffer " + renderWidth + "x" + renderHeight);
+    }
+  } catch (_) {}
+
   let menuVisibleSent = false;
   const reportMenuVisible = () => {
     const loading = document.getElementById("loading");
