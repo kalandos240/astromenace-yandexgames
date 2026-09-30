@@ -1,6 +1,7 @@
 package com.kalandos240.astromenace;
 
 import android.app.Activity;
+import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
@@ -14,6 +15,7 @@ import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.webkit.ConsoleMessage;
 import android.webkit.JavascriptInterface;
 import android.webkit.RenderProcessGoneDetail;
@@ -451,6 +453,39 @@ public final class MainActivity extends Activity {
         @JavascriptInterface
         public void startupError(String message) {
             MainActivity.this.startupError(message);
+        }
+
+        @JavascriptInterface
+        public void showKeyboard() {
+            runOnUiThread(() -> {
+                if (webView == null) return;
+                webView.requestFocus();
+                InputMethodManager inputMethodManager =
+                        (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (inputMethodManager != null) {
+                    inputMethodManager.showSoftInput(
+                            webView,
+                            InputMethodManager.SHOW_IMPLICIT);
+                }
+                Log.i(TAG, "SOFT_KEYBOARD_SHOW");
+            });
+        }
+
+        @JavascriptInterface
+        public void hideKeyboard() {
+            runOnUiThread(() -> {
+                if (webView == null) return;
+                InputMethodManager inputMethodManager =
+                        (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (inputMethodManager != null) {
+                    inputMethodManager.hideSoftInputFromWindow(
+                            webView.getWindowToken(),
+                            0);
+                }
+                webView.requestFocus();
+                hideSystemUi();
+                Log.i(TAG, "SOFT_KEYBOARD_HIDE");
+            });
         }
     }
 
