@@ -72,7 +72,8 @@ jobs:
           test -s "${GAME_DIR}/index.js"
           test -s "${GAME_DIR}/gamedata.js"
 
-      # Mobile runtime must not decode the 69 MB Base64 payload inside WebView.\n      - name: Convert browser Base64 payload to Android direct VFS
+      # Mobile runtime must not decode the 69 MB Base64 payload inside WebView.
+      - name: Convert browser Base64 payload to Android direct VFS
         shell: bash
         run: |
           set -euo pipefail
