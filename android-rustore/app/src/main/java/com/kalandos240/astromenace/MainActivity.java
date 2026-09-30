@@ -3,8 +3,10 @@ package com.kalandos240.astromenace;
 import android.app.Activity;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -12,7 +14,12 @@ import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
+import android.webkit.ConsoleMessage;
+import android.webkit.JavascriptInterface;
+import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -20,10 +27,17 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.window.OnBackInvokedDispatcher;
 
+import androidx.webkit.WebViewAssetLoader;
+
 public final class MainActivity extends Activity {
+    private static final String TAG = "AstroMenaceAndroid";
+    private static final String APP_URL =
+            "https://appassets.androidplatform.net/assets/game/index.html";
     private static final long DOUBLE_BACK_EXIT_MS = 1400L;
 
     private WebView webView;
+    private FrameLayout controlsLayer;
+    private TextView loadingOverlay;
     private boolean pageReady;
     private long lastBackAt;
 
@@ -42,14 +56,30 @@ public final class MainActivity extends Activity {
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
 
-        installTouchControls(root);
+        controlsLayer = new FrameLayout(this);
+        controlsLayer.setVisibility(View.GONE);
+        installTouchControls(controlsLayer);
+        root.addView(controlsLayer, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+
+        loadingOverlay = createLoadingOverlay();
+        root.addView(loadingOverlay, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+
         setContentView(root);
         installBackHandler();
 
-        webView.loadUrl("file:///android_asset/game/index.html");
+        Log.i(TAG, "STARTING " + APP_URL);
+        webView.loadUrl(APP_URL);
     }
 
     private WebView createGameWebView() {
+        WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
+                .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
+                .build();
+
         WebView view = new WebView(this);
         view.setBackgroundColor(Color.BLACK);
         view.setLayerType(View.LAYER_TYPE_HARDWARE, null);
@@ -62,31 +92,97 @@ public final class MainActivity extends Activity {
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
-        settings.setAllowFileAccess(true);
+        settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
-        settings.setAllowFileAccessFromFileURLs(true);
-        settings.setAllowUniversalAccessFromFileURLs(false);
         settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
         settings.setSupportZoom(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             view.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false);
         }
-        WebView.setWebContentsDebuggingEnabled(false);
 
-        view.setWebChromeClient(new WebChromeClient());
+        WebView.setWebContentsDebuggingEnabled(false);
+        view.addJavascriptInterface(new AndroidHostBridge(), "AndroidHost");
+
+        view.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onConsoleMessage(ConsoleMessage message) {
+                String line = "JS " + message.messageLevel() + ": "
+                        + message.message() + " @" + message.lineNumber();
+                switch (message.messageLevel()) {
+                    case ERROR:
+                        Log.e(TAG, line);
+                        break;
+                    case WARNING:
+                        Log.w(TAG, line);
+                        break;
+                    default:
+                        Log.d(TAG, line);
+                        break;
+                }
+                return true;
+            }
+        });
+
         view.setWebViewClient(new WebViewClient() {
+            @Override
+            public WebResourceResponse shouldInterceptRequest(
+                    WebView v, WebResourceRequest request) {
+                return assetLoader.shouldInterceptRequest(request.getUrl());
+            }
+
+            @Override
+            @SuppressWarnings("deprecation")
+            public WebResourceResponse shouldInterceptRequest(WebView v, String url) {
+                return assetLoader.shouldInterceptRequest(Uri.parse(url));
+            }
+
             @Override
             public void onPageFinished(WebView v, String url) {
                 pageReady = true;
                 installJavascriptInputBridge();
                 hideSystemUi();
+                Log.i(TAG, "PAGE_FINISHED " + url);
+            }
+
+            @Override
+            public void onReceivedError(
+                    WebView v,
+                    WebResourceRequest request,
+                    android.webkit.WebResourceError error) {
+                if (request.isForMainFrame()) {
+                    startupError("Ошибка загрузки страницы: " + error.getDescription());
+                }
+            }
+
+            @Override
+            public boolean onRenderProcessGone(
+                    WebView v,
+                    RenderProcessGoneDetail detail) {
+                String reason = detail.didCrash()
+                        ? "WebView renderer crashed"
+                        : "WebView renderer was killed (likely memory pressure)";
+                Log.e(TAG, "RENDER_PROCESS_GONE: " + reason);
+                startupError(reason);
+                return true;
             }
         });
 
+        return view;
+    }
+
+    private TextView createLoadingOverlay() {
+        TextView view = new TextView(this);
+        view.setText("Загрузка AstroMenace…");
+        view.setTextColor(Color.WHITE);
+        view.setTextSize(18f);
+        view.setGravity(Gravity.CENTER);
+        view.setBackgroundColor(Color.BLACK);
+        view.setPadding(dp(28), dp(28), dp(28), dp(28));
         return view;
     }
 
@@ -325,6 +421,36 @@ public final class MainActivity extends Activity {
         }
 
         super.onDestroy();
+    }
+
+    private void gameReady() {
+        runOnUiThread(() -> {
+            if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
+            if (controlsLayer != null) controlsLayer.setVisibility(View.VISIBLE);
+            Log.i(TAG, "GAME_READY");
+        });
+    }
+
+    private void startupError(String message) {
+        runOnUiThread(() -> {
+            Log.e(TAG, "STARTUP_ERROR: " + message);
+            if (loadingOverlay != null) {
+                loadingOverlay.setVisibility(View.VISIBLE);
+                loadingOverlay.setText("Ошибка запуска AstroMenace\n\n" + message);
+            }
+        });
+    }
+
+    private final class AndroidHostBridge {
+        @JavascriptInterface
+        public void gameReady() {
+            MainActivity.this.gameReady();
+        }
+
+        @JavascriptInterface
+        public void startupError(String message) {
+            MainActivity.this.startupError(message);
+        }
     }
 
     private void configureCutout() {
