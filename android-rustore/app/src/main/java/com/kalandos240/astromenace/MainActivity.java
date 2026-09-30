@@ -71,6 +71,8 @@ public final class MainActivity extends Activity {
     private boolean pageReady;
     private boolean smokeTestMode;
     private boolean smokeSelfTestStarted;
+    private boolean engineGameplayActive;
+    private boolean pauseMenuVisible;
     private boolean gameplayActive;
     private boolean gameplayTouchBlockLogged;
     private boolean profileScreenActive;
@@ -1127,6 +1129,46 @@ public final class MainActivity extends Activity {
         });
     }
 
+    private void setEngineGameplayState(boolean active) {
+        runOnUiThread(() -> {
+            engineGameplayActive = active;
+            if (!active) {
+                pauseMenuVisible = false;
+                pauseFlowActive = false;
+                setGameplayControlsVisible(false);
+            } else if (!pauseMenuVisible) {
+                setGameplayControlsVisible(true);
+            }
+            Log.i(TAG, active
+                    ? "ENGINE_GAMEPLAY_STATE_ON"
+                    : "ENGINE_GAMEPLAY_STATE_OFF");
+        });
+    }
+
+    private void setPauseMenuState(boolean visible) {
+        runOnUiThread(() -> {
+            pauseMenuVisible = visible;
+            pauseFlowActive = visible;
+
+            if (visible) {
+                // Pause/game menu must receive normal WebView touches.
+                gameplayActive = false;
+                if (controlsLayer != null) {
+                    controlsLayer.setVisibility(View.GONE);
+                }
+                if (joystickView != null) {
+                    joystickView.releaseJoystick();
+                }
+            } else if (engineGameplayActive) {
+                setGameplayControlsVisible(true);
+            }
+
+            Log.i(TAG, visible
+                    ? "PAUSE_MENU_STATE_ON"
+                    : "PAUSE_MENU_STATE_OFF");
+        });
+    }
+
     private void setGameplayControlsVisible(boolean visible) {
         runOnUiThread(() -> {
             gameplayActive = visible;
@@ -1212,6 +1254,16 @@ public final class MainActivity extends Activity {
         @JavascriptInterface
         public void profileInputMode(boolean enabled) {
             MainActivity.this.setProfileInputMode(enabled);
+        }
+
+        @JavascriptInterface
+        public void gameplayState(boolean active) {
+            MainActivity.this.setEngineGameplayState(active);
+        }
+
+        @JavascriptInterface
+        public void pauseMenuState(boolean visible) {
+            MainActivity.this.setPauseMenuState(visible);
         }
 
         @JavascriptInterface
