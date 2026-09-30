@@ -90,7 +90,7 @@ if [ "$selftest" != "1" ]; then
   exit 1
 fi
 
-for marker in   SMOKE_WORKSHOP_IME_GATE_PASS   SMOKE_PROFILE_IME_PASS   SMOKE_GAMEPLAY_TOUCH_BLOCK_PASS   JOYSTICK_ACTIVE   SMOKE_QUIT_TO_MENU_GUARD_PASS   SMOKE_NATIVE_CONTROLS_PASS
+for marker in   SMOKE_WORKSHOP_IME_GATE_PASS   SMOKE_PROFILE_IME_PASS   SMOKE_GAMEPLAY_TOUCH_BLOCK_PASS   JOYSTICK_ACTIVE   SMOKE_PAUSE_TOUCH_PASS   SMOKE_QUIT_TO_MENU_GUARD_PASS   SMOKE_NATIVE_CONTROLS_PASS
 do
   if ! grep -q "AstroMenaceAndroid.*${marker}" "$OUT/logcat-selftest.txt"; then
     echo "Missing regression marker: ${marker}" >&2
