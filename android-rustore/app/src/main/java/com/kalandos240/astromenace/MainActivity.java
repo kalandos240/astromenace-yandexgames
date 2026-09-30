@@ -62,11 +62,14 @@ public final class MainActivity extends Activity {
 
     private WebView webView;
     private FrameLayout controlsLayer;
+    private JoystickView joystickView;
     private TextView loadingOverlay;
     private EditText imeInput;
     private String imePreviousValue = "";
     private boolean imeInternalChange;
     private boolean pageReady;
+    private boolean smokeTestMode;
+    private boolean smokeSelfTestStarted;
     private boolean gameplayActive;
     private boolean gameplayTouchBlockLogged;
     private boolean profileKeyboardArmed;
@@ -85,6 +88,7 @@ public final class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        smokeTestMode = getIntent().getBooleanExtra("astromenace_smoke", false);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         getWindow().setFormat(PixelFormat.RGBA_8888);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
@@ -654,14 +658,14 @@ public final class MainActivity extends Activity {
     private void installTouchControls(FrameLayout root) {
         int joystickSize = dp(176);
 
-        JoystickView joystick = new JoystickView(this);
+        joystickView = new JoystickView(this);
         FrameLayout.LayoutParams joystickParams = new FrameLayout.LayoutParams(
                 joystickSize,
                 joystickSize,
                 Gravity.START | Gravity.BOTTOM);
         joystickParams.leftMargin = dp(22);
         joystickParams.bottomMargin = dp(20);
-        root.addView(joystick, joystickParams);
+        root.addView(joystickView, joystickParams);
 
         addHoldButton(root, "АТАКА 1", "z", "KeyZ", 90,
                 dp(118), dp(30), dp(96), dp(72),
@@ -817,6 +821,11 @@ public final class MainActivity extends Activity {
                 downPressed = down;
                 sendKey(down, "ArrowDown", "ArrowDown", 40);
             }
+        }
+
+        private void smokeExercise() {
+            setDirections(false, true, true, false);
+            postDelayed(() -> setDirections(false, false, false, false), 120L);
         }
     }
 
@@ -1002,6 +1011,88 @@ public final class MainActivity extends Activity {
         super.onDestroy();
     }
 
+    private void maybeRunNativeSmokeSelfTest() {
+        if (!smokeTestMode || smokeSelfTestStarted || webView == null) return;
+        smokeSelfTestStarted = true;
+        webView.postDelayed(this::runNativeSmokeSelfTest, 1200L);
+    }
+
+    private void runNativeSmokeSelfTest() {
+        if (webView == null || isFinishing()) return;
+        Log.i(TAG, "SMOKE_SELFTEST_START");
+
+        // 1) Workshop/profile keyboard gate: a profile-field-shaped tap with
+        // the gate disarmed must never open the IME.
+        disarmProfileKeyboard("smoke-reset");
+        float hotspotX = webView.getWidth() * 0.35f;
+        float hotspotY = webView.getHeight() * 0.31f;
+        MotionEvent down = MotionEvent.obtain(
+                SystemClock.uptimeMillis(), SystemClock.uptimeMillis(),
+                MotionEvent.ACTION_DOWN, hotspotX, hotspotY, 0);
+        MotionEvent up = MotionEvent.obtain(
+                SystemClock.uptimeMillis(), SystemClock.uptimeMillis() + 16,
+                MotionEvent.ACTION_UP, hotspotX, hotspotY, 0);
+        webView.dispatchTouchEvent(down);
+        webView.dispatchTouchEvent(up);
+        down.recycle();
+        up.recycle();
+
+        webView.postDelayed(() -> {
+            if (imeInput != null && imeInput.hasFocus()) {
+                Log.e(TAG, "SMOKE_WORKSHOP_IME_GATE_FAIL");
+                return;
+            }
+            Log.i(TAG, "SMOKE_WORKSHOP_IME_GATE_PASS");
+
+            // 2) Profile input can still deliberately open the system IME.
+            armProfileKeyboard();
+            handleMenuTap(0.35f, 0.31f);
+            webView.postDelayed(() -> {
+                boolean imeOpened = imeInput != null && imeInput.hasFocus();
+                Log.i(TAG, imeOpened
+                        ? "SMOKE_PROFILE_IME_PASS"
+                        : "SMOKE_PROFILE_IME_FAIL");
+                hideNativeKeyboard();
+
+                // 3) Direct gameplay canvas touches are blocked while the
+                // native joystick is active.
+                setGameplayControlsVisible(true);
+                gameplayTouchBlockLogged = false;
+                MotionEvent gameDown = MotionEvent.obtain(
+                        SystemClock.uptimeMillis(), SystemClock.uptimeMillis(),
+                        MotionEvent.ACTION_DOWN,
+                        webView.getWidth() * 0.5f, webView.getHeight() * 0.5f, 0);
+                MotionEvent gameUp = MotionEvent.obtain(
+                        SystemClock.uptimeMillis(), SystemClock.uptimeMillis() + 16,
+                        MotionEvent.ACTION_UP,
+                        webView.getWidth() * 0.5f, webView.getHeight() * 0.5f, 0);
+                webView.dispatchTouchEvent(gameDown);
+                webView.dispatchTouchEvent(gameUp);
+                gameDown.recycle();
+                gameUp.recycle();
+
+                if (joystickView != null) joystickView.smokeExercise();
+
+                webView.postDelayed(() -> {
+                    Log.i(TAG, gameplayTouchBlockLogged
+                            ? "SMOKE_GAMEPLAY_TOUCH_BLOCK_PASS"
+                            : "SMOKE_GAMEPLAY_TOUCH_BLOCK_FAIL");
+
+                    // 4) Confirming in-game quit must not close the Activity;
+                    // AstroMenace owns the transition back to main menu.
+                    pauseFlowActive = true;
+                    handleMenuTap(0.42f, 0.60f);
+                    Log.i(TAG, !isFinishing()
+                            ? "SMOKE_QUIT_TO_MENU_GUARD_PASS"
+                            : "SMOKE_QUIT_TO_MENU_GUARD_FAIL");
+
+                    setGameplayControlsVisible(false);
+                    Log.i(TAG, "SMOKE_NATIVE_CONTROLS_PASS");
+                }, 260L);
+            }, 450L);
+        }, 300L);
+    }
+
     private void gameReady() {
         runOnUiThread(() -> {
             if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
@@ -1028,6 +1119,7 @@ public final class MainActivity extends Activity {
                         null);
             }
             Log.i(TAG, "MENU_VISIBLE");
+            maybeRunNativeSmokeSelfTest();
         });
     }
 
