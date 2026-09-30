@@ -16,7 +16,7 @@ permissions:
 jobs:
   build-android:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 55
 
     steps:
       - name: Checkout Android branch
@@ -71,8 +71,20 @@ jobs:
           test -s "${GAME_DIR}/index.html"
           test -s "${GAME_DIR}/index.js"
           test -s "${GAME_DIR}/gamedata.js"
-          echo "Bundled game payload:"
+
+      - name: Convert browser Base64 payload to Android direct VFS
+        shell: bash
+        run: |
+          set -euo pipefail
+          GAME_DIR="${GITHUB_WORKSPACE}/android-rustore/app/src/main/assets/game"
+          python3 android-rustore/tools/prepare_android_game.py "${GAME_DIR}"
+          test -s "${GAME_DIR}/gamedata.vfs"
+          test ! -e "${GAME_DIR}/gamedata.js"
+          grep -q 'ASTROMENACE_ANDROID=true' "${GAME_DIR}/index.html"
+          grep -q 'Direct VFS installed' "${GAME_DIR}/index.js"
+          echo "Android game payload:"
           du -sh "${GAME_DIR}"
+          ls -lh "${GAME_DIR}/gamedata.vfs" "${GAME_DIR}/index.js"
 
       - name: Prepare optional RuStore release signing
         shell: bash
@@ -109,9 +121,81 @@ jobs:
             echo "Unexpected INTERNET permission found in APK" >&2
             exit 1
           fi
-          echo "Permission audit: PASS (no INTERNET permission)."
+          unzip -l "${APK}" | grep -q 'assets/game/gamedata.vfs'
+          if unzip -l "${APK}" | grep -q 'assets/game/gamedata.js'; then
+            echo "Legacy Base64 gamedata.js unexpectedly packaged" >&2
+            exit 1
+          fi
+          echo "APK package audit: PASS."
 
-      - name: Upload debug APK
+      - name: Enable KVM for emulator smoke test
+        shell: bash
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+
+      - name: Launch APK to real main menu in Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7
+          ram-size: 3072M
+          heap-size: 512M
+          disk-size: 6000M
+          disable-animations: true
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            set -euo pipefail
+            APK="android-rustore/app/build/outputs/apk/debug/app-debug.apk"
+            OUT="android-rustore/smoke"
+            mkdir -p "${OUT}"
+
+            adb install -r "${APK}"
+            adb logcat -c
+            adb shell am force-stop com.kalandos240.astromenace.debug || true
+            adb shell am start -W -n com.kalandos240.astromenace.debug/com.kalandos240.astromenace.MainActivity
+
+            ready=0
+            for i in $(seq 1 120); do
+              adb logcat -d > "${OUT}/logcat-live.txt"
+
+              if grep -q 'AstroMenaceAndroid.*GAME_READY' "${OUT}/logcat-live.txt"; then
+                ready=1
+                echo "AstroMenace reached GAME_READY."
+                break
+              fi
+
+              if grep -Eq 'AstroMenaceAndroid.*(STARTUP_ERROR|RENDER_PROCESS_GONE)|FATAL EXCEPTION.*com.kalandos240.astromenace' "${OUT}/logcat-live.txt"; then
+                echo "AstroMenace startup failure detected."
+                break
+              fi
+
+              sleep 2
+            done
+
+            adb exec-out screencap -p > "${OUT}/screen.png" || true
+            adb shell dumpsys meminfo com.kalandos240.astromenace.debug > "${OUT}/meminfo.txt" || true
+            adb logcat -d > "${OUT}/logcat.txt"
+
+            if [[ "${ready}" != "1" ]]; then
+              echo "AstroMenace did not reach GAME_READY."
+              tail -n 300 "${OUT}/logcat.txt"
+              exit 1
+            fi
+
+      - name: Upload emulator smoke diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: astromenace-rustore-smoke
+          path: android-rustore/smoke/
+          if-no-files-found: warn
+
+      - name: Upload verified debug APK
         uses: actions/upload-artifact@v4
         with:
           name: astromenace-rustore-debug-apk
