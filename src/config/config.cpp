@@ -90,8 +90,8 @@ sGameConfig::sGameConfig()
     KeyBoardRight = SDLK_RIGHT;
     KeyBoardUp = SDLK_UP;
     KeyBoardDown = SDLK_DOWN;
-    KeyBoardPrimary = SDLK_LCTRL;
-    KeyBoardSecondary = SDLK_SPACE;
+    KeyBoardPrimary = SDLK_z;
+    KeyBoardSecondary = SDLK_x;
     // mouse
     MousePrimary = SDL_BUTTON_LEFT;
     MouseSecondary = SDL_BUTTON_RIGHT;
@@ -300,10 +300,10 @@ static void CheckConfig()
         Config.KeyBoardRight = SDLK_RIGHT;
     }
     if (Config.KeyBoardPrimary == SDLK_UNKNOWN) {
-        Config.KeyBoardPrimary = SDLK_LCTRL;
+        Config.KeyBoardPrimary = SDLK_z;
     }
     if (Config.KeyBoardSecondary == SDLK_UNKNOWN) {
-        Config.KeyBoardSecondary = SDLK_SPACE;
+        Config.KeyBoardSecondary = SDLK_x;
     }
 
     if (Config.FontNumber < 0 || Config.FontNumber >= GetFontQuantity()) {

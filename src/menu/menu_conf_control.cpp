@@ -61,6 +61,13 @@ static bool ReservedKeys(int Key)
         // warnings on old compiller versions
         vw_SetKeyStatus(Key, false);
         return true;
+    case SDLK_TAB:
+    case SDLK_LCTRL:
+    case SDLK_RCTRL:
+    case SDLK_LALT:
+    case SDLK_RALT:
+    case SDLK_LGUI:
+    case SDLK_RGUI:
     case SDLK_F1:
     case SDLK_F2:
     case SDLK_F3:
@@ -222,10 +229,10 @@ void CheckKeysBeforeExit()
         ChangeGameConfig().KeyBoardRight = SDLK_RIGHT;
     }
     if (!GameConfig().KeyBoardPrimary) {
-        ChangeGameConfig().KeyBoardPrimary = SDLK_LCTRL;
+        ChangeGameConfig().KeyBoardPrimary = SDLK_z;
     }
     if (!GameConfig().KeyBoardSecondary) {
-        ChangeGameConfig().KeyBoardSecondary = SDLK_SPACE;
+        ChangeGameConfig().KeyBoardSecondary = SDLK_x;
     }
     if (!GameConfig().MousePrimary) {
         ChangeGameConfig().MousePrimary = SDL_BUTTON_LEFT;

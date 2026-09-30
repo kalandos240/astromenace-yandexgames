@@ -8,6 +8,11 @@ on:
       - 'scripts/enable_gl4es_offline.py'
       - 'web/yandex-offline-pre.js'
       - 'web/offline-shell.html'
+      - 'src/menu/menu_credits.cpp'
+      - 'src/menu/menu_conf_control.cpp'
+      - 'src/menu/menu.cpp'
+      - 'src/config/config.cpp'
+      - 'src/yandex_ad_scheduler.cpp'
       - '.github/workflows/build-web-offline.yml'
 
 permissions:
@@ -31,7 +36,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p web
-          cat > web/OFFLINE_BUILD_STATUS.md <<EOF
+          cat > web/OFFLINE_BUILD_STATUS.md <<'EOF'
           # Fast offline web build
 
           - Status: **RUNNING**
@@ -180,6 +185,39 @@ jobs:
           mkdir -p dist
 
           python3 scripts/enable_gl4es_offline.py
+
+          # Moderation regression audit.
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          credits = Path('src/menu/menu_credits.cpp').read_text(encoding='utf-8')
+          start = credits.index('const std::vector<std::string> CreditsArray{')
+          end = credits.index('};', start)
+          visible_credits = credits[start:end]
+          if re.search(r'https?://|www\.|\b[a-z0-9-]+\.(?:com|net|org|ru|io)\b', visible_credits, re.I):
+              raise SystemExit('Moderation audit failed: external URL/domain remains in visible credits')
+
+          config = Path('src/config/config.cpp').read_text(encoding='utf-8')
+          menu = Path('src/menu/menu.cpp').read_text(encoding='utf-8')
+          controls = Path('src/menu/menu_conf_control.cpp').read_text(encoding='utf-8')
+          for name, body in [('config', config), ('menu', menu), ('controls', controls)]:
+              if 'KeyBoardPrimary = SDLK_LCTRL' in body or 'KeyBoardSecondary = SDLK_SPACE' in body:
+                  raise SystemExit(f'Moderation audit failed: old browser-risky defaults remain in {name}')
+          if 'KeyBoardPrimary = SDLK_z' not in config or 'KeyBoardSecondary = SDLK_x' not in config:
+              raise SystemExit('Moderation audit failed: safe Z/X defaults missing')
+          for key in ('SDLK_TAB', 'SDLK_LCTRL', 'SDLK_RCTRL', 'SDLK_LALT', 'SDLK_RALT', 'SDLK_LGUI', 'SDLK_RGUI'):
+              if key not in controls:
+                  raise SystemExit(f'Moderation audit failed: reserved key not blocked: {key}')
+
+          bridge = Path('web/yandex-offline-pre.js').read_text(encoding='utf-8')
+          for needle in ('showFullscreenAdv', 'game_api_pause', 'game_api_resume',
+                         'GameplayAPI', 'LoadingAPI', 'environment?.i18n?.lang'):
+              if needle not in bridge:
+                  raise SystemExit(f'Moderation audit failed: Yandex bridge marker missing: {needle}')
+          print('Yandex moderation regression audit: PASS')
+          PY
+
           mapfile -t SOURCES < <(find src -type f -name '*.cpp' -print | sort)
 
           # SINGLE_FILE embeds the WebAssembly module into index.js. Game data is
@@ -320,7 +358,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat > web/OFFLINE_BUILD_STATUS.md <<EOF
+          git reset --hard HEAD
+          cat > web/OFFLINE_BUILD_STATUS.md <<'EOF'
           # Fast offline web build
 
           - Status: **SUCCESS**
@@ -351,7 +390,8 @@ jobs:
         shell: bash
         run: |
           set +e
-          cat > web/OFFLINE_BUILD_STATUS.md <<EOF
+          git reset --hard HEAD
+          cat > web/OFFLINE_BUILD_STATUS.md <<'EOF'
           # Fast offline web build
 
           - Status: **FAILED**

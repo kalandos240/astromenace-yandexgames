@@ -10,6 +10,12 @@ struct YandexAdSchedulerInstaller {
         // commas/object literals that are inconvenient inside the EM_ASM macro.
         emscripten_run_script(R"ASTROMENACE_JS(
             (() => {
+                // The fast/offline Yandex bridge already owns the ad cadence and
+                // pause/resume lifecycle. Do not layer a second timer over it.
+                if (typeof Module.yandexMaybeShowAd === 'function') {
+                    console.info('[Yandex] C++ fallback ad scheduler skipped; web bridge scheduler is active.');
+                    return;
+                }
                 if (Module.yandexTwoMinuteAdsInstalled) return;
                 Module.yandexTwoMinuteAdsInstalled = true;
 

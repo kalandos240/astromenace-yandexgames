@@ -251,10 +251,10 @@ void SetOptionsMenu(eMenuStatus Menu)
             ChangeGameConfig().KeyBoardRight = SDLK_RIGHT;
         }
         if (!GameConfig().KeyBoardPrimary) {
-            ChangeGameConfig().KeyBoardPrimary = SDLK_LCTRL;
+            ChangeGameConfig().KeyBoardPrimary = SDLK_z;
         }
         if (!GameConfig().KeyBoardSecondary) {
-            ChangeGameConfig().KeyBoardSecondary = SDLK_SPACE;
+            ChangeGameConfig().KeyBoardSecondary = SDLK_x;
         }
         if (!GameConfig().MousePrimary) {
             ChangeGameConfig().MousePrimary = SDL_BUTTON_LEFT;
