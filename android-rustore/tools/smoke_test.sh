@@ -57,13 +57,14 @@ if [ "$menu_visible" = "1" ] && [ -n "${WIDTH:-}" ] && [ -n "${HEIGHT:-}" ]; the
   # Open Start Game -> profile screen, tap the pilot-name input and exercise
   # the real Android IME path. Coordinates are normalized against the
   # edge-to-edge canvas, so this also covers the full-screen mobile layout.
-  adb shell input tap "$((WIDTH * 50 / 100))" "$((HEIGHT * 25 / 100))" || true
-  sleep 2
+  adb shell input tap "$((WIDTH * 50 / 100))" "$((HEIGHT * 20 / 100))" || true
+  sleep 4
   # Fresh profiles show the built-in "tips and tricks" dialog once. Android
   # Back is mapped to Escape by the app, so dismiss that modal before tapping
   # the name field.
   adb shell input keyevent 4 || true
-  sleep 1
+  sleep 2
+  adb exec-out screencap -p > "$OUT/screen-profile-before-keyboard.png" || true
   adb shell input tap "$((WIDTH * 35 / 100))" "$((HEIGHT * 32 / 100))" || true
   sleep 1
   adb shell input text MobilePilot || true
