@@ -8,6 +8,7 @@ on:
       - rustore-mobile
     paths:
       - 'android-rustore/**'
+      - 'src/platform/video.cpp'
       - '.github/workflows/build-rustore-android.yml'
 
 permissions:
@@ -72,6 +73,14 @@ jobs:
           test -s "${GAME_DIR}/index.html"
           test -s "${GAME_DIR}/index.js"
           test -s "${GAME_DIR}/gamedata.js"
+
+      - name: Build Android-tuned WebAssembly engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          GAME_DIR="${GITHUB_WORKSPACE}/android-rustore/app/src/main/assets/game"
+          bash android-rustore/tools/build_android_engine.sh "${GAME_DIR}"
+          test -s "${GAME_DIR}/index.js"
 
       # Mobile runtime must not decode the 69 MB Base64 payload inside WebView.
       - name: Convert browser Base64 payload to Android direct VFS
