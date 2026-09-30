@@ -645,6 +645,15 @@ public final class MainActivity extends Activity {
         runOnUiThread(() -> {
             if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
             if (controlsLayer != null) controlsLayer.setVisibility(View.VISIBLE);
+            if (webView != null) {
+                webView.evaluateJavascript(
+                        "(()=>{const c=document.getElementById('canvas');"
+                                + "if(!c)return;"
+                                + "const r=c.getBoundingClientRect();"
+                                + "AndroidHost.viewportReport(Math.round(r.width),Math.round(r.height),"
+                                + "Math.round(window.innerWidth),Math.round(window.innerHeight));})()",
+                        null);
+            }
             Log.i(TAG, "GAME_READY");
         });
     }
@@ -668,6 +677,21 @@ public final class MainActivity extends Activity {
         @JavascriptInterface
         public void startupError(String message) {
             MainActivity.this.startupError(message);
+        }
+
+        @JavascriptInterface
+        public void viewportReport(int canvasWidth, int canvasHeight, int viewportWidth, int viewportHeight) {
+            int deltaWidth = Math.abs(canvasWidth - viewportWidth);
+            int deltaHeight = Math.abs(canvasHeight - viewportHeight);
+            if (deltaWidth <= 2 && deltaHeight <= 2) {
+                Log.i(TAG, "FULLSCREEN_CANVAS_PASS canvas="
+                        + canvasWidth + "x" + canvasHeight
+                        + " viewport=" + viewportWidth + "x" + viewportHeight);
+            } else {
+                Log.e(TAG, "FULLSCREEN_CANVAS_FAIL canvas="
+                        + canvasWidth + "x" + canvasHeight
+                        + " viewport=" + viewportWidth + "x" + viewportHeight);
+            }
         }
 
         @JavascriptInterface
