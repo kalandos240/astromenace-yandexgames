@@ -46,7 +46,6 @@ public final class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         configureCutout();
-        hideSystemUi();
 
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
@@ -64,11 +63,13 @@ public final class MainActivity extends Activity {
                 FrameLayout.LayoutParams.MATCH_PARENT));
 
         loadingOverlay = createLoadingOverlay();
+        loadingOverlay.setVisibility(View.GONE);
         root.addView(loadingOverlay, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
 
         setContentView(root);
+        root.post(this::hideSystemUi);
         installBackHandler();
 
         Log.i(TAG, "STARTING " + APP_URL);
