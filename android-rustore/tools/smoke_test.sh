@@ -8,6 +8,9 @@ mkdir -p "$OUT"
 test -s "$APK"
 adb install -r "$APK"
 adb logcat -c
+# Prevent Android's one-time immersive-mode education card from covering
+# the game and intercepting the automated touch/keyboard validation.
+adb shell settings put secure immersive_mode_confirmations confirmed || true
 adb shell am force-stop com.kalandos240.astromenace.debug || true
 adb shell am start -W -n com.kalandos240.astromenace.debug/com.kalandos240.astromenace.MainActivity
 
@@ -31,21 +34,11 @@ while [ "$i" -le 120 ]; do
   i=$((i + 1))
 done
 
-adb exec-out screencap -p > "$OUT/screen-before-dismiss.png" || true
+adb exec-out screencap -p > "$OUT/screen-before-input.png" || true
 
-if [ "$ready" = "1" ]; then
-  # Android shows a one-time immersive-mode education overlay on a fresh emulator.
-  # Dismiss it and capture the actual game surface/menu for visual validation.
-  SIZE="$(adb shell wm size | tr -d '\r' | sed -n 's/.*: \([0-9][0-9]*\)x\([0-9][0-9]*\).*/\1 \2/p' | tail -n 1)"
-  WIDTH="$(printf '%s' "$SIZE" | awk '{print $1}')"
-  HEIGHT="$(printf '%s' "$SIZE" | awk '{print $2}')"
-  if [ -n "$WIDTH" ] && [ -n "$HEIGHT" ]; then
-    X=$((WIDTH * 68 / 100))
-    Y=$((HEIGHT * 48 / 100))
-    adb shell input tap "$X" "$Y" || true
-    sleep 2
-  fi
-fi
+SIZE="$(adb shell wm size | tr -d '\r' | sed -n 's/.*: \([0-9][0-9]*\)x\([0-9][0-9]*\).*/\1 \2/p' | tail -n 1)"
+WIDTH="$(printf '%s' "$SIZE" | awk '{print $1}')"
+HEIGHT="$(printf '%s' "$SIZE" | awk '{print $2}')"
 
 adb exec-out screencap -p > "$OUT/screen.png" || true
 
