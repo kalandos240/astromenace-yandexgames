@@ -66,6 +66,7 @@ public final class MainActivity extends Activity {
     private boolean imeInternalChange;
     private boolean pageReady;
     private boolean gameplayActive;
+    private boolean gameplayTouchBlockLogged;
     private boolean profileKeyboardArmed;
     private int safePointGeneration;
     private long lastBackAt;
@@ -291,6 +292,10 @@ public final class MainActivity extends Activity {
         // coordinates from ever opening Android's IME.
         view.setOnTouchListener((touchedView, event) -> {
             if (gameplayActive) {
+                if (event.getActionMasked() == MotionEvent.ACTION_UP && !gameplayTouchBlockLogged) {
+                    gameplayTouchBlockLogged = true;
+                    Log.i(TAG, "GAMEPLAY_CANVAS_TOUCH_BLOCKED");
+                }
                 return true;
             }
 
@@ -725,6 +730,17 @@ public final class MainActivity extends Activity {
         }
 
         private void setDirections(boolean left, boolean right, boolean up, boolean down) {
+            boolean changed = left != leftPressed
+                    || right != rightPressed
+                    || up != upPressed
+                    || down != downPressed;
+            if (changed && (left || right || up || down)) {
+                Log.i(TAG, "JOYSTICK_ACTIVE left=" + left
+                        + " right=" + right
+                        + " up=" + up
+                        + " down=" + down);
+            }
+
             if (left != leftPressed) {
                 leftPressed = left;
                 sendKey(left, "ArrowLeft", "ArrowLeft", 37);
@@ -959,6 +975,7 @@ public final class MainActivity extends Activity {
             if (visible) {
                 safePointGeneration++;
                 profileKeyboardArmed = false;
+                gameplayTouchBlockLogged = false;
             }
 
             if (controlsLayer != null) {
