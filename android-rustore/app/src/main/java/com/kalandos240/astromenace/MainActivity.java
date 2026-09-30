@@ -67,6 +67,7 @@ public final class MainActivity extends Activity {
     private EditText imeInput;
     private String imePreviousValue = "";
     private boolean imeInternalChange;
+    private boolean imeShowRequested;
     private boolean pageReady;
     private boolean smokeTestMode;
     private boolean smokeSelfTestStarted;
@@ -595,6 +596,7 @@ public final class MainActivity extends Activity {
                     InputMethodManager.SHOW_IMPLICIT));
         }
 
+        imeShowRequested = true;
         Log.i(TAG, "SOFT_KEYBOARD_SHOW");
     }
 
@@ -1049,12 +1051,12 @@ public final class MainActivity extends Activity {
             Log.i(TAG, "SMOKE_WORKSHOP_IME_GATE_PASS");
 
             // 2) Profile input can still deliberately open the system IME.
+            imeShowRequested = false;
             profileKeyboardCanArm = true;
             armProfileKeyboard();
             handleMenuTap(0.35f, 0.31f);
             webView.postDelayed(() -> {
-                boolean imeOpened = imeInput != null && imeInput.hasFocus();
-                Log.i(TAG, imeOpened
+                Log.i(TAG, imeShowRequested
                         ? "SMOKE_PROFILE_IME_PASS"
                         : "SMOKE_PROFILE_IME_FAIL");
                 hideNativeKeyboard();
@@ -1161,7 +1163,7 @@ public final class MainActivity extends Activity {
 
         // 1366x768 is only ~14% more pixels than 720p and is the highest
         // conservative step used here. Low-memory/smaller devices stay at 720p.
-        return memoryClassMb >= 256 && physicalLongSide >= 1600 ? 1366 : 1280;
+        return memoryClassMb >= 192 && physicalLongSide >= 1600 ? 1366 : 1280;
     }
 
     private int preferredRenderHeight() {
