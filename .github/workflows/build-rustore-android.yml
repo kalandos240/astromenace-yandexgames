@@ -1,4 +1,5 @@
 name: Build AstroMenace RuStore Android
+# Mobile validation: cursor, IME, and edge-to-edge fullscreen
 
 on:
   workflow_dispatch:
