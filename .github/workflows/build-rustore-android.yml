@@ -150,7 +150,7 @@ jobs:
           disable-animations: true
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
-            set -euo pipefail
+            set -eu
             APK="android-rustore/app/build/outputs/apk/debug/app-debug.apk"
             OUT="android-rustore/smoke"
             mkdir -p "${OUT}"
@@ -182,7 +182,7 @@ jobs:
             adb shell dumpsys meminfo com.kalandos240.astromenace.debug > "${OUT}/meminfo.txt" || true
             adb logcat -d > "${OUT}/logcat.txt"
 
-            if [[ "${ready}" != "1" ]]; then
+            if [ "${ready}" != "1" ]; then
               echo "AstroMenace did not reach GAME_READY."
               tail -n 300 "${OUT}/logcat.txt"
               exit 1
