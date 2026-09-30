@@ -3,7 +3,7 @@ name: Build AstroMenace Fast Offline WebAssembly
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, fix/browser-startup-20260930]
     paths:
       - 'scripts/enable_gl4es_offline.py'
       - 'web/yandex-offline-pre.js'
@@ -19,7 +19,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: astromenace-fast-offline-build
+  group: astromenace-fast-offline-build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -48,8 +48,8 @@ jobs:
           git add web/OFFLINE_BUILD_STATUS.md
           if ! git diff --cached --quiet; then
             git commit -m 'Mark fast offline WebAssembly build running [skip ci]'
-            git pull --rebase origin main
-            git push origin HEAD:main
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
       - name: Prepare complete optimized RU EN game data
@@ -381,8 +381,8 @@ jobs:
           git add web/OFFLINE_BUILD_STATUS.md
           if ! git diff --cached --quiet; then
             git commit -m 'Update fast offline WebAssembly build status [skip ci]'
-            git pull --rebase origin main
-            git push origin HEAD:main
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
       - name: Publish failure marker
@@ -402,5 +402,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add web/OFFLINE_BUILD_STATUS.md
           git commit -m 'Mark fast offline WebAssembly build failed [skip ci]' || true
-          git pull --rebase origin main || true
-          git push origin HEAD:main || true
+          git pull --rebase origin "$GITHUB_REF_NAME" || true
+          git push origin "HEAD:$GITHUB_REF_NAME" || true
