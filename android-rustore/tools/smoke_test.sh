@@ -31,6 +31,22 @@ while [ "$i" -le 120 ]; do
   i=$((i + 1))
 done
 
+adb exec-out screencap -p > "$OUT/screen-before-dismiss.png" || true
+
+if [ "$ready" = "1" ]; then
+  # Android shows a one-time immersive-mode education overlay on a fresh emulator.
+  # Dismiss it and capture the actual game surface/menu for visual validation.
+  SIZE="$(adb shell wm size | tr -d '\r' | sed -n 's/.*: \([0-9][0-9]*\)x\([0-9][0-9]*\).*/\1 \2/p' | tail -n 1)"
+  WIDTH="$(printf '%s' "$SIZE" | awk '{print $1}')"
+  HEIGHT="$(printf '%s' "$SIZE" | awk '{print $2}')"
+  if [ -n "$WIDTH" ] && [ -n "$HEIGHT" ]; then
+    X=$((WIDTH * 68 / 100))
+    Y=$((HEIGHT * 48 / 100))
+    adb shell input tap "$X" "$Y" || true
+    sleep 2
+  fi
+fi
+
 adb exec-out screencap -p > "$OUT/screen.png" || true
 adb shell dumpsys meminfo com.kalandos240.astromenace.debug > "$OUT/meminfo.txt" || true
 adb logcat -d > "$OUT/logcat.txt"
