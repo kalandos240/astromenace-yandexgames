@@ -35,9 +35,10 @@ while [ "$i" -le 120 ]; do
 done
 
 if [ "$ready" = "1" ]; then
-  # Let the first main-menu frame replace the HTML loading layer before
-  # automated taps are sent.
-  sleep 2
+  # GAME_READY is emitted when engine initialization reaches the menu path,
+  # but slower emulated GPUs can still be finishing the first visible menu
+  # frame. Wait until that rendering work has settled before touch validation.
+  sleep 8
 fi
 
 adb exec-out screencap -p > "$OUT/screen-before-input.png" || true
@@ -71,8 +72,8 @@ if [ "$ready" = "1" ] && [ -n "${WIDTH:-}" ] && [ -n "${HEIGHT:-}" ]; then
     echo "Android profile keyboard was not requested." >&2
     exit 1
   fi
-  if ! grep -q 'AstroMenaceAndroid.*PROFILE_NAME_TAP' "$OUT/logcat-after-input.txt"; then
-    echo "Native pilot-name field tap was not detected." >&2
+  if ! grep -q 'AstroMenaceAndroid.*PROFILE_NAME_HOTSPOT' "$OUT/logcat-after-input.txt"; then
+    echo "Mobile pilot-name hotspot was not detected." >&2
     exit 1
   fi
   if ! grep -q 'TextInput, Unicode:' "$OUT/logcat-after-input.txt"; then
