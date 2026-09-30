@@ -644,6 +644,12 @@ public final class MainActivity extends Activity {
     private void gameReady() {
         runOnUiThread(() -> {
             if (loadingOverlay != null) loadingOverlay.setVisibility(View.GONE);
+            Log.i(TAG, "GAME_READY");
+        });
+    }
+
+    private void menuVisible() {
+        runOnUiThread(() -> {
             if (controlsLayer != null) controlsLayer.setVisibility(View.VISIBLE);
             if (webView != null) {
                 webView.evaluateJavascript(
@@ -654,7 +660,7 @@ public final class MainActivity extends Activity {
                                 + "Math.round(window.innerWidth),Math.round(window.innerHeight));})()",
                         null);
             }
-            Log.i(TAG, "GAME_READY");
+            Log.i(TAG, "MENU_VISIBLE");
         });
     }
 
@@ -677,6 +683,11 @@ public final class MainActivity extends Activity {
         @JavascriptInterface
         public void startupError(String message) {
             MainActivity.this.startupError(message);
+        }
+
+        @JavascriptInterface
+        public void menuVisible() {
+            MainActivity.this.menuVisible();
         }
 
         @JavascriptInterface
