@@ -48,6 +48,32 @@ if [ "$ready" = "1" ]; then
 fi
 
 adb exec-out screencap -p > "$OUT/screen.png" || true
+
+if [ "$ready" = "1" ] && [ -n "${WIDTH:-}" ] && [ -n "${HEIGHT:-}" ]; then
+  # Open Start Game -> profile screen, tap the pilot-name input and exercise
+  # the real Android IME path. Coordinates are normalized against the
+  # edge-to-edge canvas, so this also covers the full-screen mobile layout.
+  adb shell input tap "$((WIDTH * 50 / 100))" "$((HEIGHT * 25 / 100))" || true
+  sleep 2
+  adb shell input tap "$((WIDTH * 35 / 100))" "$((HEIGHT * 32 / 100))" || true
+  sleep 1
+  adb shell input text MobilePilot || true
+  sleep 1
+  adb shell input keyevent 66 || true
+  sleep 2
+  adb logcat -d > "$OUT/logcat-after-input.txt"
+
+  if ! grep -q 'AstroMenaceAndroid.*SOFT_KEYBOARD_SHOW' "$OUT/logcat-after-input.txt"; then
+    echo "Android profile keyboard was not requested." >&2
+    exit 1
+  fi
+  if ! grep -q '\[AndroidInput\] char' "$OUT/logcat-after-input.txt"; then
+    echo "Android profile text was not forwarded into the game." >&2
+    exit 1
+  fi
+  adb exec-out screencap -p > "$OUT/screen-after-profile-input.png" || true
+fi
+
 adb shell dumpsys meminfo com.kalandos240.astromenace.debug > "$OUT/meminfo.txt" || true
 adb logcat -d > "$OUT/logcat.txt"
 
