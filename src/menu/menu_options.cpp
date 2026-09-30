@@ -224,6 +224,7 @@ void OptionsMenu(float ContentTransp, float &ButtonTransp1, float &LastButtonUpd
 
 
 
+#if !defined(ASTROMENACE_ANDROID_BUILD)
     Y1 += Prir1;
     vw_DrawTextUTF32(X1, Y1, -280, 0, 1.0f, sRGBCOLOR{eRGBCOLOR::white}, ContentTransp, vw_GetTextUTF32("Full Screen"));
     if (DrawButton128_2(X1+300, Y1-6, vw_GetTextUTF32("Off"), ContentTransp, DetectWindowSizeArray().empty() || !Options_Fullscreen)
@@ -313,6 +314,8 @@ void OptionsMenu(float ContentTransp, float &ButtonTransp1, float &LastButtonUpd
 
 
 
+
+#endif
 
     Y1 += Prir1;
     vw_DrawTextUTF32(X1, Y1, -280, 0, 1.0f, sRGBCOLOR{eRGBCOLOR::white}, ContentTransp, vw_GetTextUTF32("Brightness"));
