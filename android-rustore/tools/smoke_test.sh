@@ -16,7 +16,11 @@ fi
 grep -q 'Android/WebView must not wait in the desktop fade-out state' src/game/game.cpp
 grep -q 'void RealExitGame();' src/game/game.cpp
 grep -q 'NeedShowHint\[4\] = false' src/main.cpp
-echo "Mobile-only UI source audit: PASS."
+grep -q 'Desktop pre-simulates 30 seconds' src/menu/menu.cpp
+grep -q '#if !defined(ASTROMENACE_ANDROID_BUILD)' src/menu/menu_options.cpp
+grep -q '#if !defined(ASTROMENACE_ANDROID_BUILD)' src/menu/menu_interface.cpp
+grep -q '#if !defined(ASTROMENACE_ANDROID_BUILD)' src/menu/menu_options_adv.cpp
+echo "Mobile-only UI and fast-main-menu source audit: PASS."
 adb install -r "$APK"
 adb logcat -c
 # Prevent Android's one-time immersive-mode education card from covering
