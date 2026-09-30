@@ -34,6 +34,12 @@ while [ "$i" -le 120 ]; do
   i=$((i + 1))
 done
 
+if [ "$ready" = "1" ]; then
+  # Let the first main-menu frame replace the HTML loading layer before
+  # automated taps are sent.
+  sleep 2
+fi
+
 adb exec-out screencap -p > "$OUT/screen-before-input.png" || true
 
 SIZE="$(adb shell wm size | tr -d '\r' | sed -n 's/.*: \([0-9][0-9]*\)x\([0-9][0-9]*\).*/\1 \2/p' | tail -n 1)"
@@ -65,8 +71,12 @@ if [ "$ready" = "1" ] && [ -n "${WIDTH:-}" ] && [ -n "${HEIGHT:-}" ]; then
     echo "Android profile keyboard was not requested." >&2
     exit 1
   fi
-  if ! grep -q '\[AndroidInput\] char' "$OUT/logcat-after-input.txt"; then
-    echo "Android profile text was not forwarded into the game." >&2
+  if ! grep -q 'AstroMenaceAndroid.*PROFILE_NAME_TAP' "$OUT/logcat-after-input.txt"; then
+    echo "Native pilot-name field tap was not detected." >&2
+    exit 1
+  fi
+  if ! grep -q 'TextInput, Unicode:' "$OUT/logcat-after-input.txt"; then
+    echo "Android profile text did not reach SDL text input." >&2
     exit 1
   fi
   adb exec-out screencap -p > "$OUT/screen-after-profile-input.png" || true
