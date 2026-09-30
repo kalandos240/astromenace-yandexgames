@@ -255,6 +255,25 @@ globalThis.ASTROMENACE_ANDROID=true;
     }
   };
 
+  let cleanExitBridgeInstalled = false;
+  const installCleanExitBridge = () => {
+    if (cleanExitBridgeInstalled || !globalThis.Module || typeof globalThis.Module.onExit !== "function") return;
+    const previousOnExit = globalThis.Module.onExit;
+    globalThis.Module.onExit = function(status) {
+      try {
+        return previousOnExit.apply(this, arguments);
+      } finally {
+        if (Number(status) === 0) {
+          try { globalThis.AndroidHost?.cleanExit?.(); } catch (_) {}
+          console.info("[Android] clean Emscripten exit forwarded to Activity");
+        }
+      }
+    };
+    cleanExitBridgeInstalled = true;
+    console.info("[Android] clean-exit bridge installed");
+  };
+  setInterval(installCleanExitBridge, 100);
+
   let gameplayBridgeInstalled = false;
   const installGameplayBridge = () => {
     if (gameplayBridgeInstalled || !globalThis.Module) return;
