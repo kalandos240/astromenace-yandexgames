@@ -14,6 +14,7 @@ if grep -q 'class JoystickView' android-rustore/app/src/main/java/com/kalandos24
   exit 1
 fi
 grep -q 'Android/WebView must not wait in the desktop fade-out state' src/game/game.cpp
+grep -q 'void RealExitGame();' src/game/game.cpp
 grep -q 'NeedShowHint\[4\] = false' src/main.cpp
 echo "Mobile-only UI source audit: PASS."
 adb install -r "$APK"
