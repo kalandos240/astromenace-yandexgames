@@ -100,17 +100,10 @@ jobs:
             echo "No release keystore configured: release outputs will remain unsigned; debug APK stays installable."
           fi
 
-      - name: Build APK and AAB
+      - name: Build debug APK for smoke test
         working-directory: android-rustore
-        env:
-          ASTROMENACE_KEYSTORE_PASSWORD: ${{ secrets.RUSTORE_KEYSTORE_PASSWORD }}
-          ASTROMENACE_KEY_ALIAS: ${{ secrets.RUSTORE_KEY_ALIAS }}
-          ASTROMENACE_KEY_PASSWORD: ${{ secrets.RUSTORE_KEY_PASSWORD }}
         run: |
-          gradle --no-daemon --stacktrace \
-            :app:assembleDebug \
-            :app:assembleRelease \
-            :app:bundleRelease
+          gradle --no-daemon --stacktrace :app:assembleDebug
 
       - name: Verify packaged application does not request INTERNET
         shell: bash
@@ -158,6 +151,17 @@ jobs:
           name: astromenace-rustore-smoke
           path: android-rustore/smoke/
           if-no-files-found: warn
+
+      - name: Build release APK and AAB after smoke passes
+        working-directory: android-rustore
+        env:
+          ASTROMENACE_KEYSTORE_PASSWORD: ${{ secrets.RUSTORE_KEYSTORE_PASSWORD }}
+          ASTROMENACE_KEY_ALIAS: ${{ secrets.RUSTORE_KEY_ALIAS }}
+          ASTROMENACE_KEY_PASSWORD: ${{ secrets.RUSTORE_KEY_PASSWORD }}
+        run: |
+          gradle --no-daemon --stacktrace \
+            :app:assembleRelease \
+            :app:bundleRelease
 
       - name: Upload verified debug APK
         uses: actions/upload-artifact@v4
