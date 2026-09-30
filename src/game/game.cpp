@@ -62,6 +62,13 @@ EM_JS(void, AstroMenaceAndroidPauseMenuState, (int Visible), {
         }
     } catch (_) {}
 });
+EM_JS(void, AstroMenaceAndroidSmokeQuitTransitionPassed, (), {
+    try {
+        if (globalThis.AndroidHost && typeof globalThis.AndroidHost.smokeQuitToMenuPass === "function") {
+            globalThis.AndroidHost.smokeQuitToMenuPass();
+        }
+    } catch (_) {}
+});
 #endif
 #include <sstream>
 #include <iomanip>
@@ -387,6 +394,15 @@ void RealExitGame()
     // release mouse control
     SDL_SetWindowGrab(reinterpret_cast<SDL_Window*>(vw_GetSDLWindow()), SDL_FALSE);
 }
+
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceAndroidSmokeQuitToMainMenu()
+{
+    ExitGame(eCommand::SWITCH_FROM_GAME_TO_MAIN_MENU);
+    cCommand::GetInstance().Proceed();
+    AstroMenaceAndroidSmokeQuitTransitionPassed();
+}
+#endif
 
 //------------------------------------------------------------------------------------
 // Exit game, save all data
