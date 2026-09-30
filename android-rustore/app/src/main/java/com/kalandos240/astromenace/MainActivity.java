@@ -1193,6 +1193,17 @@ public final class MainActivity extends Activity {
         });
     }
 
+    private float preferredRenderAspect() {
+        int width = getResources().getDisplayMetrics().widthPixels;
+        int height = getResources().getDisplayMetrics().heightPixels;
+        int longSide = Math.max(width, height);
+        int shortSide = Math.max(1, Math.min(width, height));
+        float aspect = (float) longSide / (float) shortSide;
+
+        // AstroMenace missions officially support from 5:4 to 16:9.
+        return Math.max(1.25f, Math.min(16.0f / 9.0f, aspect));
+    }
+
     private int preferredRenderWidth() {
         ActivityManager manager =
                 (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
@@ -1201,28 +1212,28 @@ public final class MainActivity extends Activity {
                 getResources().getDisplayMetrics().widthPixels,
                 getResources().getDisplayMetrics().heightPixels);
 
-        // Adaptive quality tiers. Keep weak devices at the proven 720p target;
-        // scale only devices with enough WebView heap and display pixels.
-        // This improves text/texture sharpness without forcing every phone to
-        // render a 1080p scene.
+        int maxWidth;
         if (memoryClassMb >= 384 && physicalLongSide >= 2200) {
-            return 1920;
+            maxWidth = 1920;
+        } else if (memoryClassMb >= 256 && physicalLongSide >= 1900) {
+            maxWidth = 1600;
+        } else if (memoryClassMb >= 192 && physicalLongSide >= 1600) {
+            maxWidth = 1366;
+        } else {
+            maxWidth = 1280;
         }
-        if (memoryClassMb >= 256 && physicalLongSide >= 1900) {
-            return 1600;
-        }
-        if (memoryClassMb >= 192 && physicalLongSide >= 1600) {
-            return 1366;
-        }
-        return 1280;
+
+        float aspect = preferredRenderAspect();
+        // Height is capped at 1080, so reduce width on 4:3/16:10 tablets
+        // instead of distorting a 16:9 buffer to their physical screen.
+        int widthFor1080 = Math.round(1080.0f * aspect);
+        return Math.max(1280, Math.min(maxWidth, widthFor1080));
     }
 
     private int preferredRenderHeight() {
         int width = preferredRenderWidth();
-        if (width >= 1920) return 1080;
-        if (width >= 1600) return 900;
-        if (width >= 1366) return 768;
-        return 720;
+        int height = Math.round(width / preferredRenderAspect());
+        return Math.max(720, Math.min(1080, height));
     }
 
     private void startupError(String message) {
