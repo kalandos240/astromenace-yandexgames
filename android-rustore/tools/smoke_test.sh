@@ -40,7 +40,9 @@ while [ "$i" -le 120 ]; do
 done
 
 if [ "$menu_visible" = "1" ]; then
-  sleep 2
+  # SwiftShader is much slower than a real phone while AstroMenace finishes
+  # first-frame OpenGL/menu setup. Wait for the visible menu before taps.
+  sleep 25
 fi
 
 adb exec-out screencap -p > "$OUT/screen-before-input.png" || true
