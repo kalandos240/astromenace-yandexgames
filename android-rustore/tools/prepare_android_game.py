@@ -2,19 +2,98 @@
 from pathlib import Path
 import base64
 import gzip
+import struct
 import sys
 
 game_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("android-rustore/app/src/main/assets/game")
 data_js = game_dir / "gamedata.js"
 index_js = game_dir / "index.js"
 index_html = game_dir / "index.html"
+css_file = game_dir / "astromenace.css"
 
 source = data_js.read_text(encoding="utf-8")
+
 
 def read_int(marker):
     start = source.index(marker) + len(marker)
     end = source.index(";", start)
     return int(source[start:end].strip())
+
+
+def vfs_entries(data):
+    if data[:8] != b"VFS_v1.6":
+        raise SystemExit(f"bad VFS header: {data[:8]!r}")
+
+    table_offset = struct.unpack_from("<I", data, 12)[0]
+    if table_offset < 16 or table_offset > len(data):
+        raise SystemExit("invalid VFS table offset")
+
+    entries = {}
+    pos = table_offset
+    while pos < len(data):
+        if pos + 2 > len(data):
+            raise SystemExit("truncated VFS table")
+        name_size = struct.unpack_from("<H", data, pos)[0]
+        pos += 2
+        if name_size <= 0 or pos + name_size + 8 > len(data):
+            raise SystemExit("invalid VFS entry")
+        name = bytes(data[pos:pos + name_size]).decode("utf-8")
+        pos += name_size
+        offset, size = struct.unpack_from("<II", data, pos)
+        pos += 8
+        if offset + size > table_offset:
+            raise SystemExit(f"invalid VFS entry range for {name}")
+        entries[name] = (offset, size)
+    return entries
+
+
+def make_rle_tga_fully_transparent(data, offset, size, name):
+    blob = memoryview(data)[offset:offset + size]
+    if len(blob) < 18:
+        raise SystemExit(f"{name}: truncated TGA")
+
+    id_length = blob[0]
+    color_map_type = blob[1]
+    image_type = blob[2]
+    width = int.from_bytes(blob[12:14], "little")
+    height = int.from_bytes(blob[14:16], "little")
+    bpp = blob[16]
+
+    if color_map_type != 0 or image_type != 10 or bpp != 32:
+        raise SystemExit(
+            f"{name}: expected RLE 32-bit true-color TGA, got "
+            f"cmap={color_map_type} type={image_type} bpp={bpp}"
+        )
+
+    pos = 18 + id_length
+    pixels_left = width * height
+
+    while pixels_left > 0:
+        if pos >= len(blob):
+            raise SystemExit(f"{name}: truncated RLE packet")
+        packet = blob[pos]
+        pos += 1
+        count = (packet & 0x7F) + 1
+
+        if packet & 0x80:
+            if pos + 4 > len(blob):
+                raise SystemExit(f"{name}: truncated RLE pixel")
+            blob[pos + 3] = 0
+            pos += 4
+        else:
+            byte_count = count * 4
+            if pos + byte_count > len(blob):
+                raise SystemExit(f"{name}: truncated raw TGA packet")
+            for pixel in range(count):
+                blob[pos + pixel * 4 + 3] = 0
+            pos += byte_count
+
+        pixels_left -= count
+        if pixels_left < 0:
+            raise SystemExit(f"{name}: invalid RLE pixel count")
+
+    print(f"Android cursor asset hidden: {name} ({width}x{height})")
+
 
 raw_size = read_int("globalThis.ASTROMENACE_GAMEDATA_RAW_SIZE=")
 gzip_size = read_int("globalThis.ASTROMENACE_GAMEDATA_GZIP_SIZE=")
@@ -37,11 +116,16 @@ compressed = b"".join(base64.b64decode(chunk) for chunk in chunks)
 if len(compressed) != gzip_size:
     raise SystemExit(f"gzip size mismatch: {len(compressed)} != {gzip_size}")
 
-vfs = gzip.decompress(compressed)
+vfs = bytearray(gzip.decompress(compressed))
 if len(vfs) != raw_size:
     raise SystemExit(f"raw size mismatch: {len(vfs)} != {raw_size}")
-if vfs[:8] != b"VFS_v1.6":
-    raise SystemExit(f"bad VFS header: {vfs[:8]!r}")
+
+entries = vfs_entries(vfs)
+for cursor_name in ("menu/cursor.tga", "menu/cursor_shadow.tga"):
+    if cursor_name not in entries:
+        raise SystemExit(f"missing cursor asset in VFS: {cursor_name}")
+    cursor_offset, cursor_size = entries[cursor_name]
+    make_rle_tga_fully_transparent(vfs, cursor_offset, cursor_size, cursor_name)
 
 (game_dir / "gamedata.vfs").write_bytes(vfs)
 data_js.unlink()
@@ -132,13 +216,217 @@ js = (
 )
 index_js.write_text(js, encoding="utf-8")
 
+mobile_input_script = r'''
+<script>
+globalThis.ASTROMENACE_ANDROID = true;
+(() => {
+  "use strict";
+
+  const canvas = document.getElementById("canvas");
+  if (!canvas) return;
+
+  const keyboardInput = document.createElement("input");
+  keyboardInput.id = "astromenace-mobile-keyboard";
+  keyboardInput.type = "text";
+  keyboardInput.inputMode = "text";
+  keyboardInput.autocomplete = "off";
+  keyboardInput.autocorrect = "off";
+  keyboardInput.autocapitalize = "off";
+  keyboardInput.spellcheck = false;
+  keyboardInput.enterKeyHint = "done";
+  keyboardInput.setAttribute("aria-label", "Pilot name");
+  keyboardInput.style.cssText =
+    "position:fixed;left:2px;bottom:2px;width:2px;height:2px;" +
+    "opacity:.01;border:0;padding:0;margin:0;background:transparent;" +
+    "color:transparent;caret-color:transparent;z-index:2147483647;";
+  document.body.appendChild(keyboardInput);
+
+  let previousValue = "";
+  let openingKeyboard = false;
+
+  const defineNumber = (event, name, value) => {
+    try {
+      Object.defineProperty(event, name, { configurable: true, get: () => value });
+    } catch (_) {}
+  };
+
+  const dispatchKeyboard = (type, key, code, keyCode, charCode = 0) => {
+    const event = new KeyboardEvent(type, {
+      key,
+      code,
+      bubbles: true,
+      cancelable: true,
+      repeat: false
+    });
+    defineNumber(event, "keyCode", keyCode);
+    defineNumber(event, "which", type === "keypress" ? charCode : keyCode);
+    defineNumber(event, "charCode", type === "keypress" ? charCode : 0);
+    canvas.dispatchEvent(event);
+  };
+
+  const emitCharacter = (character) => {
+    const codePoint = character.codePointAt(0) || 0;
+    dispatchKeyboard("keydown", character, "", codePoint, 0);
+    dispatchKeyboard("keypress", character, "", codePoint, codePoint);
+    dispatchKeyboard("keyup", character, "", codePoint, 0);
+    console.info("[AndroidInput] char", character);
+  };
+
+  const emitBackspace = () => {
+    dispatchKeyboard("keydown", "Backspace", "Backspace", 8, 0);
+    dispatchKeyboard("keyup", "Backspace", "Backspace", 8, 0);
+    console.info("[AndroidInput] backspace");
+  };
+
+  const emitEnter = () => {
+    dispatchKeyboard("keydown", "Enter", "Enter", 13, 0);
+    dispatchKeyboard("keyup", "Enter", "Enter", 13, 0);
+    console.info("[AndroidInput] enter");
+  };
+
+  const syncInputValue = () => {
+    const current = keyboardInput.value;
+    let prefix = 0;
+    while (
+      prefix < previousValue.length &&
+      prefix < current.length &&
+      previousValue[prefix] === current[prefix]
+    ) {
+      prefix += 1;
+    }
+
+    let previousSuffix = previousValue.length;
+    let currentSuffix = current.length;
+    while (
+      previousSuffix > prefix &&
+      currentSuffix > prefix &&
+      previousValue[previousSuffix - 1] === current[currentSuffix - 1]
+    ) {
+      previousSuffix -= 1;
+      currentSuffix -= 1;
+    }
+
+    const removed = previousValue.slice(prefix, previousSuffix);
+    const inserted = current.slice(prefix, currentSuffix);
+
+    for (const _ of Array.from(removed)) emitBackspace();
+    for (const character of Array.from(inserted)) emitCharacter(character);
+
+    previousValue = current;
+  };
+
+  keyboardInput.addEventListener("input", syncInputValue);
+
+  for (const type of ["keypress", "keyup"]) {
+    keyboardInput.addEventListener(type, (event) => event.stopPropagation());
+  }
+
+  keyboardInput.addEventListener("keydown", (event) => {
+    event.stopPropagation();
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      emitEnter();
+      keyboardInput.blur();
+      try { globalThis.AndroidHost?.hideKeyboard?.(); } catch (_) {}
+      return;
+    }
+
+    if (event.key === "Backspace" && keyboardInput.value === previousValue) {
+      // Some Android IMEs produce a key event without an input event at an
+      // already-empty editing buffer. Forward it so the game can still erase.
+      emitBackspace();
+    }
+  });
+
+  const showKeyboard = () => {
+    if (openingKeyboard) return;
+    openingKeyboard = true;
+    previousValue = "";
+    keyboardInput.value = "";
+    keyboardInput.focus({ preventScroll: true });
+    try { globalThis.AndroidHost?.showKeyboard?.(); } catch (_) {}
+    setTimeout(() => { openingKeyboard = false; }, 250);
+    console.info("[AndroidInput] profile keyboard requested");
+  };
+
+  canvas.addEventListener("pointerup", (event) => {
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
+    const normalizedX = (event.clientX - rect.left) / rect.width;
+    const normalizedY = (event.clientY - rect.top) / rect.height;
+
+    // New Pilot Profile input is at y ~= 230 in AstroMenace's 768px
+    // virtual menu. Restrict this to a narrow band so ordinary menu
+    // buttons do not summon the keyboard.
+    if (
+      normalizedX >= 0.18 && normalizedX <= 0.72 &&
+      normalizedY >= 0.295 && normalizedY <= 0.345
+    ) {
+      setTimeout(showKeyboard, 30);
+    }
+  }, true);
+
+  globalThis.__astroMobileKeyboard = {
+    show: showKeyboard,
+    hide: () => {
+      keyboardInput.blur();
+      try { globalThis.AndroidHost?.hideKeyboard?.(); } catch (_) {}
+    }
+  };
+})();
+</script>
+'''
+
 html = index_html.read_text(encoding="utf-8")
 html = html.replace('  <script src="gamedata.js" charset="utf-8"></script>' + chr(10), "")
 html = html.replace(
     '<script src="index.js" charset="utf-8"></script>',
-    '<script>globalThis.ASTROMENACE_ANDROID=true;</script>' + chr(10)
-    + '  <script src="index.js" charset="utf-8"></script>'
+    mobile_input_script + chr(10) + '  <script src="index.js" charset="utf-8"></script>'
 )
 index_html.write_text(html, encoding="utf-8")
 
-print(f"Android game prepared: VFS={raw_size} bytes; removed Base64 payload={gzip_size} compressed bytes")
+css = css_file.read_text(encoding="utf-8")
+css += r'''
+
+/* Android/RuStore: occupy the complete physical display. The browser build
+   intentionally letterboxes to 16:9, but the mobile app must use the phone
+   or tablet screen edge-to-edge. */
+html,
+body {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-width: 100vw !important;
+  min-height: 100vh !important;
+}
+
+body {
+  display: block !important;
+}
+
+html *,
+body * {
+  cursor: none !important;
+}
+
+#canvas {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  cursor: none !important;
+}
+'''
+css_file.write_text(css, encoding="utf-8")
+
+print(
+    f"Android game prepared: VFS={raw_size} bytes; "
+    f"removed Base64 payload={gzip_size} compressed bytes; "
+    "cursor hidden; full-screen CSS and mobile keyboard bridge installed"
+)
