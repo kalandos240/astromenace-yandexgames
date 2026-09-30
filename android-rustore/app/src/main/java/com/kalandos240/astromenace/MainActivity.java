@@ -73,6 +73,7 @@ public final class MainActivity extends Activity {
     private boolean gameplayActive;
     private boolean gameplayTouchBlockLogged;
     private boolean profileKeyboardArmed;
+    private boolean profileKeyboardCanArm = true;
     private long profileKeyboardArmedUntil;
     private boolean pauseFlowActive;
     private int safePointGeneration;
@@ -420,6 +421,8 @@ public final class MainActivity extends Activity {
     }
 
     private void armProfileKeyboard() {
+        if (!profileKeyboardCanArm) return;
+        profileKeyboardCanArm = false;
         profileKeyboardArmed = true;
         profileKeyboardArmedUntil = SystemClock.elapsedRealtime() + PROFILE_KEYBOARD_ARM_MS;
         Log.i(TAG, "PROFILE_KEYBOARD_ARMED");
@@ -434,7 +437,8 @@ public final class MainActivity extends Activity {
 
     private void handleMenuTap(float normalizedX, float normalizedY) {
         // Main menu START GAME.
-        if (!isProfileKeyboardArmed()
+        if (profileKeyboardCanArm
+                && !isProfileKeyboardArmed()
                 && normalizedX >= 0.24f && normalizedX <= 0.76f
                 && normalizedY >= 0.20f && normalizedY <= 0.295f) {
             armProfileKeyboard();
@@ -1045,6 +1049,7 @@ public final class MainActivity extends Activity {
             Log.i(TAG, "SMOKE_WORKSHOP_IME_GATE_PASS");
 
             // 2) Profile input can still deliberately open the system IME.
+            profileKeyboardCanArm = true;
             armProfileKeyboard();
             handleMenuTap(0.35f, 0.31f);
             webView.postDelayed(() -> {
