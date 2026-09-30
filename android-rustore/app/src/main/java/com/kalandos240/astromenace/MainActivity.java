@@ -1084,7 +1084,22 @@ public final class MainActivity extends Activity {
                             ? "SMOKE_GAMEPLAY_TOUCH_BLOCK_PASS"
                             : "SMOKE_GAMEPLAY_TOUCH_BLOCK_FAIL");
 
-                    // 4) Confirming in-game quit must not close the Activity;
+                    // 4) Pause menu must hide gameplay controls and allow
+                    // normal canvas/menu touches, then restore joystick input.
+                    setEngineGameplayState(true);
+                    setPauseMenuState(true);
+                    boolean pausePass = !gameplayActive
+                            && controlsLayer != null
+                            && controlsLayer.getVisibility() == View.GONE;
+                    setPauseMenuState(false);
+                    boolean resumeControlsPass = gameplayActive
+                            && controlsLayer != null
+                            && controlsLayer.getVisibility() == View.VISIBLE;
+                    Log.i(TAG, pausePass && resumeControlsPass
+                            ? "SMOKE_PAUSE_TOUCH_PASS"
+                            : "SMOKE_PAUSE_TOUCH_FAIL");
+
+                    // 5) Confirming in-game quit must not close the Activity;
                     // AstroMenace owns the transition back to main menu.
                     pauseFlowActive = true;
                     handleMenuTap(0.42f, 0.60f);
@@ -1092,7 +1107,7 @@ public final class MainActivity extends Activity {
                             ? "SMOKE_QUIT_TO_MENU_GUARD_PASS"
                             : "SMOKE_QUIT_TO_MENU_GUARD_FAIL");
 
-                    setGameplayControlsVisible(false);
+                    setEngineGameplayState(false);
                     Log.i(TAG, "SMOKE_NATIVE_CONTROLS_PASS");
                 }, 260L);
             }, 450L);
