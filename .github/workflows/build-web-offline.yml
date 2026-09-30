@@ -404,3 +404,30 @@ jobs:
           git commit -m 'Mark fast offline WebAssembly build failed [skip ci]' || true
           git pull --rebase origin "$GITHUB_REF_NAME" || true
           git push origin "HEAD:$GITHUB_REF_NAME" || true
+
+      - name: Package and split archive for reliable transfer
+        run: |
+          cd dist
+          zip -9 -r ../astromenace-yandexgames.zip .
+          cd ..
+          split -b 16000000 -d astromenace-yandexgames.zip astromenace-archive.part
+      - uses: actions/upload-artifact@v4
+        with:
+          name: astromenace-part-00
+          path: astromenace-archive.part00
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: astromenace-part-01
+          path: astromenace-archive.part01
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: astromenace-part-02
+          path: astromenace-archive.part02
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: astromenace-part-03
+          path: astromenace-archive.part03
+          compression-level: 0
