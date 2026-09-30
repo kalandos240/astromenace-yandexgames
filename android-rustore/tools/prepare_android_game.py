@@ -283,7 +283,9 @@ globalThis.ASTROMENACE_ANDROID=true;
     };
     globalThis.Module.yandexGameplayStop = function(...args) {
       try { globalThis.AndroidHost?.gameplayControls?.(false); } catch (_) {}
-      return stop.apply(this, args);
+      const result = stop.apply(this, args);
+      try { globalThis.AndroidHost?.requestInterstitial?.("gameplay-stop"); } catch (_) {}
+      return result;
     };
     gameplayBridgeInstalled = true;
     try { globalThis.AndroidHost?.gameplayControls?.(false); } catch (_) {}
