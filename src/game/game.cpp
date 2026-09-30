@@ -338,6 +338,8 @@ void InitGame()
 //------------------------------------------------------------------------------------
 // Exit game
 //------------------------------------------------------------------------------------
+void RealExitGame();
+
 void ExitGame(eCommand Command)
 {
 #if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
