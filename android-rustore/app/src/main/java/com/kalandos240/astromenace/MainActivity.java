@@ -1338,6 +1338,19 @@ public final class MainActivity extends Activity {
                         + " buffer=" + bufferWidth + "x" + bufferHeight
                         + " dpr=" + devicePixelRatio);
             }
+
+            int targetWidth = MainActivity.this.preferredRenderWidth();
+            int targetHeight = MainActivity.this.preferredRenderHeight();
+            if (Math.abs(bufferWidth - targetWidth) <= 2
+                    && Math.abs(bufferHeight - targetHeight) <= 2) {
+                Log.i(TAG, "RENDER_BUFFER_PASS buffer="
+                        + bufferWidth + "x" + bufferHeight
+                        + " target=" + targetWidth + "x" + targetHeight);
+            } else {
+                Log.e(TAG, "RENDER_BUFFER_FAIL buffer="
+                        + bufferWidth + "x" + bufferHeight
+                        + " target=" + targetWidth + "x" + targetHeight);
+            }
         }
 
         @JavascriptInterface
