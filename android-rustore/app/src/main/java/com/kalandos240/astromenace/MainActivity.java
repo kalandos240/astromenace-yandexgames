@@ -462,9 +462,8 @@ public final class MainActivity extends Activity {
     private void setProfileInputMode(boolean enabled) {
         runOnUiThread(() -> {
             profileScreenActive = enabled;
-            if (!enabled) {
+            if (!enabled && imeInput != null && imeInput.hasFocus()) {
                 hideNativeKeyboard();
-                setProfileInputMode(false);
             }
             Log.i(TAG, enabled
                     ? "PROFILE_INPUT_MODE_ON"
