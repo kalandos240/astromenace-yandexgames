@@ -200,8 +200,14 @@ void InitMenu(eMenuStatus NewMenuStatus)
     }
     ChangeGameConfig().MenuScript++;
 
-    // scroll the script a bit, in order to see action on the whole screen
+    // Desktop pre-simulates 30 seconds of the animated menu background so
+    // it looks busy immediately. That synchronous warm-up is expensive in
+    // Android WebView/WASM and makes "Quit to main menu" look frozen.
     float Time1 = vw_GetTimeThread(0);
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+    MenuScript->StartTime = Time1;
+    MenuScript->TimeLastOp = Time1;
+#else
     MenuScript->StartTime = Time1-30;
     MenuScript->TimeLastOp = Time1-30;
     for (float i=Time1-30; i<Time1; i+=1.0f) {
@@ -210,6 +216,7 @@ void InitMenu(eMenuStatus NewMenuStatus)
     }
     MenuScript->StartTime = Time1;
     MenuScript->TimeLastOp = Time1;
+#endif
 
 
 
