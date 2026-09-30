@@ -231,6 +231,8 @@ globalThis.ASTROMENACE_ANDROID=true;
     const renderWidth = Number(globalThis.AndroidHost?.renderWidth?.() || 1280);
     const renderHeight = Number(globalThis.AndroidHost?.renderHeight?.() || 720);
     if (renderWidth >= 1280 && renderHeight >= 720) {
+      globalThis.ASTROMENACE_ANDROID_RENDER_WIDTH = renderWidth;
+      globalThis.ASTROMENACE_ANDROID_RENDER_HEIGHT = renderHeight;
       canvas.width = renderWidth;
       canvas.height = renderHeight;
       console.info("[Android] initial render buffer " + renderWidth + "x" + renderHeight);
