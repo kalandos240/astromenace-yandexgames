@@ -43,6 +43,17 @@
 #include "../game.h" // FIXME "game.h" should be replaced by individual headers
 #include "SDL2/SDL.h"
 
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+#include <emscripten.h>
+EM_JS(void, AstroMenaceAndroidProfileInputMode, (int Enabled), {
+    try {
+        if (globalThis.AndroidHost && typeof globalThis.AndroidHost.profileInputMode === "function") {
+            globalThis.AndroidHost.profileInputMode(!!Enabled);
+        }
+    } catch (_) {}
+});
+#endif
+
 // NOTE switch to nested namespace definition (namespace A::B::C { ... }) (since C++17)
 namespace viewizard {
 namespace astromenace {
@@ -106,6 +117,10 @@ float LastButton14UpdateTime = 0.0f;
 void InitMenu(eMenuStatus NewMenuStatus)
 {
     MenuStatus = NewMenuStatus;
+
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+    AstroMenaceAndroidProfileInputMode(MenuStatus == eMenuStatus::PROFILE ? 1 : 0);
+#endif
 
     ShadowMap_SizeSetup(eShadowMapSetup::Menu);
 
@@ -354,6 +369,10 @@ void SetMenu2(eMenuStatus Menu)
 
     PrevMenu = MenuStatus;
     MenuStatus = Menu;
+
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+    AstroMenaceAndroidProfileInputMode(MenuStatus == eMenuStatus::PROFILE ? 1 : 0);
+#endif
 
     float Time = vw_GetTimeThread(0);
     Button1Transp = 1.0f;
