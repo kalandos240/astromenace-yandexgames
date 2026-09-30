@@ -7,6 +7,9 @@ import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.InputType;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -15,6 +18,7 @@ import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.ConsoleMessage;
 import android.webkit.JavascriptInterface;
@@ -25,6 +29,7 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.window.OnBackInvokedDispatcher;
@@ -40,6 +45,9 @@ public final class MainActivity extends Activity {
     private WebView webView;
     private FrameLayout controlsLayer;
     private TextView loadingOverlay;
+    private EditText imeInput;
+    private String imePreviousValue = "";
+    private boolean imeInternalChange;
     private boolean pageReady;
     private long lastBackAt;
 
@@ -47,6 +55,7 @@ public final class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
         configureCutout();
 
         FrameLayout root = new FrameLayout(this);
@@ -94,6 +103,13 @@ public final class MainActivity extends Activity {
         root.addView(controlsLayer, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
+
+        imeInput = createNativeImeInput();
+        FrameLayout.LayoutParams imeParams = new FrameLayout.LayoutParams(
+                dp(2), dp(2), Gravity.START | Gravity.BOTTOM);
+        imeParams.leftMargin = dp(2);
+        imeParams.bottomMargin = dp(2);
+        root.addView(imeInput, imeParams);
 
         loadingOverlay = createLoadingOverlay();
         loadingOverlay.setVisibility(View.GONE);
@@ -235,6 +251,136 @@ public final class MainActivity extends Activity {
         return view;
     }
 
+    private EditText createNativeImeInput() {
+        EditText input = new EditText(this);
+        input.setSingleLine(true);
+        input.setInputType(
+                InputType.TYPE_CLASS_TEXT
+                        | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+                        | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        input.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        input.setBackgroundColor(Color.TRANSPARENT);
+        input.setTextColor(Color.TRANSPARENT);
+        input.setHintTextColor(Color.TRANSPARENT);
+        input.setCursorVisible(false);
+        input.setAlpha(0.01f);
+        input.setPadding(0, 0, 0, 0);
+
+        input.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                if (imeInternalChange) return;
+                String current = editable.toString();
+                forwardImeDiff(imePreviousValue, current);
+                imePreviousValue = current;
+            }
+        });
+
+        input.setOnEditorActionListener((view, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE
+                    || (event != null
+                    && event.getKeyCode() == android.view.KeyEvent.KEYCODE_ENTER)) {
+                tapKey("Enter", "Enter", 13);
+                hideNativeKeyboard();
+                return true;
+            }
+            return false;
+        });
+
+        return input;
+    }
+
+    private void forwardImeDiff(String previous, String current) {
+        int prefix = 0;
+        int previousLength = previous.length();
+        int currentLength = current.length();
+
+        while (prefix < previousLength
+                && prefix < currentLength
+                && previous.charAt(prefix) == current.charAt(prefix)) {
+            prefix++;
+        }
+
+        int previousSuffix = previousLength;
+        int currentSuffix = currentLength;
+        while (previousSuffix > prefix
+                && currentSuffix > prefix
+                && previous.charAt(previousSuffix - 1) == current.charAt(currentSuffix - 1)) {
+            previousSuffix--;
+            currentSuffix--;
+        }
+
+        int removedCodePoints = previous.codePointCount(prefix, previousSuffix);
+        for (int i = 0; i < removedCodePoints; i++) {
+            tapKey("Backspace", "Backspace", 8);
+        }
+
+        String inserted = current.substring(prefix, currentSuffix);
+        for (int offset = 0; offset < inserted.length();) {
+            int codePoint = inserted.codePointAt(offset);
+            sendTextCharacter(new String(Character.toChars(codePoint)));
+            offset += Character.charCount(codePoint);
+        }
+
+        if (removedCodePoints > 0 || !inserted.isEmpty()) {
+            Log.i(TAG, "NATIVE_IME_TEXT_CHANGE removed="
+                    + removedCodePoints + " inserted=" + inserted.length());
+        }
+    }
+
+    private void sendTextCharacter(String character) {
+        if (!pageReady || webView == null || character == null || character.isEmpty()) return;
+        webView.evaluateJavascript(
+                "window.__astroAndroidInput&&window.__astroAndroidInput.text&&"
+                        + "window.__astroAndroidInput.text(" + quoteJs(character) + ");",
+                null);
+    }
+
+    private void showNativeKeyboard() {
+        if (imeInput == null) return;
+
+        imeInternalChange = true;
+        imeInput.setText("");
+        imeInput.setSelection(0);
+        imePreviousValue = "";
+        imeInternalChange = false;
+
+        imeInput.setVisibility(View.VISIBLE);
+        imeInput.setFocusableInTouchMode(true);
+        imeInput.requestFocus();
+
+        InputMethodManager inputMethodManager =
+                (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (inputMethodManager != null) {
+            imeInput.post(() -> inputMethodManager.showSoftInput(
+                    imeInput,
+                    InputMethodManager.SHOW_IMPLICIT));
+        }
+
+        Log.i(TAG, "SOFT_KEYBOARD_SHOW");
+    }
+
+    private void hideNativeKeyboard() {
+        if (imeInput == null) return;
+
+        InputMethodManager inputMethodManager =
+                (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (inputMethodManager != null) {
+            inputMethodManager.hideSoftInputFromWindow(imeInput.getWindowToken(), 0);
+        }
+
+        imeInput.clearFocus();
+        if (webView != null) webView.requestFocus();
+        hideSystemUi();
+        Log.i(TAG, "SOFT_KEYBOARD_HIDE");
+    }
+
     private TextView createLoadingOverlay() {
         TextView view = new TextView(this);
         view.setText("Загрузка AstroMenace…");
@@ -258,9 +404,21 @@ public final class MainActivity extends Activity {
                 + "function emit(type,key,code,kc){"
                 + "var targets=[window,document,document.getElementById('canvas')];"
                 + "for(var i=0;i<targets.length;i++){if(targets[i]){try{targets[i].dispatchEvent(make(type,key,code,kc));}catch(_){}}}}"
+                + "function emitText(ch){"
+                + "var canvas=document.getElementById('canvas');if(!canvas||!ch)return;"
+                + "var cp=ch.codePointAt(0)||0;"
+                + "function one(type,which){"
+                + "var e=new KeyboardEvent(type,{key:ch,bubbles:true,cancelable:true});"
+                + "try{Object.defineProperty(e,'keyCode',{get:function(){return cp;}});"
+                + "Object.defineProperty(e,'which',{get:function(){return which;}});"
+                + "Object.defineProperty(e,'charCode',{get:function(){return type==='keypress'?cp:0;}});}catch(_){}"
+                + "canvas.dispatchEvent(e);}"
+                + "one('keydown',cp);one('keypress',cp);one('keyup',cp);"
+                + "}"
                 + "window.__astroAndroidInput={"
                 + "down:function(key,code,kc){emit('keydown',key,code,kc);},"
                 + "up:function(key,code,kc){emit('keyup',key,code,kc);},"
+                + "text:function(ch){emitText(ch);},"
                 + "pause:function(){window.dispatchEvent(new Event('blur'));},"
                 + "resume:function(){window.dispatchEvent(new Event('focus'));}"
                 + "};"
@@ -514,35 +672,12 @@ public final class MainActivity extends Activity {
 
         @JavascriptInterface
         public void showKeyboard() {
-            runOnUiThread(() -> {
-                if (webView == null) return;
-                webView.requestFocus();
-                InputMethodManager inputMethodManager =
-                        (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                if (inputMethodManager != null) {
-                    inputMethodManager.showSoftInput(
-                            webView,
-                            InputMethodManager.SHOW_IMPLICIT);
-                }
-                Log.i(TAG, "SOFT_KEYBOARD_SHOW");
-            });
+            runOnUiThread(MainActivity.this::showNativeKeyboard);
         }
 
         @JavascriptInterface
         public void hideKeyboard() {
-            runOnUiThread(() -> {
-                if (webView == null) return;
-                InputMethodManager inputMethodManager =
-                        (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                if (inputMethodManager != null) {
-                    inputMethodManager.hideSoftInputFromWindow(
-                            webView.getWindowToken(),
-                            0);
-                }
-                webView.requestFocus();
-                hideSystemUi();
-                Log.i(TAG, "SOFT_KEYBOARD_HIDE");
-            });
+            runOnUiThread(MainActivity.this::hideNativeKeyboard);
         }
     }
 
