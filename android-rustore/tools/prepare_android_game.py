@@ -225,6 +225,24 @@ globalThis.ASTROMENACE_ANDROID=true;
   const canvas = document.getElementById("canvas");
   if (!canvas) return;
 
+  let menuVisibleSent = false;
+  const reportMenuVisible = () => {
+    const loading = document.getElementById("loading");
+    if (menuVisibleSent || !loading || !loading.classList.contains("hidden")) return;
+    menuVisibleSent = true;
+    try { globalThis.AndroidHost?.menuVisible?.(); } catch (_) {}
+    console.info("[Android] menu visible");
+  };
+
+  const loading = document.getElementById("loading");
+  if (loading) {
+    new MutationObserver(reportMenuVisible).observe(loading, {
+      attributes: true,
+      attributeFilter: ["class"]
+    });
+  }
+  setInterval(reportMenuVisible, 250);
+
   const showKeyboard = () => {
     try { globalThis.AndroidHost?.showKeyboard?.(); } catch (_) {}
     console.info("[AndroidInput] native profile keyboard requested");
