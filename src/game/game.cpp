@@ -340,6 +340,25 @@ void InitGame()
 //------------------------------------------------------------------------------------
 void ExitGame(eCommand Command)
 {
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+    // Android/WebView must not wait in the desktop fade-out state after
+    // confirming QUIT from the paused game. Clean up immediately and queue
+    // the normal main-menu transition for this same rendered frame.
+    if (Command == eCommand::SWITCH_FROM_GAME_TO_MAIN_MENU) {
+        GameExitCommand = eCommand::DO_NOTHING;
+        NeedOffGame = false;
+        NeedOnGame = false;
+        GameMenu = false;
+        NeedShowGameMenu = false;
+        NeedHideGameMenu = false;
+        AstroMenaceAndroidPauseMenuState(0);
+        AstroMenaceAndroidGameplayState(0);
+        RealExitGame();
+        cCommand::GetInstance().Set(eCommand::SWITCH_FROM_GAME_TO_MAIN_MENU);
+        return;
+    }
+#endif
+
     GameExitCommand = Command;
     NeedOffGame = true;
     LastGameOnOffUpdateTime = vw_GetTimeThread(0);
