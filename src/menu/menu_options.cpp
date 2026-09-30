@@ -373,6 +373,7 @@ void OptionsMenu(float ContentTransp, float &ButtonTransp1, float &LastButtonUpd
 
 
     X = GameConfig().InternalWidth / 2 - 366;
+#if !defined(ASTROMENACE_ANDROID_BUILD)
     if (DrawButton200_2(X, Y+28, vw_GetTextUTF32("Advanced"), ContentTransp, false)) {
         if (MenuStatus == eMenuStatus::GAME) {
             SetOptionsMenu(eMenuStatus::OPTIONS_ADVANCED);
@@ -381,6 +382,8 @@ void OptionsMenu(float ContentTransp, float &ButtonTransp1, float &LastButtonUpd
             cCommand::GetInstance().Set(eCommand::SWITCH_TO_OPTIONS_ADVANCED);
         }
     }
+#endif
+
 
 
     X = GameConfig().InternalWidth / 2 - 100;
