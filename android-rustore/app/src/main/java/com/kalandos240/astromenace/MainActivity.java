@@ -70,6 +70,7 @@ public final class MainActivity extends Activity {
     private boolean pageReady;
     private boolean smokeTestMode;
     private boolean smokeSelfTestStarted;
+    private boolean smokeEngineQuitPassed;
     private boolean engineGameplayActive;
     private boolean pauseMenuVisible;
     private boolean gameplayActive;
@@ -981,7 +982,25 @@ public final class MainActivity extends Activity {
                             : "SMOKE_QUIT_TO_MENU_GUARD_FAIL");
 
                     setEngineGameplayState(false);
-                    Log.i(TAG, "SMOKE_NATIVE_CONTROLS_PASS");
+                    smokeEngineQuitPassed = false;
+                    webView.evaluateJavascript(
+                            "(typeof Module!=='undefined'&&"
+                                    + "typeof Module._AstroMenaceAndroidSmokeQuitToMainMenu==='function')"
+                                    + "?(Module._AstroMenaceAndroidSmokeQuitToMainMenu(),true):false",
+                            value -> {
+                                if (!"true".equals(value)) {
+                                    Log.e(TAG, "SMOKE_ENGINE_QUIT_TO_MENU_EXPORT_FAIL");
+                                }
+                            });
+
+                    webView.postDelayed(() -> {
+                        Log.i(TAG, smokeEngineQuitPassed
+                                ? "SMOKE_ENGINE_QUIT_TO_MENU_PASS"
+                                : "SMOKE_ENGINE_QUIT_TO_MENU_FAIL");
+                        Log.i(TAG, smokeEngineQuitPassed
+                                ? "SMOKE_NATIVE_CONTROLS_PASS"
+                                : "SMOKE_NATIVE_CONTROLS_FAIL");
+                    }, 1200L);
                 }, 260L);
             }, 450L);
         }, 300L);
@@ -1170,6 +1189,12 @@ public final class MainActivity extends Activity {
         @JavascriptInterface
         public void cleanExit() {
             runOnUiThread(MainActivity.this::finishCleanlyAfterGameQuit);
+        }
+
+        @JavascriptInterface
+        public void smokeQuitToMenuPass() {
+            smokeEngineQuitPassed = true;
+            Log.i(TAG, "ENGINE_QUIT_TO_MENU_CALLBACK");
         }
 
         @JavascriptInterface
