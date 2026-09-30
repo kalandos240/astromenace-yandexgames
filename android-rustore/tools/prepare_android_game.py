@@ -218,7 +218,7 @@ index_js.write_text(js, encoding="utf-8")
 
 mobile_input_script = r'''
 <script>
-globalThis.ASTROMENACE_ANDROID = true;
+globalThis.ASTROMENACE_ANDROID=true;
 (() => {
   "use strict";
 
