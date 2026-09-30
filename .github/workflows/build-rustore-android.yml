@@ -149,44 +149,7 @@ jobs:
           disk-size: 6000M
           disable-animations: true
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: |
-            set -eu
-            APK="android-rustore/app/build/outputs/apk/debug/app-debug.apk"
-            OUT="android-rustore/smoke"
-            mkdir -p "${OUT}"
-
-            adb install -r "${APK}"
-            adb logcat -c
-            adb shell am force-stop com.kalandos240.astromenace.debug || true
-            adb shell am start -W -n com.kalandos240.astromenace.debug/com.kalandos240.astromenace.MainActivity
-
-            ready=0
-            for i in $(seq 1 120); do
-              adb logcat -d > "${OUT}/logcat-live.txt"
-
-              if grep -q 'AstroMenaceAndroid.*GAME_READY' "${OUT}/logcat-live.txt"; then
-                ready=1
-                echo "AstroMenace reached GAME_READY."
-                break
-              fi
-
-              if grep -Eq 'AstroMenaceAndroid.*(STARTUP_ERROR|RENDER_PROCESS_GONE)|FATAL EXCEPTION.*com.kalandos240.astromenace' "${OUT}/logcat-live.txt"; then
-                echo "AstroMenace startup failure detected."
-                break
-              fi
-
-              sleep 2
-            done
-
-            adb exec-out screencap -p > "${OUT}/screen.png" || true
-            adb shell dumpsys meminfo com.kalandos240.astromenace.debug > "${OUT}/meminfo.txt" || true
-            adb logcat -d > "${OUT}/logcat.txt"
-
-            if [ "${ready}" != "1" ]; then
-              echo "AstroMenace did not reach GAME_READY."
-              tail -n 300 "${OUT}/logcat.txt"
-              exit 1
-            fi
+          script: sh android-rustore/tools/smoke_test.sh
 
       - name: Upload emulator smoke diagnostics
         if: always()
