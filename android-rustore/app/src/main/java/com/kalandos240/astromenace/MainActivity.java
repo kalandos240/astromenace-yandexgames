@@ -1161,13 +1161,28 @@ public final class MainActivity extends Activity {
                 getResources().getDisplayMetrics().widthPixels,
                 getResources().getDisplayMetrics().heightPixels);
 
-        // 1366x768 is only ~14% more pixels than 720p and is the highest
-        // conservative step used here. Low-memory/smaller devices stay at 720p.
-        return memoryClassMb >= 192 && physicalLongSide >= 1600 ? 1366 : 1280;
+        // Adaptive quality tiers. Keep weak devices at the proven 720p target;
+        // scale only devices with enough WebView heap and display pixels.
+        // This improves text/texture sharpness without forcing every phone to
+        // render a 1080p scene.
+        if (memoryClassMb >= 384 && physicalLongSide >= 2200) {
+            return 1920;
+        }
+        if (memoryClassMb >= 256 && physicalLongSide >= 1900) {
+            return 1600;
+        }
+        if (memoryClassMb >= 192 && physicalLongSide >= 1600) {
+            return 1366;
+        }
+        return 1280;
     }
 
     private int preferredRenderHeight() {
-        return preferredRenderWidth() > 1280 ? 768 : 720;
+        int width = preferredRenderWidth();
+        if (width >= 1920) return 1080;
+        if (width >= 1600) return 900;
+        if (width >= 1366) return 768;
+        return 720;
     }
 
     private void startupError(String message) {
