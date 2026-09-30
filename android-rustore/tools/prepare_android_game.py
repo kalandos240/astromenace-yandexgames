@@ -248,21 +248,6 @@ globalThis.ASTROMENACE_ANDROID=true;
     console.info("[AndroidInput] native profile keyboard requested");
   };
 
-  canvas.addEventListener("pointerup", (event) => {
-    const rect = canvas.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
-
-    const normalizedX = (event.clientX - rect.left) / rect.width;
-    const normalizedY = (event.clientY - rect.top) / rect.height;
-
-    if (
-      normalizedX >= 0.18 && normalizedX <= 0.72 &&
-      normalizedY >= 0.295 && normalizedY <= 0.345
-    ) {
-      setTimeout(showKeyboard, 20);
-    }
-  }, true);
-
   globalThis.__astroMobileKeyboard = {
     show: showKeyboard,
     hide: () => {
@@ -337,6 +322,9 @@ body * {
   max-height: none !important;
   margin: 0 !important;
   cursor: none !important;
+  image-rendering: auto !important;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 '''
 css_file.write_text(css, encoding="utf-8")
@@ -344,5 +332,5 @@ css_file.write_text(css, encoding="utf-8")
 print(
     f"Android game prepared: VFS={raw_size} bytes; "
     f"removed Base64 payload={gzip_size} compressed bytes; "
-    "cursor hidden; full-screen CSS and mobile keyboard bridge installed"
+    "cursor hidden; high-quality full-screen compositing and gated mobile keyboard bridge installed"
 )
