@@ -57,6 +57,8 @@ public final class MainActivity extends Activity {
     private static final long DOUBLE_BACK_EXIT_MS = 1400L;
     private static final long INTERSTITIAL_COOLDOWN_MS = 120_000L;
     private static final long INTERSTITIAL_SAFE_POINT_DELAY_MS = 1_600L;
+    private static final long PROFILE_KEYBOARD_ARM_MS = 45_000L;
+    private static final long MENU_POINTER_MOVE_INTERVAL_MS = 16L;
 
     private WebView webView;
     private FrameLayout controlsLayer;
@@ -68,6 +70,9 @@ public final class MainActivity extends Activity {
     private boolean gameplayActive;
     private boolean gameplayTouchBlockLogged;
     private boolean profileKeyboardArmed;
+    private long profileKeyboardArmedUntil;
+    private boolean pauseFlowActive;
+    private long lastMenuPointerMoveAt;
     private int safePointGeneration;
     private long lastBackAt;
 
@@ -291,6 +296,15 @@ public final class MainActivity extends Activity {
         // the profile screen. This prevents workshop/system buttons at similar
         // coordinates from ever opening Android's IME.
         view.setOnTouchListener((touchedView, event) -> {
+            if (touchedView.getWidth() <= 0 || touchedView.getHeight() <= 0) {
+                return true;
+            }
+
+            float normalizedX = Math.max(0.0f, Math.min(1.0f, event.getX() / touchedView.getWidth()));
+            float normalizedY = Math.max(0.0f, Math.min(1.0f, event.getY() / touchedView.getHeight()));
+
+            // During missions the WebView canvas never receives direct touch
+            // steering. Only the native joystick and fire buttons control the ship.
             if (gameplayActive) {
                 if (event.getActionMasked() == MotionEvent.ACTION_UP && !gameplayTouchBlockLogged) {
                     gameplayTouchBlockLogged = true;
@@ -299,31 +313,32 @@ public final class MainActivity extends Activity {
                 return true;
             }
 
-            if (event.getActionMasked() == MotionEvent.ACTION_UP
-                    && touchedView.getWidth() > 0
-                    && touchedView.getHeight() > 0) {
-                float normalizedX = event.getX() / touchedView.getWidth();
-                float normalizedY = event.getY() / touchedView.getHeight();
-
-                // Main-menu Start Game button.
-                if (!profileKeyboardArmed
-                        && normalizedX >= 0.24f && normalizedX <= 0.76f
-                        && normalizedY >= 0.20f && normalizedY <= 0.295f) {
-                    profileKeyboardArmed = true;
-                    Log.i(TAG, "PROFILE_KEYBOARD_ARMED");
-                } else if (profileKeyboardArmed
-                        && normalizedX >= 0.18f && normalizedX <= 0.72f
-                        && normalizedY >= 0.285f && normalizedY <= 0.350f
-                        && pageReady) {
-                    view.post(MainActivity.this::showNativeKeyboard);
-                    Log.i(TAG, "PROFILE_NAME_TAP");
-                } else if (profileKeyboardArmed && normalizedY >= 0.87f) {
-                    profileKeyboardArmed = false;
-                    Log.i(TAG, "PROFILE_KEYBOARD_DISARMED profile-navigation");
-                }
+            // Menus/workshop use explicit SDL-compatible mouse events instead
+            // of WebView's device-dependent touch-to-mouse emulation. This also
+            // preserves drag-and-drop in the workshop.
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    sendCanvasPointer("down", normalizedX, normalizedY);
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    long now = SystemClock.elapsedRealtime();
+                    if (now - lastMenuPointerMoveAt >= MENU_POINTER_MOVE_INTERVAL_MS) {
+                        lastMenuPointerMoveAt = now;
+                        sendCanvasPointer("move", normalizedX, normalizedY);
+                    }
+                    break;
+                case MotionEvent.ACTION_UP:
+                    sendCanvasPointer("up", normalizedX, normalizedY);
+                    handleMenuTap(normalizedX, normalizedY);
+                    break;
+                case MotionEvent.ACTION_CANCEL:
+                    sendCanvasPointer("cancel", normalizedX, normalizedY);
+                    break;
+                default:
+                    break;
             }
 
-            return false;
+            return true;
         });
 
         WebSettings settings = view.getSettings();
@@ -415,6 +430,90 @@ public final class MainActivity extends Activity {
         return view;
     }
 
+    private void sendCanvasPointer(String phase, float normalizedX, float normalizedY) {
+        if (!pageReady || webView == null) return;
+        webView.evaluateJavascript(
+                "window.__astroAndroidInput&&window.__astroAndroidInput.pointer&&"
+                        + "window.__astroAndroidInput.pointer("
+                        + quoteJs(phase) + ","
+                        + normalizedX + ","
+                        + normalizedY + ");",
+                null);
+    }
+
+    private boolean isProfileKeyboardArmed() {
+        if (!profileKeyboardArmed) return false;
+        if (SystemClock.elapsedRealtime() <= profileKeyboardArmedUntil) return true;
+        disarmProfileKeyboard("expired");
+        return false;
+    }
+
+    private void armProfileKeyboard() {
+        profileKeyboardArmed = true;
+        profileKeyboardArmedUntil = SystemClock.elapsedRealtime() + PROFILE_KEYBOARD_ARM_MS;
+        Log.i(TAG, "PROFILE_KEYBOARD_ARMED");
+    }
+
+    private void disarmProfileKeyboard(String reason) {
+        if (!profileKeyboardArmed) return;
+        profileKeyboardArmed = false;
+        profileKeyboardArmedUntil = 0L;
+        Log.i(TAG, "PROFILE_KEYBOARD_DISARMED " + reason);
+    }
+
+    private void handleMenuTap(float normalizedX, float normalizedY) {
+        // Main menu START GAME.
+        if (!isProfileKeyboardArmed()
+                && normalizedX >= 0.24f && normalizedX <= 0.76f
+                && normalizedY >= 0.20f && normalizedY <= 0.295f) {
+            armProfileKeyboard();
+            return;
+        }
+
+        // Pilot-name field. Opening the IME consumes the one-shot keyboard arm,
+        // so similarly positioned workshop controls can never reopen it.
+        if (isProfileKeyboardArmed()
+                && normalizedX >= 0.18f && normalizedX <= 0.72f
+                && normalizedY >= 0.285f && normalizedY <= 0.350f) {
+            disarmProfileKeyboard("field-opened");
+            if (pageReady) {
+                webView.post(this::showNativeKeyboard);
+                Log.i(TAG, "PROFILE_NAME_TAP");
+            }
+            return;
+        }
+
+        // Profile navigation buttons at the bottom leave the profile context.
+        if (isProfileKeyboardArmed() && normalizedY >= 0.82f) {
+            disarmProfileKeyboard("profile-navigation");
+        }
+
+        // The native pause button arms the quit flow. AstroMenace's YES button
+        // in the confirmation dialog is around x=0.37..0.48, y=0.58..0.63.
+        // The original desktop quit path terminates the Emscripten main loop;
+        // close the Android Activity after forwarding the click instead of
+        // leaving a permanently frozen WebView frame.
+        if (pauseFlowActive
+                && normalizedX >= 0.34f && normalizedX <= 0.50f
+                && normalizedY >= 0.54f && normalizedY <= 0.68f) {
+            Log.i(TAG, "CONFIRMED_QUIT_TAP");
+            pauseFlowActive = false;
+            if (webView != null) {
+                webView.postDelayed(this::finishCleanlyAfterGameQuit, 700L);
+            }
+        }
+    }
+
+    private void finishCleanlyAfterGameQuit() {
+        if (isFinishing() || isDestroyed()) return;
+        Log.i(TAG, "ANDROID_CLEAN_GAME_EXIT");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            finishAndRemoveTask();
+        } else {
+            finish();
+        }
+    }
+
     private EditText createNativeImeInput() {
         EditText input = new EditText(this);
         input.setSingleLine(true);
@@ -451,9 +550,8 @@ public final class MainActivity extends Activity {
                     || (event != null
                     && event.getKeyCode() == android.view.KeyEvent.KEYCODE_ENTER)) {
                 tapKey("Enter", "Enter", 13);
-                profileKeyboardArmed = false;
+                disarmProfileKeyboard("submitted");
                 hideNativeKeyboard();
-                Log.i(TAG, "PROFILE_KEYBOARD_DISARMED submitted");
                 return true;
             }
             return false;
@@ -585,6 +683,19 @@ public final class MainActivity extends Activity {
                 + "down:function(key,code,kc){emit('keydown',key,code,kc);},"
                 + "up:function(key,code,kc){emit('keyup',key,code,kc);},"
                 + "text:function(ch){emitText(ch);},"
+                + "pointer:function(phase,nx,ny){"
+                + "var canvas=document.getElementById('canvas');if(!canvas)return;"
+                + "var r=canvas.getBoundingClientRect();"
+                + "var x=r.left+Math.max(0,Math.min(1,nx))*r.width;"
+                + "var y=r.top+Math.max(0,Math.min(1,ny))*r.height;"
+                + "function fire(type,buttons){"
+                + "var e=new MouseEvent(type,{clientX:x,clientY:y,button:0,buttons:buttons,bubbles:true,cancelable:true,view:window});"
+                + "canvas.dispatchEvent(e);}"
+                + "if(phase==='down'){fire('mousemove',0);fire('mousedown',1);}"
+                + "else if(phase==='move'){fire('mousemove',1);}"
+                + "else if(phase==='up'){fire('mousemove',1);fire('mouseup',0);}"
+                + "else if(phase==='cancel'){fire('mouseup',0);}"
+                + "},"
                 + "pause:function(){window.dispatchEvent(new Event('blur'));},"
                 + "resume:function(){window.dispatchEvent(new Event('focus'));}"
                 + "};"
@@ -621,6 +732,7 @@ public final class MainActivity extends Activity {
         pause.setLayoutParams(pauseParams);
         pause.setContentDescription("Пауза");
         pause.setOnClickListener(v -> {
+            pauseFlowActive = true;
             tapKey("Escape", "Escape", 27);
             Log.i(TAG, "PAUSE_BUTTON_TAPPED");
         });
@@ -954,8 +1066,9 @@ public final class MainActivity extends Activity {
     private void menuVisible() {
         runOnUiThread(() -> {
             gameplayActive = false;
+            pauseFlowActive = false;
             safePointGeneration++;
-            profileKeyboardArmed = false;
+            disarmProfileKeyboard("menu-visible");
             if (controlsLayer != null) controlsLayer.setVisibility(View.GONE);
             if (webView != null) {
                 webView.evaluateJavascript(
@@ -963,7 +1076,8 @@ public final class MainActivity extends Activity {
                                 + "if(!c)return;"
                                 + "const r=c.getBoundingClientRect();"
                                 + "AndroidHost.viewportReport(Math.round(r.width),Math.round(r.height),"
-                                + "Math.round(window.innerWidth),Math.round(window.innerHeight));})()",
+                                + "Math.round(window.innerWidth),Math.round(window.innerHeight),"
+                                + "Math.round(c.width),Math.round(c.height),Number(window.devicePixelRatio||1));})()",
                         null);
             }
             Log.i(TAG, "MENU_VISIBLE");
@@ -974,8 +1088,9 @@ public final class MainActivity extends Activity {
         runOnUiThread(() -> {
             gameplayActive = visible;
             if (visible) {
+                pauseFlowActive = false;
                 safePointGeneration++;
-                profileKeyboardArmed = false;
+                disarmProfileKeyboard("gameplay-start");
                 gameplayTouchBlockLogged = false;
             }
 
@@ -1024,23 +1139,33 @@ public final class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public void cleanExit() {
+            runOnUiThread(MainActivity.this::finishCleanlyAfterGameQuit);
+        }
+
+        @JavascriptInterface
         public void requestInterstitial(String reason) {
             MainActivity.this.requestInterstitialAtSafePoint(
                     reason == null ? "unknown" : reason);
         }
 
         @JavascriptInterface
-        public void viewportReport(int canvasWidth, int canvasHeight, int viewportWidth, int viewportHeight) {
+        public void viewportReport(int canvasWidth, int canvasHeight, int viewportWidth, int viewportHeight,
+                                   int bufferWidth, int bufferHeight, float devicePixelRatio) {
             int deltaWidth = Math.abs(canvasWidth - viewportWidth);
             int deltaHeight = Math.abs(canvasHeight - viewportHeight);
             if (deltaWidth <= 2 && deltaHeight <= 2) {
                 Log.i(TAG, "FULLSCREEN_CANVAS_PASS canvas="
                         + canvasWidth + "x" + canvasHeight
-                        + " viewport=" + viewportWidth + "x" + viewportHeight);
+                        + " viewport=" + viewportWidth + "x" + viewportHeight
+                        + " buffer=" + bufferWidth + "x" + bufferHeight
+                        + " dpr=" + devicePixelRatio);
             } else {
                 Log.e(TAG, "FULLSCREEN_CANVAS_FAIL canvas="
                         + canvasWidth + "x" + canvasHeight
-                        + " viewport=" + viewportWidth + "x" + viewportHeight);
+                        + " viewport=" + viewportWidth + "x" + viewportHeight
+                        + " buffer=" + bufferWidth + "x" + bufferHeight
+                        + " dpr=" + devicePixelRatio);
             }
         }
 
