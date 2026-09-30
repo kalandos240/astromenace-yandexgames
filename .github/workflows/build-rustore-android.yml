@@ -8,7 +8,7 @@ on:
       - rustore-mobile
     paths:
       - 'android-rustore/**'
-      - 'src/platform/video.cpp'
+      - 'src/**'
       - '.github/workflows/build-rustore-android.yml'
 
 permissions:
