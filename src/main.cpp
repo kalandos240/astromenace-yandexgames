@@ -524,6 +524,11 @@ int main(int argc, char *argv[])
 
     // should be called after vw_InitText(), since we need find language index numbers
     bool FirstStart = LoadXMLConfigFile(NeedResetConfig);
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+    // Android has dedicated on-screen controls; desktop shortcut hints such
+    // as F2/F5-F12, Esc, mouse and keyboard setup must never be surfaced.
+    ChangeGameConfig().NeedShowHint[4] = false;
+#endif
 #ifdef __EMSCRIPTEN__
     // Yandex Games requires automatic language detection through the SDK.
     const int YandexLanguageIndex = AstroMenaceYandexLanguageIndex();
