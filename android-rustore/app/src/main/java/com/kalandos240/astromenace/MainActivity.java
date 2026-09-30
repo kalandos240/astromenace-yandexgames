@@ -73,6 +73,7 @@ public final class MainActivity extends Activity {
     private boolean smokeSelfTestStarted;
     private boolean gameplayActive;
     private boolean gameplayTouchBlockLogged;
+    private boolean profileScreenActive;
     private boolean profileKeyboardArmed;
     private boolean profileKeyboardCanArm = true;
     private long profileKeyboardArmedUntil;
@@ -437,31 +438,16 @@ public final class MainActivity extends Activity {
     }
 
     private void handleMenuTap(float normalizedX, float normalizedY) {
-        // Main menu START GAME.
-        if (profileKeyboardCanArm
-                && !isProfileKeyboardArmed()
-                && normalizedX >= 0.24f && normalizedX <= 0.76f
-                && normalizedY >= 0.20f && normalizedY <= 0.295f) {
-            armProfileKeyboard();
-            return;
-        }
-
-        // Pilot-name field. Opening the IME consumes the one-shot keyboard arm,
-        // so similarly positioned workshop controls can never reopen it.
-        if (isProfileKeyboardArmed()
+        // Text input is allowed only when the C++ engine explicitly reports
+        // that the PROFILE menu is active. No coordinate-only arming is used.
+        if (profileScreenActive
                 && normalizedX >= 0.18f && normalizedX <= 0.72f
                 && normalizedY >= 0.285f && normalizedY <= 0.350f) {
-            disarmProfileKeyboard("field-opened");
             if (pageReady) {
                 webView.post(this::showNativeKeyboard);
                 Log.i(TAG, "PROFILE_NAME_TAP");
             }
             return;
-        }
-
-        // Profile navigation buttons at the bottom leave the profile context.
-        if (isProfileKeyboardArmed() && normalizedY >= 0.87f) {
-            disarmProfileKeyboard("profile-navigation");
         }
 
         // In-game QUIT is handled by AstroMenace itself and returns to the
@@ -471,6 +457,19 @@ public final class MainActivity extends Activity {
                 && normalizedY >= 0.54f && normalizedY <= 0.68f) {
             Log.i(TAG, "CONFIRMED_QUIT_TO_MENU_TAP");
         }
+    }
+
+    private void setProfileInputMode(boolean enabled) {
+        runOnUiThread(() -> {
+            profileScreenActive = enabled;
+            if (!enabled) {
+                hideNativeKeyboard();
+                setProfileInputMode(false);
+            }
+            Log.i(TAG, enabled
+                    ? "PROFILE_INPUT_MODE_ON"
+                    : "PROFILE_INPUT_MODE_OFF");
+        });
     }
 
     private void finishCleanlyAfterGameQuit() {
@@ -1029,7 +1028,7 @@ public final class MainActivity extends Activity {
 
         // 1) Workshop/profile keyboard gate: a profile-field-shaped tap with
         // the gate disarmed must never open the IME.
-        disarmProfileKeyboard("smoke-reset");
+        setProfileInputMode(false);
         float hotspotX = webView.getWidth() * 0.35f;
         float hotspotY = webView.getHeight() * 0.31f;
         MotionEvent down = MotionEvent.obtain(
@@ -1052,8 +1051,7 @@ public final class MainActivity extends Activity {
 
             // 2) Profile input can still deliberately open the system IME.
             imeShowRequested = false;
-            profileKeyboardCanArm = true;
-            armProfileKeyboard();
+            setProfileInputMode(true);
             handleMenuTap(0.35f, 0.31f);
             webView.postDelayed(() -> {
                 Log.i(TAG, imeShowRequested
@@ -1134,6 +1132,7 @@ public final class MainActivity extends Activity {
         runOnUiThread(() -> {
             gameplayActive = visible;
             if (visible) {
+                profileScreenActive = false;
                 pauseFlowActive = false;
                 safePointGeneration++;
                 disarmProfileKeyboard("gameplay-start");
@@ -1209,6 +1208,11 @@ public final class MainActivity extends Activity {
         @JavascriptInterface
         public void menuVisible() {
             MainActivity.this.menuVisible();
+        }
+
+        @JavascriptInterface
+        public void profileInputMode(boolean enabled) {
+            MainActivity.this.setProfileInputMode(enabled);
         }
 
         @JavascriptInterface
