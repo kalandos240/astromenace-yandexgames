@@ -21,6 +21,25 @@ git clone --depth 1 https://github.com/emscripten-core/emsdk.git "${EMSDK}"
 # shellcheck disable=SC1091
 source "${EMSDK}/emsdk_env.sh"
 
+# Reuse the proven web-runtime source preparation from the production Yandex
+# pipeline, but deliberately skip its fixed 1280x720 video-mode patch and
+# its legacy GameplayAPI patch. Android has its own adaptive resolution,
+# joystick/pause state bridge and native ad lifecycle.
+cd "${ROOT}"
+python3 - <<'PY'
+from scripts import enable_gl4es_offline as p
+
+p.patch_gl_main()
+p.patch_web_main_menu()
+p.patch_mission_save()
+p.patch_web_locale_preloads()
+p.patch_first_run_config_noise()
+p.patch_startup_yields()
+p.patch_fast_asset_loading()
+
+print("Prepared Android WebAssembly sources with proven web runtime patches.")
+PY
+
 git init "${GL4ES}"
 git -C "${GL4ES}" remote add origin https://github.com/ptitSeb/gl4es.git
 git -C "${GL4ES}" fetch --depth 1 origin 81547d986798e876de8b434193920b606a72363f
