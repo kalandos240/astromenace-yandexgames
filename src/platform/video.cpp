@@ -49,11 +49,11 @@ In real, we allow any view size with aspect ratio from 5:4 (1.25) to 16:9 (1.77)
 #include <emscripten.h>
 EM_JS(int, AstroMenaceAndroidRenderWidth, (), {
     const value = Number(globalThis.ASTROMENACE_ANDROID_RENDER_WIDTH || 1280);
-    return Number.isFinite(value) ? Math.max(1280, Math.min(1366, Math.round(value))) : 1280;
+    return Number.isFinite(value) ? Math.max(1280, Math.min(1920, Math.round(value))) : 1280;
 });
 EM_JS(int, AstroMenaceAndroidRenderHeight, (), {
     const value = Number(globalThis.ASTROMENACE_ANDROID_RENDER_HEIGHT || 720);
-    return Number.isFinite(value) ? Math.max(720, Math.min(768, Math.round(value))) : 720;
+    return Number.isFinite(value) ? Math.max(720, Math.min(1080, Math.round(value))) : 720;
 });
 #endif
 
