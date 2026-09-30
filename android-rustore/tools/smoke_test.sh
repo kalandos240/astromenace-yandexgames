@@ -6,6 +6,16 @@ OUT="android-rustore/smoke"
 mkdir -p "$OUT"
 
 test -s "$APK"
+
+# Source-level guardrails for the mobile-only control surface.
+grep -q 'addHoldButton(root, "▲"' android-rustore/app/src/main/java/com/kalandos240/astromenace/MainActivity.java
+if grep -q 'class JoystickView' android-rustore/app/src/main/java/com/kalandos240/astromenace/MainActivity.java; then
+  echo "Joystick control unexpectedly remains in mobile Activity." >&2
+  exit 1
+fi
+grep -q 'Android/WebView must not wait in the desktop fade-out state' src/game/game.cpp
+grep -q 'NeedShowHint\[4\] = false' src/main.cpp
+echo "Mobile-only UI source audit: PASS."
 adb install -r "$APK"
 adb logcat -c
 # Prevent Android's one-time immersive-mode education card from covering
