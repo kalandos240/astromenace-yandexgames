@@ -1,6 +1,7 @@
 package com.kalandos240.astromenace;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -1053,6 +1054,23 @@ public final class MainActivity extends Activity {
         });
     }
 
+    private int preferredRenderWidth() {
+        ActivityManager manager =
+                (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        int memoryClassMb = manager != null ? manager.getMemoryClass() : 128;
+        int physicalLongSide = Math.max(
+                getResources().getDisplayMetrics().widthPixels,
+                getResources().getDisplayMetrics().heightPixels);
+
+        // 1366x768 is only ~14% more pixels than 720p and is the highest
+        // conservative step used here. Low-memory/smaller devices stay at 720p.
+        return memoryClassMb >= 256 && physicalLongSide >= 1600 ? 1366 : 1280;
+    }
+
+    private int preferredRenderHeight() {
+        return preferredRenderWidth() > 1280 ? 768 : 720;
+    }
+
     private void startupError(String message) {
         runOnUiThread(() -> {
             Log.e(TAG, "STARTUP_ERROR: " + message);
@@ -1093,6 +1111,18 @@ public final class MainActivity extends Activity {
         public void requestInterstitial(String reason) {
             MainActivity.this.requestInterstitialAtSafePoint(
                     reason == null ? "unknown" : reason);
+        }
+
+        @JavascriptInterface
+        public int renderWidth() {
+            int value = MainActivity.this.preferredRenderWidth();
+            Log.i(TAG, "MOBILE_RENDER_TARGET width=" + value);
+            return value;
+        }
+
+        @JavascriptInterface
+        public int renderHeight() {
+            return MainActivity.this.preferredRenderHeight();
         }
 
         @JavascriptInterface
