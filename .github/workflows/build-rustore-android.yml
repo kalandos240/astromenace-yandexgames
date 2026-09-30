@@ -106,22 +106,22 @@ jobs:
         run: |
           gradle --no-daemon --stacktrace :app:assembleDebug
 
-      - name: Verify packaged application does not request INTERNET
+      - name: Verify packaged application and ad permissions
         shell: bash
         run: |
           set -euo pipefail
           APK="android-rustore/app/build/outputs/apk/debug/app-debug.apk"
           test -s "${APK}"
-          if "${ANDROID_HOME}/build-tools/36.0.0/aapt" dump permissions "${APK}" | grep -q 'android.permission.INTERNET'; then
-            echo "Unexpected INTERNET permission found in APK" >&2
-            exit 1
-          fi
+          PERMISSIONS="$("${ANDROID_HOME}/build-tools/36.0.0/aapt" dump permissions "${APK}")"
+          printf '%s\n' "${PERMISSIONS}"
+          grep -q 'android.permission.INTERNET' <<<"${PERMISSIONS}"
+          grep -q 'android.permission.ACCESS_NETWORK_STATE' <<<"${PERMISSIONS}"
           unzip -l "${APK}" | grep -q 'assets/game/gamedata.vfs'
           if unzip -l "${APK}" | grep -q 'assets/game/gamedata.js'; then
             echo "Legacy Base64 gamedata.js unexpectedly packaged" >&2
             exit 1
           fi
-          echo "APK package audit: PASS."
+          echo "APK + Yandex Mobile Ads permission audit: PASS."
 
       - name: Enable KVM for emulator smoke test
         shell: bash
@@ -159,6 +159,7 @@ jobs:
           ASTROMENACE_KEYSTORE_PASSWORD: ${{ secrets.RUSTORE_KEYSTORE_PASSWORD }}
           ASTROMENACE_KEY_ALIAS: ${{ secrets.RUSTORE_KEY_ALIAS }}
           ASTROMENACE_KEY_PASSWORD: ${{ secrets.RUSTORE_KEY_PASSWORD }}
+          YANDEX_INTERSTITIAL_AD_UNIT_ID: ${{ secrets.YANDEX_INTERSTITIAL_AD_UNIT_ID }}
         run: |
           gradle --no-daemon --stacktrace \
             :app:assembleRelease \
