@@ -40,6 +40,21 @@ def patch_gl_main() -> None:
             raise SystemExit("Could not find SDL window flag insertion point")
         text = text.replace(marker, web_window + marker, 1)
 
+    context = (
+        "#ifdef __EMSCRIPTEN__\n"
+        "    // Emscripten EGL accepts GLES 2 for this WebGL 1 build. SDL's\n"
+        "    // desktop/default context version can otherwise cause EGL_BAD_MATCH.\n"
+        "    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);\n"
+        "    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);\n"
+        "    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);\n"
+        "#endif\n\n"
+    )
+    if "Emscripten EGL accepts GLES 2" not in text:
+        marker = "    Uint32 Flags{SDL_WINDOW_OPENGL};\n"
+        if marker not in text:
+            raise SystemExit("SDL context attributes insertion point not found")
+        text = text.replace(marker, context + marker, 1)
+
     init = "#ifdef __EMSCRIPTEN__\n    initialize_gl4es();\n#endif\n\n"
     if "initialize_gl4es();" not in text:
         marker = "    if (SDL_GL_SetSwapInterval(VSync) == -1) {\n"
