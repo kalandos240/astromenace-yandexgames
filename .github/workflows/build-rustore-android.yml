@@ -40,6 +40,19 @@ jobs:
             "build-tools;36.0.0"
           set -o pipefail
 
+      - name: Preserve official Android APK signature verifier
+        shell: bash
+        run: |
+          mkdir -p "${RUNNER_TEMP}/astromenace-signing-tools"
+          cp "${ANDROID_HOME}/build-tools/36.0.0/lib/apksigner.jar" "${RUNNER_TEMP}/astromenace-signing-tools/"
+
+      - name: Upload official APK signing tool
+        uses: actions/upload-artifact@v4
+        with:
+          name: astromenace-rustore-signing-tools
+          path: ${{ runner.temp }}/astromenace-signing-tools/
+          if-no-files-found: error
+
       - name: Set up Gradle 9.6
         uses: gradle/actions/setup-gradle@v4
         with:
