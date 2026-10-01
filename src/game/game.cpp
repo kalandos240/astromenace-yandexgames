@@ -370,8 +370,6 @@ void ExitGame(eCommand Command)
         GameMenu = false;
         NeedShowGameMenu = false;
         NeedHideGameMenu = false;
-        AstroMenaceAndroidPauseMenuState(0);
-        AstroMenaceAndroidGameplayState(0);
         RealExitGame();
         cCommand::GetInstance().Set(eCommand::SWITCH_FROM_GAME_TO_MAIN_MENU);
         return;
@@ -394,6 +392,12 @@ void ExitGame(eCommand Command)
 }
 void RealExitGame()
 {
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+    // Every mission transition must clear native gameplay state, including
+    // restart, completion and return to the workshop/mission list.
+    AstroMenaceAndroidGameplayState(0);
+    AstroMenaceAndroidPauseMenuState(0);
+#endif
     ReleaseSpaceShip(PlayerFighter);
 
     vw_ReleaseAllParticleSystems2D();

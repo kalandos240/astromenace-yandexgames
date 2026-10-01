@@ -307,7 +307,7 @@ public final class MainActivity extends Activity {
         view.setVerticalScrollBarEnabled(false);
         view.setHapticFeedbackEnabled(false);
 
-        // Mobile gameplay is controlled exclusively by the native joystick
+        // Mobile gameplay is controlled exclusively by the native arrow controls
         // and action buttons. Direct canvas touches are swallowed while a
         // mission is active so SDL cannot interpret a finger as mouse steering.
         //
@@ -315,7 +315,7 @@ public final class MainActivity extends Activity {
         // the profile screen. This prevents workshop/system buttons at similar
         // coordinates from ever opening Android's IME.
         view.setOnTouchListener((touchedView, event) -> {
-            // In missions, only the native joystick and action buttons control
+            // In missions, only the native arrow controls and action buttons control
             // the ship. All direct canvas touches are swallowed.
             if (gameplayActive) {
                 if (event.getActionMasked() == MotionEvent.ACTION_UP && !gameplayTouchBlockLogged) {
@@ -1188,6 +1188,10 @@ public final class MainActivity extends Activity {
 
             if (controlsLayer != null) {
                 controlsLayer.setVisibility(visible ? View.VISIBLE : View.GONE);
+            }
+            if (!visible && webView != null && pageReady) {
+                webView.evaluateJavascript(
+                        "window.__astroAndroidInput&&window.__astroAndroidInput.releaseAll();", null);
             }
             if (!visible && imeInput != null && imeInput.hasFocus()) {
                 hideNativeKeyboard();

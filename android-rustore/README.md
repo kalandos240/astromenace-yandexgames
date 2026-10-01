@@ -1,40 +1,32 @@
 # AstroMenace for RuStore / Android
 
-This directory contains the Android packaging target for the RuStore version.
+## Runtime
 
-## Architecture
+The offline game engine and resources are bundled in the APK. A hardware-accelerated WebView loads them through AndroidX WebViewAssetLoader at `https://appassets.androidplatform.net/assets/game/index.html`; gameplay needs no network connection.
 
-- Android app, not a link/redirect to a website.
-- The verified offline AstroMenace WebAssembly runtime is bundled inside the APK/AAB under `assets/game/`.
-- The runtime is opened from `file:///android_asset/` and therefore does not require the `INTERNET` permission for gameplay.
-- Hardware-accelerated WebView hosts the existing WebGL/WebAssembly renderer.
-- Native Android overlay provides touch controls: D-pad, two attack buttons and pause.
-- Direct touch on the game surface remains available for aiming/interaction.
-- Android lifecycle events pause/resume the game and flush local progress.
-- Android back sends `Esc`; a second back press quickly exits the app.
-- Landscape immersive mode is used on phones while remaining resizable on large-screen Android devices.
+Native arrow, attack and pause buttons call exported engine functions. Gameplay canvas touches are blocked; menus accept normal touch input. Android IME is available only on the profile screen, supports full Unicode names and submits through Done. Pause Quit returns to the main menu. Android Back closes the keyboard first, opens mission pause while playing, and uses double Back to exit from menus.
 
-## Store-ready baseline
+Android backgrounding releases held controls, pauses timers/audio and flushes local saves. Resuming restores the WebView; the mission remains paused for the player to continue.
 
-- `compileSdk 36`, `targetSdk 36`, Java 17.
-- No runtime network permission in the manifest.
-- No Yandex Games SDK is requested when the packaged game is opened through `file://`.
-- Local saves use the existing offline storage path.
-- Release signing is supported through environment variables/secrets without committing keystore material.
+## Build and signing
 
-## Build
+- Android 8+ (`minSdk 26`), `compileSdk 36`, `targetSdk 36`, Java 17.
+- Version 1.0.6, versionCode 6, package `com.kalandos240.astromenace`.
+- Internet/network-state permissions support optional Yandex Mobile Ads; the Yandex Games SDK is disabled.
+- No demo ad unit ships by default. Set `YANDEX_INTERSTITIAL_AD_UNIT_ID` to a production unit to enable ads.
+- Release self-test intent is disabled with `BuildConfig.DEBUG`.
 
-The GitHub Actions workflow `.github/workflows/build-rustore-android.yml` downloads the latest successful `astromenace-yandexgames-fast-offline` web artifact, puts it into `app/src/main/assets/game/`, and builds:
+`.github/workflows/build-rustore-android.yml` downloads the verified offline resources, rebuilds the Android-specific WebAssembly engine, converts its VFS to a direct asset, builds a debug APK and runs emulator regressions. Release APK/AAB are built only after those pass.
 
-- debug APK for device testing;
-- release APK;
-- release AAB for RuStore.
+Tests cover initial rendering, canvas size, keyboard gating and Unicode profile names, engine movement from a native arrow, mission pause/resume/quit, and Android background/resume. Emulator tests do not replace physical-device compatibility/performance testing or a full campaign playthrough.
 
-For a signed release configure these repository secrets:
+Optional CI release signing secrets:
 
 - `RUSTORE_KEYSTORE_BASE64`
 - `RUSTORE_KEYSTORE_PASSWORD`
 - `RUSTORE_KEY_ALIAS`
 - `RUSTORE_KEY_PASSWORD`
 
-The keystore itself must never be committed to Git.
+Without these secrets CI produces unsigned release outputs. Sign the APK with the private release key using official Android `apksigner`, then verify its signature. Keep the same package and signing key for every update and increase versionCode. Never commit keys or passwords to Git.
+
+The bundled `SOURCE_CODE.txt` points to the exact source commit and build instructions. Upstream credits and licenses remain included.
