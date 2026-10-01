@@ -572,6 +572,20 @@ static void ToggleGamePauseMenu()
 }
 
 #if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceAndroidHostPause()
+{
+    // WebView can process focus loss and gain in the same frame after resume.
+    // Pause directly and idempotently; focus gain must not resume the mission.
+    if (MenuStatus != eMenuStatus::GAME) return;
+    GameMenu = true;
+    NeedShowGameMenu = true;
+    NeedHideGameMenu = false;
+    GameContentTransp = 1.0f;
+    cGameSpeed::GetInstance().SetThreadSpeed(0.0f);
+    SetShowGameCursor(true);
+    AstroMenaceAndroidPauseMenuState(1);
+}
+
 extern "C" EMSCRIPTEN_KEEPALIVE int AstroMenaceAndroidGameBack()
 {
     if (MenuStatus != eMenuStatus::GAME || isDialogBoxDrawing()) return 0;

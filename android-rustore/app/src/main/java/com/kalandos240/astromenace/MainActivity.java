@@ -661,7 +661,7 @@ public final class MainActivity extends Activity {
                 + "up:function(key,code,kc){delete held[code];emit('keyup',key,code,kc);},"
                 + "releaseAll:function(){Object.keys(held).forEach(function(c){var k=held[c];emit('keyup',k[0],k[1],k[2]);});held={};},"
                 + "text:function(ch){emitText(ch);},"
-                + "pause:function(){this.releaseAll();if(window.Module&&Module.androidHostPause)Module.androidHostPause();else window.dispatchEvent(new Event('blur'));},"
+                + "pause:function(){this.releaseAll();if(window.Module&&Module._AstroMenaceAndroidHostPause)Module._AstroMenaceAndroidHostPause();if(window.Module&&Module.androidHostPause)Module.androidHostPause();else window.dispatchEvent(new Event('blur'));},"
                 + "resume:function(){if(window.Module&&Module.androidHostResume)Module.androidHostResume();else window.dispatchEvent(new Event('focus'));}"
                 + "};"
                 + "})();";
@@ -743,17 +743,24 @@ public final class MainActivity extends Activity {
         }
 
         button.setLayoutParams(params);
+        final java.util.Set<Integer> pointers = new java.util.HashSet<>();
         button.setOnTouchListener((v, event) -> {
             switch (event.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN:
+                    pointers.clear();
                 case MotionEvent.ACTION_POINTER_DOWN:
+                    boolean wasReleased = pointers.isEmpty();
+                    pointers.add(event.getPointerId(event.getActionIndex()));
                     v.setAlpha(1.0f);
-                    sendKey(true, key, code, keyCode);
+                    if (wasReleased) sendKey(true, key, code, keyCode);
                     return true;
 
-                case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_POINTER_UP:
+                    pointers.remove(event.getPointerId(event.getActionIndex()));
+                    if (!pointers.isEmpty()) return true;
+                case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_CANCEL:
+                    pointers.clear();
                     v.setAlpha(0.72f);
                     sendKey(false, key, code, keyCode);
                     return true;
@@ -841,9 +848,9 @@ public final class MainActivity extends Activity {
             tapKey("Escape", "Escape", 27);
             return;
         }
-        long now = System.currentTimeMillis();
+        long now = SystemClock.elapsedRealtime();
 
-        if (now - lastBackAt <= DOUBLE_BACK_EXIT_MS) {
+        if (lastBackAt != 0L && now - lastBackAt <= DOUBLE_BACK_EXIT_MS) {
             finish();
             return;
         }
@@ -855,6 +862,7 @@ public final class MainActivity extends Activity {
     @Override
     protected void onPause() {
         activityResumed = false;
+        lastBackAt = 0L;
         safePointGeneration++;
         if (webView != null && pageReady) {
             webView.evaluateJavascript(
@@ -1068,8 +1076,12 @@ public final class MainActivity extends Activity {
     private void startSmokeMission() {
         webView.evaluateJavascript("Module._AstroMenaceAndroidSmokeStartMission()", null);
         smokeWait("MISSION", () -> engineGameplayActive && gameplayActive, () -> smokeCheckMovement(() -> {
-            tapKey("Escape", "Escape", 27);
+            // Restore focus before SDL gets another frame, as on fast resume.
+            // Repeated host pauses must leave the mission paused.
+            webView.evaluateJavascript(
+                    "(()=>{let i=window.__astroAndroidInput;i.pause();i.pause();i.resume();})()", null);
             smokeWait("PAUSE", () -> pauseMenuVisible && !gameplayActive, () -> {
+                Log.i(TAG, "SMOKE_HOST_PAUSE_IDEMPOTENT_PASS");
                 smokeTap(0.5f, 0.338f);
                 smokeWait("RESUME", () -> !pauseMenuVisible && gameplayActive, () -> {
                     tapKey("Escape", "Escape", 27);
