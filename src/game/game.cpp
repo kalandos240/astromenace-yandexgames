@@ -567,14 +567,18 @@ static void ToggleGamePauseMenu()
     }
     GameMissionCompleteStatusShowDialog = false;
 #if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
-    AstroMenaceAndroidPauseMenuState(GameMenu || NeedShowGameMenu || GameContentTransp > 0.0f ? 1 : 0);
+    AstroMenaceAndroidPauseMenuState(GameMenu || NeedShowGameMenu || GameContentTransp > 0.0f || PlayerFighter.expired() ? 1 : 0);
 #endif
 }
 
 #if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
 extern "C" EMSCRIPTEN_KEEPALIVE int AstroMenaceAndroidGameBack()
 {
-    if (MenuStatus != eMenuStatus::GAME || isDialogBoxDrawing() || PlayerFighter.expired()) return 0;
+    if (MenuStatus != eMenuStatus::GAME || isDialogBoxDrawing()) return 0;
+    if (PlayerFighter.expired()) {
+        ExitGame(eCommand::SWITCH_FROM_GAME_TO_MAIN_MENU);
+        return 1;
+    }
     ToggleGamePauseMenu();
     return 1;
 }
@@ -589,7 +593,7 @@ void DrawGame()
     // Report real menu transitions, including death/results dialogs and
     // lifecycle pause. Native controls must never intercept menu touches.
     static bool AndroidMenuWasVisible = false;
-    const bool AndroidMenuVisible = GameMenu || NeedShowGameMenu || GameContentTransp > 0.0f;
+    const bool AndroidMenuVisible = GameMenu || NeedShowGameMenu || GameContentTransp > 0.0f || PlayerFighter.expired();
     if (AndroidMenuVisible != AndroidMenuWasVisible) {
         AndroidMenuWasVisible = AndroidMenuVisible;
         AstroMenaceAndroidPauseMenuState(AndroidMenuVisible ? 1 : 0);
