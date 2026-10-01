@@ -16,7 +16,7 @@ fi
 grep -q 'Android/WebView must not wait in the desktop fade-out state' src/game/game.cpp
 grep -q 'void RealExitGame();' src/game/game.cpp
 grep -q 'NeedShowHint\[4\] = false' src/main.cpp
-grep -q 'Phones/tablets do not need the desktop animated mission-script' src/menu/menu.cpp
+grep -q 'Android renders the original backdrop immediately' src/menu/menu.cpp
 grep -q '#if !defined(ASTROMENACE_ANDROID_BUILD)' src/menu/menu_options.cpp
 grep -q '#if !defined(ASTROMENACE_ANDROID_BUILD)' src/menu/menu_interface.cpp
 grep -q '#if !defined(ASTROMENACE_ANDROID_BUILD)' src/menu/menu_options_adv.cpp

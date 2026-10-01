@@ -178,12 +178,6 @@ void InitMenu(eMenuStatus NewMenuStatus)
 
     StarSystemInitByType(eDrawType::MENU); // should be before RunScript()
 
-#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
-    // Phones/tablets do not need the desktop animated mission-script
-    // backdrop. Keeping this path lightweight prevents a long synchronous
-    // stall when returning from a paused mission to the main menu.
-    MenuScript.reset();
-#else
     MenuScript.reset(new cMissionScript);
 
     if (GameConfig().MenuScript > 2) {
@@ -206,6 +200,9 @@ void InitMenu(eMenuStatus NewMenuStatus)
     ChangeGameConfig().MenuScript++;
 
     const float Time1 = vw_GetTimeThread(0);
+#if !defined(__EMSCRIPTEN__) || !defined(ASTROMENACE_ANDROID_BUILD)
+    // Android renders the original backdrop immediately and advances it on
+    // live frames, without blocking on thirty seconds of catch-up simulation.
     MenuScript->StartTime = Time1-30;
     MenuScript->TimeLastOp = Time1-30;
     for (float i=Time1-30; i<Time1; i+=1.0f) {

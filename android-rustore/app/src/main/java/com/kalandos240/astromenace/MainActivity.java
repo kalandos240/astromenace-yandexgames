@@ -88,6 +88,7 @@ public final class MainActivity extends Activity {
     private boolean adSdkInitialized;
     private boolean adLoadInProgress;
     private boolean adShowing;
+    private boolean activityResumed;
     private long nextInterstitialAt;
 
     @Override
@@ -146,7 +147,13 @@ public final class MainActivity extends Activity {
     }
 
     private void initializeYandexMobileAds() {
+        String unit = getString(R.string.yandex_interstitial_ad_unit_id);
+        if (unit.isBlank() || unit.startsWith("demo-")) {
+            Log.i(TAG, "YANDEX_ADS_DISABLED missing-production-unit");
+            return;
+        }
         YandexAds.initialize(this, () -> {
+            if (isFinishing() || isDestroyed()) return;
             adSdkInitialized = true;
             Log.i(TAG, "YANDEX_ADS_SDK_INITIALIZED");
             interstitialAdLoader = new InterstitialAdLoader(this);
@@ -172,6 +179,7 @@ public final class MainActivity extends Activity {
             @Override
             public void onAdLoaded(InterstitialAd ad) {
                 adLoadInProgress = false;
+                if (isFinishing() || isDestroyed()) return;
                 interstitialAd = ad;
                 Log.i(TAG, "YANDEX_AD_LOADED");
             }
@@ -191,7 +199,8 @@ public final class MainActivity extends Activity {
 
         View scheduler = webView != null ? webView : getWindow().getDecorView();
         scheduler.postDelayed(() -> {
-            if (generation != safePointGeneration || gameplayActive || isFinishing()) {
+            if (generation != safePointGeneration || engineGameplayActive
+                    || !activityResumed || !pageReady || isFinishing() || isDestroyed()) {
                 Log.d(TAG, "YANDEX_AD_SKIP unsafe-transition reason=" + reason);
                 return;
             }
@@ -220,6 +229,8 @@ public final class MainActivity extends Activity {
 
             InterstitialAd ad = interstitialAd;
             adShowing = true;
+            webView.evaluateJavascript(
+                    "window.__astroAndroidInput&&window.__astroAndroidInput.pause();", null);
             nextInterstitialAt = now + INTERSTITIAL_COOLDOWN_MS;
 
             ad.setAdEventListener(new InterstitialAdEventListener() {
@@ -273,7 +284,7 @@ public final class MainActivity extends Activity {
             adShowing = false;
 
             hideSystemUi();
-            if (webView != null && pageReady) {
+            if (webView != null && pageReady && activityResumed) {
                 webView.evaluateJavascript(
                         "window.__astroAndroidInput&&window.__astroAndroidInput.resume();",
                         null);
@@ -631,12 +642,13 @@ public final class MainActivity extends Activity {
 
         String js = "(function(){"
                 + "if(window.__astroAndroidInput)return;"
+                + "var held={};"
                 + "function make(type,key,code,kc){"
                 + "var e=new KeyboardEvent(type,{key:key,code:code,bubbles:true,cancelable:true,repeat:false});"
                 + "try{Object.defineProperty(e,'keyCode',{get:function(){return kc;}});"
                 + "Object.defineProperty(e,'which',{get:function(){return kc;}});}catch(_){}return e;}"
                 + "function emit(type,key,code,kc){"
-                + "var targets=[window,document,document.getElementById('canvas')];"
+                + "var targets=[document.getElementById('canvas')||window];"
                 + "for(var i=0;i<targets.length;i++){if(targets[i]){try{targets[i].dispatchEvent(make(type,key,code,kc));}catch(_){}}}}"
                 + "function emitText(ch){"
                 + "var canvas=document.getElementById('canvas');if(!canvas||!ch)return;"
@@ -650,11 +662,12 @@ public final class MainActivity extends Activity {
                 + "one('keydown',cp);one('keypress',cp);one('keyup',cp);"
                 + "}"
                 + "window.__astroAndroidInput={"
-                + "down:function(key,code,kc){emit('keydown',key,code,kc);},"
-                + "up:function(key,code,kc){emit('keyup',key,code,kc);},"
+                + "down:function(key,code,kc){if(held[code])return;held[code]=[key,code,kc];emit('keydown',key,code,kc);},"
+                + "up:function(key,code,kc){delete held[code];emit('keyup',key,code,kc);},"
+                + "releaseAll:function(){Object.keys(held).forEach(function(c){var k=held[c];emit('keyup',k[0],k[1],k[2]);});held={};},"
                 + "text:function(ch){emitText(ch);},"
-                + "pause:function(){window.dispatchEvent(new Event('blur'));},"
-                + "resume:function(){window.dispatchEvent(new Event('focus'));}"
+                + "pause:function(){this.releaseAll();if(window.Module&&Module.androidHostPause)Module.androidHostPause();else window.dispatchEvent(new Event('blur'));},"
+                + "resume:function(){if(window.Module&&Module.androidHostResume)Module.androidHostResume();else window.dispatchEvent(new Event('focus'));}"
                 + "};"
                 + "})();";
 
@@ -817,6 +830,16 @@ public final class MainActivity extends Activity {
     }
 
     private void handleBack() {
+        if (imeInput != null && imeInput.hasFocus()) {
+            hideNativeKeyboard();
+            return;
+        }
+        if (adShowing || !pageReady) return;
+        if (engineGameplayActive) {
+            lastBackAt = 0L;
+            tapKey("Escape", "Escape", 27);
+            return;
+        }
         long now = System.currentTimeMillis();
 
         if (now - lastBackAt <= DOUBLE_BACK_EXIT_MS) {
@@ -830,6 +853,8 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
+        activityResumed = false;
+        safePointGeneration++;
         if (webView != null && pageReady) {
             webView.evaluateJavascript(
                     "window.__astroAndroidInput&&window.__astroAndroidInput.pause();"
@@ -845,13 +870,14 @@ public final class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        activityResumed = true;
         hideSystemUi();
 
         if (webView != null) {
             webView.onResume();
             webView.resumeTimers();
 
-            if (pageReady) {
+            if (pageReady && !adShowing) {
                 installJavascriptInputBridge();
                 webView.evaluateJavascript(
                         "window.__astroAndroidInput&&window.__astroAndroidInput.resume();",
@@ -1058,6 +1084,10 @@ public final class MainActivity extends Activity {
             pauseFlowActive = visible;
 
             if (visible) {
+                if (webView != null && pageReady) {
+                    webView.evaluateJavascript(
+                            "window.__astroAndroidInput&&window.__astroAndroidInput.releaseAll();", null);
+                }
                 // Pause/game menu must receive normal WebView touches.
                 gameplayActive = false;
                 if (controlsLayer != null) {

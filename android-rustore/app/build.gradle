@@ -5,7 +5,7 @@ plugins {
 def keystorePath = System.getenv('ASTROMENACE_KEYSTORE_PATH')
 def hasReleaseSigning = keystorePath != null && !keystorePath.isBlank()
 def yandexInterstitialAdUnitId =
-        System.getenv('YANDEX_INTERSTITIAL_AD_UNIT_ID') ?: 'demo-interstitial-yandex'
+        System.getenv('YANDEX_INTERSTITIAL_AD_UNIT_ID') ?: ''
 
 android {
     namespace 'com.kalandos240.astromenace'
@@ -19,8 +19,8 @@ android {
         applicationId 'com.kalandos240.astromenace'
         minSdk 26
         targetSdk 36
-        versionCode 1
-        versionName '1.0.0'
+        versionCode 6
+        versionName '1.0.6'
         resValue 'string', 'yandex_interstitial_ad_unit_id', yandexInterstitialAdUnitId
     }
 
