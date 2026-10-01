@@ -12,6 +12,7 @@ android {
 
     buildFeatures {
         resValues = true
+        buildConfig = true
     }
     compileSdk 36
 

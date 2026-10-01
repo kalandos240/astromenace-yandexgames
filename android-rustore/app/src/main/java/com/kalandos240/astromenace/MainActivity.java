@@ -94,7 +94,7 @@ public final class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        smokeTestMode = getIntent().getBooleanExtra("astromenace_smoke", false);
+        smokeTestMode = BuildConfig.DEBUG && getIntent().getBooleanExtra("astromenace_smoke", false);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         getWindow().setFormat(PixelFormat.RGBA_8888);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
