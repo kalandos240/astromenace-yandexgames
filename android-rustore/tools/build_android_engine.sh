@@ -50,7 +50,7 @@ cmake --build "${GL4ES_BUILD}" --target GL -j2
 
 mapfile -t SOURCES < <(find "${ROOT}/src" -type f -name '*.cpp' -print | sort)
 
-em++ "${SOURCES[@]}" "${ROOT}/web/web_glu_compat.cpp"   -std=c++11 -O3 -flto -fno-exceptions -fno-rtti   -DASTROMENACE_WEB_ASYNC_STARTUP=1   -DASTROMENACE_ANDROID_BUILD=1   -I"${GL4ES}/include" -I"${ROOT}" -I"${ROOT}/src"   "${GL4ES}/lib/libGL.a"   -sUSE_SDL=2   -sUSE_FREETYPE=1   -sUSE_OGG=1   -sUSE_VORBIS=1   -lopenal   -sALLOW_MEMORY_GROWTH=1   -sFULL_ES2=1   -sGL_ENABLE_GET_PROC_ADDRESS=1   -sFORCE_FILESYSTEM=1   -sENVIRONMENT=web   -sASYNCIFY=1   -sASYNCIFY_STACK_SIZE=65536   -sSINGLE_FILE=1   --pre-js "${ROOT}/web/yandex-offline-pre.js"   -o "${GAME_DIR}/index.js"
+em++ "${SOURCES[@]}" "${ROOT}/web/web_glu_compat.cpp"   -std=c++11 -O3 -flto -fno-exceptions -fno-rtti   -DASTROMENACE_WEB_ASYNC_STARTUP=1   -DASTROMENACE_ANDROID_BUILD=1   -I"${GL4ES}/include" -I"${ROOT}" -I"${ROOT}/src"   "${GL4ES}/lib/libGL.a"   -sUSE_SDL=2   -sUSE_FREETYPE=1   -sUSE_OGG=1   -sUSE_VORBIS=1   -lopenal   -sALLOW_MEMORY_GROWTH=1   -sFULL_ES2=1   -sGL_ENABLE_GET_PROC_ADDRESS=1   -sFORCE_FILESYSTEM=1   -sENVIRONMENT=web   -sASYNCIFY=1   -sASYNCIFY_STACK_SIZE=65536   -sSINGLE_FILE=1 -sEXPORTED_RUNTIME_METHODS=ccall   --pre-js "${ROOT}/web/yandex-offline-pre.js"   -o "${GAME_DIR}/index.js"
 
 test -s "${GAME_DIR}/index.js"
 grep -q 'decodeEmbeddedGzip' "${GAME_DIR}/index.js"

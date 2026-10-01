@@ -548,41 +548,11 @@ public final class MainActivity extends Activity {
     }
 
     private void forwardImeDiff(String previous, String current) {
-        int prefix = 0;
-        int previousLength = previous.length();
-        int currentLength = current.length();
-
-        while (prefix < previousLength
-                && prefix < currentLength
-                && previous.charAt(prefix) == current.charAt(prefix)) {
-            prefix++;
-        }
-
-        int previousSuffix = previousLength;
-        int currentSuffix = currentLength;
-        while (previousSuffix > prefix
-                && currentSuffix > prefix
-                && previous.charAt(previousSuffix - 1) == current.charAt(currentSuffix - 1)) {
-            previousSuffix--;
-            currentSuffix--;
-        }
-
-        int removedCodePoints = previous.codePointCount(prefix, previousSuffix);
-        for (int i = 0; i < removedCodePoints; i++) {
-            tapKey("Backspace", "Backspace", 8);
-        }
-
-        String inserted = current.substring(prefix, currentSuffix);
-        for (int offset = 0; offset < inserted.length();) {
-            int codePoint = inserted.codePointAt(offset);
-            sendTextCharacter(new String(Character.toChars(codePoint)));
-            offset += Character.charCount(codePoint);
-        }
-
-        if (removedCodePoints > 0 || !inserted.isEmpty()) {
-            Log.i(TAG, "NATIVE_IME_TEXT_CHANGE removed="
-                    + removedCodePoints + " inserted=" + inserted.length());
-        }
+        if (!pageReady || webView == null || !profileScreenActive) return;
+        webView.evaluateJavascript(
+                "Module.ccall('AstroMenaceAndroidSetProfileName',null,['string'],["
+                        + quoteJs(current) + "]);", null);
+        Log.i(TAG, "NATIVE_IME_TEXT_CHANGE full-name length=" + current.length());
     }
 
     private void sendTextCharacter(String character) {
@@ -615,6 +585,23 @@ public final class MainActivity extends Activity {
         }
 
         imeShowRequested = true;
+        if (webView != null && pageReady && profileScreenActive) {
+            webView.evaluateJavascript(
+                    "Module.ccall('AstroMenaceAndroidGetProfileName','string',[],[])", value -> {
+                        if (imeInput == null || !imeInput.hasFocus()) return;
+                        try {
+                            Object decoded = new org.json.JSONTokener(value).nextValue();
+                            if (!(decoded instanceof String)) return;
+                            imeInternalChange = true;
+                            imeInput.setText((String) decoded);
+                            imeInput.setSelection(imeInput.length());
+                            imePreviousValue = (String) decoded;
+                            imeInternalChange = false;
+                        } catch (org.json.JSONException ignored) {
+                            imeInternalChange = false;
+                        }
+                    });
+        }
         Log.i(TAG, "SOFT_KEYBOARD_SHOW");
     }
 
@@ -817,7 +804,7 @@ public final class MainActivity extends Activity {
     }
 
     private static String quoteJs(String value) {
-        return "'" + value.replace("\\", "\\\\").replace("'", "\\'") + "'";
+        return org.json.JSONObject.quote(value);
     }
 
     private void installBackHandler() {
@@ -1055,6 +1042,23 @@ public final class MainActivity extends Activity {
     }
 
     private void runRealMissionSmokeTest() {
+        webView.evaluateJavascript("Module._AstroMenaceAndroidSmokeOpenProfile()", null);
+        smokeWait("PROFILE", () -> profileScreenActive, () -> {
+            webView.evaluateJavascript(
+                    "(()=>{let n='Тест\\u0027\\u0022';"
+                            + "Module.ccall('AstroMenaceAndroidSetProfileName',null,['string'],[n]);"
+                            + "return Module.ccall('AstroMenaceAndroidGetProfileName','string',[],[])===n})()", value -> {
+                        if (!"true".equals(value)) {
+                            Log.e(TAG, "SMOKE_REAL_PROFILE_TEXT_FAIL");
+                            return;
+                        }
+                        Log.i(TAG, "SMOKE_REAL_PROFILE_TEXT_PASS");
+                        startSmokeMission();
+                    });
+        });
+    }
+
+    private void startSmokeMission() {
         webView.evaluateJavascript("Module._AstroMenaceAndroidSmokeStartMission()", null);
         smokeWait("MISSION", () -> engineGameplayActive && gameplayActive, () -> {
             tapKey("Escape", "Escape", 27);

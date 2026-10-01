@@ -39,6 +39,9 @@
 #include "SDL2/SDL.h"
 #include <sstream>
 #include <iomanip>
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+#include <emscripten.h>
+#endif
 
 // NOTE switch to nested namespace definition (namespace A::B::C { ... }) (since C++17)
 namespace viewizard {
@@ -49,6 +52,36 @@ int CurrentProfile = -1;
 
 
 std::u32string NewProfileName;
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceAndroidSmokeOpenProfile()
+{
+    cCommand::GetInstance().Set(eCommand::SWITCH_TO_PROFILE);
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceAndroidSetProfileName(const char *Text)
+{
+    if (MenuStatus != eMenuStatus::PROFILE || !Text) return;
+    std::u32string Name;
+    for (const auto Symbol : ConvertUTF8.from_bytes(Text)) {
+        if (Symbol < 32 || Symbol == 127) continue;
+        auto Candidate = Name;
+        Candidate += Symbol;
+        if (ConvertUTF8.to_bytes(Candidate).size() >= config::PROFILE_NAME_SIZE
+            || vw_TextWidthUTF32(Candidate) > 540) break;
+        Name.swap(Candidate);
+    }
+    NewProfileName.swap(Name);
+    vw_SetCurrentUnicodeChar(nullptr);
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE const char *AstroMenaceAndroidGetProfileName()
+{
+    static std::string Name;
+    Name = ConvertUTF8.to_bytes(NewProfileName);
+    return Name.c_str();
+}
+#endif
+
 float LastProfileNameTime = 0.0f;
 float CurrentProfileNameTransp = 0.9f;
 int SoundOnProfileID = -1;
