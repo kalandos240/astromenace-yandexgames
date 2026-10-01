@@ -112,6 +112,7 @@ while [ "$n" -le 240 ]; do
 done
 
 if [ "$selftest" != "1" ]; then
+  adb exec-out screencap -p > "$OUT/screen-selftest-failure.png" || true
   echo "Native Android regression self-test did not complete." >&2
   grep -E 'AstroMenaceAndroid.*SMOKE_|AstroMenaceAndroid.*(STARTUP_ERROR|RENDER_PROCESS_GONE)' "$OUT/logcat-selftest.txt" || true
   exit 1

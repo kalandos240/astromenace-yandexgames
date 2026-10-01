@@ -522,6 +522,64 @@ void SetGameMissionComplete()
 
 
 
+// Shared menu transition for keyboard, mission results and native Android Back.
+static void ToggleGamePauseMenu()
+{
+    bool NeedPlaySfx = true;
+    if (GameMissionCompleteStatusShowDialog) {
+        if (GameMenu) {
+            NeedPlaySfx = false;
+        } else {
+            GameMenu = true;
+        }
+    } else {
+        GameMenu = !GameMenu;
+    }
+
+    if (GameMenu && (!GameMissionCompleteStatus || GameMissionCompleteStatusShowDialog)) {
+        NeedShowGameMenu = true;
+        NeedHideGameMenu = false;
+        if (NeedPlaySfx && vw_IsSoundAvailable(SoundShowHideMenu)) {
+            vw_StopSound(SoundShowHideMenu, 150);
+        }
+        if (NeedPlaySfx) {
+            SoundShowHideMenu = PlayMenuSFX(eMenuSFX::MissionShowMenu, 1.0f);
+        }
+        // reset mouse click, prevent miss clicking here
+        vw_GetMouseLeftClick(true);
+    } else if (!GameMenu && !GameMissionCompleteStatus) { // if menu with mission results are opened - don't allow close it
+        NeedShowGameMenu = false;
+        NeedHideGameMenu = true;
+        // set mouse position to last menu mouse position
+        SDL_WarpMouseInWindow(reinterpret_cast<SDL_Window*>(vw_GetSDLWindow()), LastMouseXR, LastMouseYR);
+
+        if (NeedPlaySfx && vw_IsSoundAvailable(SoundShowHideMenu)) {
+            vw_StopSound(SoundShowHideMenu, 150);
+        }
+        if (NeedPlaySfx) {
+            SoundShowHideMenu = PlayMenuSFX(eMenuSFX::MissionHideMenu, 1.0f);
+        }
+        SetShowGameCursor(false);
+    }
+
+    if (GameMissionCompleteStatus && !GameMissionCompleteStatusShowDialog) { // if displaying the mission results, only allow exit to the main menu
+        SetCurrentDialogBox(eDialogBox::QuiToMenuNoSave);
+    }
+    GameMissionCompleteStatusShowDialog = false;
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+    AstroMenaceAndroidPauseMenuState(GameMenu || NeedShowGameMenu || GameContentTransp > 0.0f ? 1 : 0);
+#endif
+}
+
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+extern "C" EMSCRIPTEN_KEEPALIVE int AstroMenaceAndroidGameBack()
+{
+    if (MenuStatus != eMenuStatus::GAME || isDialogBoxDrawing() || PlayerFighter.expired()) return 0;
+    ToggleGamePauseMenu();
+    return 1;
+}
+#endif
+
 //------------------------------------------------------------------------------------
 // draw game, main method
 //------------------------------------------------------------------------------------
@@ -904,47 +962,7 @@ void DrawGame()
     if (!isDialogBoxDrawing()) {
         if (!PlayerFighter.expired()) {
             if (vw_GetKeyStatus(SDLK_ESCAPE) || GameMissionCompleteStatusShowDialog) {
-                bool NeedPlaySfx = true;
-                if (GameMissionCompleteStatusShowDialog) {
-                    if (GameMenu) {
-                        NeedPlaySfx = false;
-                    } else {
-                        GameMenu = true;
-                    }
-                } else {
-                    GameMenu = !GameMenu;
-                }
-
-                if (GameMenu && (!GameMissionCompleteStatus || GameMissionCompleteStatusShowDialog)) {
-                    NeedShowGameMenu = true;
-                    NeedHideGameMenu = false;
-                    if (NeedPlaySfx && vw_IsSoundAvailable(SoundShowHideMenu)) {
-                        vw_StopSound(SoundShowHideMenu, 150);
-                    }
-                    if (NeedPlaySfx) {
-                        SoundShowHideMenu = PlayMenuSFX(eMenuSFX::MissionShowMenu, 1.0f);
-                    }
-                    // reset mouse click, prevent miss clicking here
-                    vw_GetMouseLeftClick(true);
-                } else if (!GameMenu && !GameMissionCompleteStatus) { // if menu with mission results are opened - don't allow close it
-                    NeedShowGameMenu = false;
-                    NeedHideGameMenu = true;
-                    // set mouse position to last menu mouse position
-                    SDL_WarpMouseInWindow(reinterpret_cast<SDL_Window*>(vw_GetSDLWindow()), LastMouseXR, LastMouseYR);
-
-                    if (NeedPlaySfx && vw_IsSoundAvailable(SoundShowHideMenu)) {
-                        vw_StopSound(SoundShowHideMenu, 150);
-                    }
-                    if (NeedPlaySfx) {
-                        SoundShowHideMenu = PlayMenuSFX(eMenuSFX::MissionHideMenu, 1.0f);
-                    }
-                    SetShowGameCursor(false);
-                }
-
-                if (GameMissionCompleteStatus && !GameMissionCompleteStatusShowDialog) { // if displaying the mission results, only allow exit to the main menu
-                    SetCurrentDialogBox(eDialogBox::QuiToMenuNoSave);
-                }
-                GameMissionCompleteStatusShowDialog = false;
+                ToggleGamePauseMenu();
                 vw_SetKeyStatus(SDLK_ESCAPE, false);
             }
         }

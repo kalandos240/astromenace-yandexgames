@@ -803,10 +803,11 @@ public final class MainActivity extends Activity {
         // Latch one-shot presses in the engine; retain a DOM fallback for
         // keys that are not handled by the native Android control bridge.
         webView.evaluateJavascript(
-                "(()=>{if(window.Module&&Module._AstroMenaceAndroidTapKey&&Module._AstroMenaceAndroidTapKey(" + keyCode + "))return;"
+                "(()=>{if(" + keyCode + "===27&&window.Module&&Module._AstroMenaceAndroidGameBack&&Module._AstroMenaceAndroidGameBack())return 'game-back';"
+                        + "if(window.Module&&Module._AstroMenaceAndroidTapKey&&Module._AstroMenaceAndroidTapKey(" + keyCode + "))return 'key-tap';"
                         + "let i=window.__astroAndroidInput;if(!i)return;i.down(" + args
-                        + ");requestAnimationFrame(()=>requestAnimationFrame(()=>i.up(" + args + ")));})()",
-                null);
+                        + ");requestAnimationFrame(()=>requestAnimationFrame(()=>i.up(" + args + ")));return 'dom';})()",
+                value -> { if (smokeTestMode) Log.i(TAG, "SMOKE_KEY_DISPATCH code=" + keyCode + " result=" + value); });
     }
 
     private static String quoteJs(String value) {
