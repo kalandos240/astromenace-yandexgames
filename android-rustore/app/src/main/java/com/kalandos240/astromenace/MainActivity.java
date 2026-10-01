@@ -588,7 +588,7 @@ public final class MainActivity extends Activity {
         if (webView != null && pageReady && profileScreenActive) {
             webView.evaluateJavascript(
                     "Module.ccall('AstroMenaceAndroidGetProfileName','string',[],[])", value -> {
-                        if (imeInput == null || !imeInput.hasFocus()) return;
+                        if (imeInput == null || !imeInput.hasFocus() || !imePreviousValue.isEmpty()) return;
                         try {
                             Object decoded = new org.json.JSONTokener(value).nextValue();
                             if (!(decoded instanceof String)) return;

@@ -38,7 +38,7 @@ ready=0
 menu_visible=0
 i=1
 while [ "$i" -le 120 ]; do
-  adb logcat -d > "$OUT/logcat-live.txt"
+  adb logcat -d -v threadtime AstroMenaceAndroid:V chromium:E AndroidRuntime:E ActivityManager:E '*:S' > "$OUT/logcat-live.txt"
 
   if grep -q 'AstroMenaceAndroid.*GAME_READY' "$OUT/logcat-live.txt"; then
     ready=1
@@ -87,7 +87,7 @@ adb exec-out screencap -p > "$OUT/screen.png" || true
 selftest=0
 n=1
 while [ "$n" -le 240 ]; do
-  adb logcat -d > "$OUT/logcat-selftest.txt"
+  adb logcat -d -v threadtime AstroMenaceAndroid:V chromium:E AndroidRuntime:E ActivityManager:E '*:S' > "$OUT/logcat-selftest.txt"
   for phase in MISSION PAUSE RESUME PAUSE_AGAIN QUIT; do
     if [ ! -e "$OUT/real-${phase}.png" ] && grep -q "SMOKE_REAL_${phase}_PASS" "$OUT/logcat-selftest.txt"; then
       adb exec-out screencap -p > "$OUT/real-${phase}.png"
@@ -124,7 +124,7 @@ adb shell input keyevent 3 || true
 sleep 2
 adb shell am start -W -n com.kalandos240.astromenace.debug/com.kalandos240.astromenace.MainActivity --ez astromenace_smoke true >/dev/null
 sleep 4
-adb logcat -d > "$OUT/logcat-after-resume.txt"
+adb logcat -d -v threadtime AstroMenaceAndroid:V chromium:E AndroidRuntime:E ActivityManager:E '*:S' > "$OUT/logcat-after-resume.txt"
 if grep -Eq 'AstroMenaceAndroid.*(STARTUP_ERROR|RENDER_PROCESS_GONE)|FATAL EXCEPTION.*com.kalandos240.astromenace|ANR in com.kalandos240.astromenace' "$OUT/logcat-after-resume.txt"; then
   echo "Crash/render failure after Android background/resume." >&2
   exit 1
@@ -137,7 +137,7 @@ adb exec-out screencap -p > "$OUT/screen-after-resume.png" || true
 echo "Android background/resume regression: PASS"
 
 adb shell dumpsys meminfo com.kalandos240.astromenace.debug > "$OUT/meminfo.txt" || true
-adb logcat -d > "$OUT/logcat.txt"
+adb logcat -d -v threadtime AstroMenaceAndroid:V chromium:E AndroidRuntime:E ActivityManager:E '*:S' > "$OUT/logcat.txt"
 
 if ! grep -q 'AstroMenaceAndroid.*FULLSCREEN_CANVAS_PASS' "$OUT/logcat.txt"; then
   echo "Android canvas did not validate as full-screen." >&2
