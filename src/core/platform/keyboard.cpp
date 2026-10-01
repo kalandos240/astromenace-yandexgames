@@ -50,6 +50,7 @@ std::array<bool, SDL_NUM_SCANCODES> AndroidHeldKeys{};
 std::array<bool, SDL_NUM_SCANCODES> AndroidKeyTaps{};
 int AndroidKey(int BrowserKey) {
     switch (BrowserKey) {
+    case 13: return SDLK_RETURN;
     case 27: return SDLK_ESCAPE;
     case 37: return SDLK_LEFT;
     case 38: return SDLK_UP;
