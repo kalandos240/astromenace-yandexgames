@@ -34,7 +34,10 @@ adb shell settings put global show_first_crash_dialog 0 || true
 # Remove unrelated Pixel Launcher/GMS workloads from the isolated CI emulator.
 # Their ANR dialogs steal WebView focus and invalidate game input checks.
 adb shell pm disable-user --user 0 com.google.android.apps.nexuslauncher || true
+adb shell pm disable-user --user 0 com.google.android.apps.messaging || true
+adb shell pm disable-user --user 0 com.google.android.apps.wellbeing || true
 adb shell pm disable-user --user 0 com.google.android.gms || true
+adb shell cmd notification set_dnd none || true
 adb shell am force-stop com.kalandos240.astromenace.debug || true
 adb shell am start -W -n com.kalandos240.astromenace.debug/com.kalandos240.astromenace.MainActivity --ez astromenace_smoke true
 

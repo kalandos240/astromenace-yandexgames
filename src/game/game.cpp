@@ -213,8 +213,6 @@ void InitGame()
 
 #if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
     ChangeGameConfig().MouseControl = false;
-    AstroMenaceAndroidGameplayState(1);
-    AstroMenaceAndroidPauseMenuState(0);
 #endif
 
     GameEngineSystem = GameConfig().Profile[CurrentProfile].EngineSystem;
@@ -334,6 +332,11 @@ void InitGame()
     LastGameOnOffUpdateTime = vw_GetTimeThread(0);
     GameBlackTransp = 1.0f;
     NeedOnGame = true;
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+    // Show native controls only when assets, HUD and actual game state are ready.
+    AstroMenaceAndroidGameplayState(1);
+    AstroMenaceAndroidPauseMenuState(0);
+#endif
 }
 
 
@@ -399,6 +402,8 @@ void RealExitGame()
 extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceAndroidSmokeStartMission()
 {
     if (MenuStatus == eMenuStatus::GAME) return;
+    InitDialogBoxes();
+    ChangeGameConfig().NeedShowHint[0] = false;
     CurrentProfile = 0;
     ChangeGameConfig().Profile[0] = sPilotProfile{};
     ChangeGameConfig().Profile[0].Used = true;

@@ -4,6 +4,7 @@ import base64
 import gzip
 import struct
 import sys
+import os
 
 game_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("android-rustore/app/src/main/assets/game")
 data_js = game_dir / "gamedata.js"
@@ -374,4 +375,16 @@ print(
     f"Android game prepared: VFS={raw_size} bytes; "
     f"removed Base64 payload={gzip_size} compressed bytes; "
     "cursor hidden; high-quality full-screen compositing and gated mobile keyboard bridge installed"
+)
+
+source_ref = os.environ.get("GITHUB_SHA", "rustore-mobile")
+(game_dir / "SOURCE_CODE.txt").write_text(
+    "AstroMenace Android / RuStore port\n"
+    "Corresponding source (Android shell and WebAssembly engine):\n"
+    f"https://github.com/kalandos240/astromenace-yandexgames/tree/{source_ref}\n\n"
+    "Build instructions: android-rustore/README.md and .github/workflows/build-rustore-android.yml\n"
+    "Upstream: https://github.com/viewizard/astromenace\n"
+    "gl4es: https://github.com/ptitSeb/gl4es/commit/81547d986798e876de8b434193920b606a72363f\n"
+    "Licenses and attribution: LICENSE.md, AUTHORS.md, licenses/\n",
+    encoding="utf-8",
 )
