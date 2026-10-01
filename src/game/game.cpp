@@ -188,6 +188,13 @@ bool NeedOffGame = false;
 
 
 
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+extern "C" EMSCRIPTEN_KEEPALIVE float AstroMenaceAndroidSmokePlayerX() {
+    if (auto Fighter = PlayerFighter.lock()) return Fighter->Location.x;
+    return 0.0f;
+}
+#endif
+
 //------------------------------------------------------------------------------------
 // game initialization
 //------------------------------------------------------------------------------------

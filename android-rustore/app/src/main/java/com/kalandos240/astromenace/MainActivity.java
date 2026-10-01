@@ -642,6 +642,7 @@ public final class MainActivity extends Activity {
                 + "try{Object.defineProperty(e,'keyCode',{get:function(){return kc;}});"
                 + "Object.defineProperty(e,'which',{get:function(){return kc;}});}catch(_){}return e;}"
                 + "function emit(type,key,code,kc){"
+                + "if(window.Module&&Module._AstroMenaceAndroidSetKey&&Module._AstroMenaceAndroidSetKey(kc,type==='keydown'?1:0))return;"
                 + "var targets=[document.getElementById('canvas')||window];"
                 + "for(var i=0;i<targets.length;i++){if(targets[i]){try{targets[i].dispatchEvent(make(type,key,code,kc));}catch(_){}}}}"
                 + "function emitText(ch){"
@@ -799,10 +800,11 @@ public final class MainActivity extends Activity {
     private void tapKey(String key, String code, int keyCode) {
         if (!pageReady || webView == null) return;
         String args = quoteJs(key) + "," + quoteJs(code) + "," + keyCode;
-        // Keep a one-shot press alive across an actual engine frame. A fixed
-        // 70 ms keyup could arrive before SDL polls input on a slow device.
+        // Latch one-shot presses in the engine; retain a DOM fallback for
+        // keys that are not handled by the native Android control bridge.
         webView.evaluateJavascript(
-                "(()=>{let i=window.__astroAndroidInput;if(!i)return;i.down(" + args
+                "(()=>{if(window.Module&&Module._AstroMenaceAndroidTapKey&&Module._AstroMenaceAndroidTapKey(" + keyCode + "))return;"
+                        + "let i=window.__astroAndroidInput;if(!i)return;i.down(" + args
                         + ");requestAnimationFrame(()=>requestAnimationFrame(()=>i.up(" + args + ")));})()",
                 null);
     }
@@ -1064,7 +1066,7 @@ public final class MainActivity extends Activity {
 
     private void startSmokeMission() {
         webView.evaluateJavascript("Module._AstroMenaceAndroidSmokeStartMission()", null);
-        smokeWait("MISSION", () -> engineGameplayActive && gameplayActive, () -> {
+        smokeWait("MISSION", () -> engineGameplayActive && gameplayActive, () -> smokeCheckMovement(() -> {
             tapKey("Escape", "Escape", 27);
             smokeWait("PAUSE", () -> pauseMenuVisible && !gameplayActive, () -> {
                 smokeTap(0.5f, 0.338f);
@@ -1082,6 +1084,23 @@ public final class MainActivity extends Activity {
                     });
                 });
             });
+        }));
+    }
+
+    private void smokeCheckMovement(Runnable next) {
+        webView.evaluateJavascript("Module._AstroMenaceAndroidSmokePlayerX()", before -> {
+            sendKey(true, "ArrowRight", "ArrowRight", 39);
+            webView.postDelayed(() -> {
+                sendKey(false, "ArrowRight", "ArrowRight", 39);
+                webView.evaluateJavascript("Math.abs(Module._AstroMenaceAndroidSmokePlayerX()-(" + before + "))>0.01", moved -> {
+                    if (!"true".equals(moved)) {
+                        Log.e(TAG, "SMOKE_REAL_MOVEMENT_FAIL");
+                        return;
+                    }
+                    Log.i(TAG, "SMOKE_REAL_MOVEMENT_PASS");
+                    next.run();
+                });
+            }, 2000L);
         });
     }
 
