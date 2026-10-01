@@ -86,8 +86,13 @@ adb exec-out screencap -p > "$OUT/screen.png" || true
 # real Activity/WebView after AstroMenace reaches its visible menu.
 selftest=0
 n=1
-while [ "$n" -le 20 ]; do
+while [ "$n" -le 240 ]; do
   adb logcat -d > "$OUT/logcat-selftest.txt"
+  for phase in MISSION PAUSE RESUME PAUSE_AGAIN QUIT; do
+    if [ ! -e "$OUT/real-${phase}.png" ] && grep -q "SMOKE_REAL_${phase}_PASS" "$OUT/logcat-selftest.txt"; then
+      adb exec-out screencap -p > "$OUT/real-${phase}.png"
+    fi
+  done
   if grep -q 'AstroMenaceAndroid.*SMOKE_NATIVE_CONTROLS_PASS' "$OUT/logcat-selftest.txt"; then
     selftest=1
     break
@@ -105,7 +110,7 @@ if [ "$selftest" != "1" ]; then
   exit 1
 fi
 
-for marker in   SMOKE_WORKSHOP_IME_GATE_PASS   SMOKE_PROFILE_IME_PASS   SMOKE_GAMEPLAY_TOUCH_BLOCK_PASS   ARROW_CONTROLS_ACTIVE   SMOKE_PAUSE_TOUCH_PASS   SMOKE_QUIT_TO_MENU_GUARD_PASS   SMOKE_ENGINE_QUIT_TO_MENU_PASS   SMOKE_NATIVE_CONTROLS_PASS
+for marker in   SMOKE_WORKSHOP_IME_GATE_PASS   SMOKE_PROFILE_IME_PASS   SMOKE_GAMEPLAY_TOUCH_BLOCK_PASS   ARROW_CONTROLS_ACTIVE   SMOKE_PAUSE_TOUCH_PASS   SMOKE_QUIT_TO_MENU_GUARD_PASS   SMOKE_ENGINE_QUIT_TO_MENU_PASS   SMOKE_REAL_MISSION_PASS   SMOKE_REAL_PAUSE_PASS   SMOKE_REAL_RESUME_PASS   SMOKE_REAL_QUIT_PASS   SMOKE_NATIVE_CONTROLS_PASS
 do
   if ! grep -q "AstroMenaceAndroid.*${marker}" "$OUT/logcat-selftest.txt"; then
     echo "Missing regression marker: ${marker}" >&2

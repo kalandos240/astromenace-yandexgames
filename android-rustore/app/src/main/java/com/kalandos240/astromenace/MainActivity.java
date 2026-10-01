@@ -395,6 +395,13 @@ public final class MainActivity extends Activity {
             }
 
             @Override
+            public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest request) {
+                Uri uri = request.getUrl();
+                return !"https".equals(uri.getScheme())
+                        || !"appassets.androidplatform.net".equals(uri.getHost());
+            }
+
+            @Override
             public void onPageFinished(WebView v, String url) {
                 pageReady = true;
                 installJavascriptInputBridge();
@@ -917,7 +924,7 @@ public final class MainActivity extends Activity {
     private void maybeRunNativeSmokeSelfTest() {
         if (!smokeTestMode || smokeSelfTestStarted || webView == null) return;
         smokeSelfTestStarted = true;
-        webView.postDelayed(this::runNativeSmokeSelfTest, 1200L);
+        webView.postDelayed(this::runNativeSmokeSelfTest, 25000L);
     }
 
     private void runNativeSmokeSelfTest() {
@@ -1008,28 +1015,66 @@ public final class MainActivity extends Activity {
                             : "SMOKE_QUIT_TO_MENU_GUARD_FAIL");
 
                     setEngineGameplayState(false);
-                    smokeEngineQuitPassed = false;
-                    webView.evaluateJavascript(
-                            "(typeof Module!=='undefined'&&"
-                                    + "typeof Module._AstroMenaceAndroidSmokeQuitToMainMenu==='function')"
-                                    + "?(Module._AstroMenaceAndroidSmokeQuitToMainMenu(),true):false",
-                            value -> {
-                                if (!"true".equals(value)) {
-                                    Log.e(TAG, "SMOKE_ENGINE_QUIT_TO_MENU_EXPORT_FAIL");
-                                }
-                            });
-
-                    webView.postDelayed(() -> {
-                        Log.i(TAG, smokeEngineQuitPassed
-                                ? "SMOKE_ENGINE_QUIT_TO_MENU_PASS"
-                                : "SMOKE_ENGINE_QUIT_TO_MENU_FAIL");
-                        Log.i(TAG, smokeEngineQuitPassed
-                                ? "SMOKE_NATIVE_CONTROLS_PASS"
-                                : "SMOKE_NATIVE_CONTROLS_FAIL");
-                    }, 8000L);
+                    runRealMissionSmokeTest();
                 }, 260L);
             }, 450L);
         }, 300L);
+    }
+
+    private void smokeWait(String phase, java.util.function.BooleanSupplier condition,
+            Runnable next, long deadline) {
+        if (webView == null || isFinishing()) return;
+        if (condition.getAsBoolean()) {
+            Log.i(TAG, "SMOKE_REAL_" + phase + "_PASS");
+            webView.postDelayed(next, 3500L);
+        } else if (SystemClock.elapsedRealtime() >= deadline) {
+            Log.e(TAG, "SMOKE_REAL_" + phase + "_FAIL");
+        } else {
+            webView.postDelayed(() -> smokeWait(phase, condition, next, deadline), 500L);
+        }
+    }
+
+    private void smokeWait(String phase, java.util.function.BooleanSupplier condition, Runnable next) {
+        smokeWait(phase, condition, next, SystemClock.elapsedRealtime() + 60_000L);
+    }
+
+    private void smokeTap(float x, float y) {
+        if (webView == null) return;
+        long time = SystemClock.uptimeMillis();
+        MotionEvent down = MotionEvent.obtain(time, time, MotionEvent.ACTION_DOWN,
+                webView.getWidth() * x, webView.getHeight() * y, 0);
+        webView.dispatchTouchEvent(down);
+        down.recycle();
+        webView.postDelayed(() -> {
+            if (webView == null) return;
+            MotionEvent up = MotionEvent.obtain(time, SystemClock.uptimeMillis(), MotionEvent.ACTION_UP,
+                    webView.getWidth() * x, webView.getHeight() * y, 0);
+            webView.dispatchTouchEvent(up);
+            up.recycle();
+        }, 350L);
+    }
+
+    private void runRealMissionSmokeTest() {
+        webView.evaluateJavascript("Module._AstroMenaceAndroidSmokeStartMission()", null);
+        smokeWait("MISSION", () -> engineGameplayActive && gameplayActive, () -> {
+            tapKey("Escape", "Escape", 27);
+            smokeWait("PAUSE", () -> pauseMenuVisible && !gameplayActive, () -> {
+                smokeTap(0.5f, 0.338f);
+                smokeWait("RESUME", () -> !pauseMenuVisible && gameplayActive, () -> {
+                    tapKey("Escape", "Escape", 27);
+                    smokeWait("PAUSE_AGAIN", () -> pauseMenuVisible && !gameplayActive, () -> {
+                        smokeTap(0.5f, 0.73f);
+                        webView.postDelayed(() -> {
+                            smokeTap(0.42f, 0.604f);
+                            smokeWait("QUIT", () -> !engineGameplayActive && !isFinishing(), () -> {
+                                Log.i(TAG, "SMOKE_ENGINE_QUIT_TO_MENU_PASS");
+                                Log.i(TAG, "SMOKE_NATIVE_CONTROLS_PASS");
+                            });
+                        }, 3500L);
+                    });
+                });
+            });
+        });
     }
 
     private void gameReady() {

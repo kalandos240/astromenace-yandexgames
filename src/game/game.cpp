@@ -396,6 +396,19 @@ void RealExitGame()
 }
 
 #if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceAndroidSmokeStartMission()
+{
+    if (MenuStatus == eMenuStatus::GAME) return;
+    CurrentProfile = 0;
+    ChangeGameConfig().Profile[0] = sPilotProfile{};
+    ChangeGameConfig().Profile[0].Used = true;
+    ChangeGameConfig().Profile[0].Name[0] = 'T';
+    ChangeGameConfig().Profile[0].Name[1] = '\0';
+    CurrentMission = 0;
+    MissionListInit();
+    cCommand::GetInstance().Set(eCommand::SWITCH_FROM_MENU_TO_GAME);
+}
+
 extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceAndroidSmokeQuitToMainMenu()
 {
     ExitGame(eCommand::SWITCH_FROM_GAME_TO_MAIN_MENU);
@@ -498,6 +511,16 @@ void SetGameMissionComplete()
 //------------------------------------------------------------------------------------
 void DrawGame()
 {
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+    // Report real menu transitions, including death/results dialogs and
+    // lifecycle pause. Native controls must never intercept menu touches.
+    static bool AndroidMenuWasVisible = false;
+    const bool AndroidMenuVisible = GameMenu || NeedShowGameMenu || GameContentTransp > 0.0f;
+    if (AndroidMenuVisible != AndroidMenuWasVisible) {
+        AndroidMenuWasVisible = AndroidMenuVisible;
+        AstroMenaceAndroidPauseMenuState(AndroidMenuVisible ? 1 : 0);
+    }
+#endif
 
     float TimeDelta = vw_GetTimeThread(0) - CurrentTime;
     CurrentTime = vw_GetTimeThread(0);
