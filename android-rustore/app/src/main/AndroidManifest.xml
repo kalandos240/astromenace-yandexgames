@@ -14,6 +14,7 @@
         android:hardwareAccelerated="true"
         android:largeHeap="true"
         android:label="AstroMenace"
+        android:icon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar"
         android:usesCleartextTraffic="false">
