@@ -797,10 +797,14 @@ public final class MainActivity extends Activity {
     }
 
     private void tapKey(String key, String code, int keyCode) {
-        sendKey(true, key, code, keyCode);
-        if (webView != null) {
-            webView.postDelayed(() -> sendKey(false, key, code, keyCode), 70L);
-        }
+        if (!pageReady || webView == null) return;
+        String args = quoteJs(key) + "," + quoteJs(code) + "," + keyCode;
+        // Keep a one-shot press alive across an actual engine frame. A fixed
+        // 70 ms keyup could arrive before SDL polls input on a slow device.
+        webView.evaluateJavascript(
+                "(()=>{let i=window.__astroAndroidInput;if(!i)return;i.down(" + args
+                        + ");requestAnimationFrame(()=>requestAnimationFrame(()=>i.up(" + args + ")));})()",
+                null);
     }
 
     private static String quoteJs(String value) {
