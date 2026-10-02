@@ -30,6 +30,7 @@
 
 // TODO applying changes should be moved out from the vw_BeginRendering()/vw_EndRendering() block
 
+#include "../web_mobile.h"
 #include "../core/core.h"
 #include "../enum.h"
 #include "../config/config.h"

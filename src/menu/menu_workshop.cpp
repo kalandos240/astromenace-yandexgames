@@ -25,6 +25,7 @@
 
 *****************************************************************************/
 
+#include "../web_mobile.h"
 #include "../core/core.h"
 #include "../config/config.h"
 #include "../gfx/shadow_map.h"

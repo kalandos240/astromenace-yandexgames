@@ -101,7 +101,10 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   input.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); input.blur(); } });
   input.addEventListener('keyup', e => e.stopPropagation());
   for (const ev of ['keydown','keyup','keypress']) window.addEventListener(ev, e => {
-    if (e.target === input) e.stopImmediatePropagation();
+    if (e.target === input) {
+      if (ev === 'keydown' && e.key === 'Enter') { e.preventDefault(); input.blur(); }
+      e.stopImmediatePropagation();
+    }
   }, true);
   const blockGameplayTouch = e => {
     if (Module.astroMobile && mission && !paused) { e.preventDefault(); e.stopImmediatePropagation(); }
