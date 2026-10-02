@@ -6,6 +6,9 @@ on:
 permissions:
   contents: read
   actions: read
+concurrency:
+  group: astromenace-v7-diagnosis
+  cancel-in-progress: true
 jobs:
   diagnose:
     runs-on: ubuntu-latest
@@ -16,20 +19,52 @@ jobs:
           name: v7-browser-comparison-debug
           run-id: 37024443285
           github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build gl4es for Emscripten
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/emsdk /tmp/gl4es /tmp/gl4es-build
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git /tmp/emsdk
+          cd /tmp/emsdk
+          ./emsdk install latest
+          ./emsdk activate latest
+          source ./emsdk_env.sh
+
+          git init /tmp/gl4es
+          git -C /tmp/gl4es remote add origin https://github.com/ptitSeb/gl4es.git
+          git -C /tmp/gl4es fetch --depth 1 origin 81547d986798e876de8b434193920b606a72363f
+          git -C /tmp/gl4es checkout --detach FETCH_HEAD
+
+          emcmake cmake -S /tmp/gl4es -B /tmp/gl4es-build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DNOX11=ON \
+            -DNOEGL=ON \
+            -DSTATICLIB=ON \
+            -DDEFAULT_ES=2
+          cmake --build /tmp/gl4es-build --target GL -j2
+          test -s /tmp/gl4es/lib/libGL.a
+
+      - name: Build named candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          source /tmp/emsdk/emsdk_env.sh
+          python3 scripts/enable_gl4es_offline.py
+          python3 scripts/instrument_v7_smoke.py
+          ASTROMENACE_TEST_FLAGS='-DASTROMENACE_WEB_SMOKE_TEST=1 --profiling-funcs' bash scripts/build_v6_engine.sh
       - run: |
           set -euo pipefail
           npm install --no-save playwright terser
+          npx terser dist/index.js -o /tmp/compact.js
+          mv /tmp/compact.js dist/index.js
+          python3 scripts/apply_v6_runtime.py
           npx playwright install --with-deps chromium
-          node scripts/test_v6_browser.cjs | tee V6_BROWSER_TEST.txt
-          node scripts/test_v7_performance.cjs | tee V7_DIAGNOSTIC.txt
+          node scripts/diagnose_v7_browser.cjs | tee V7_DIAGNOSTIC.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: v7-stress-diagnostic
           path: |
-            dist/V7_PERFORMANCE.json
-            V6_BROWSER_TEST.txt
+            dist/index.js
             V7_DIAGNOSTIC.txt
-            dist/V7_STRESS.png
-            dist-baseline/V7_STRESS.png
 
