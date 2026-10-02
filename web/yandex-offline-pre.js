@@ -157,6 +157,8 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     if (ctx?.state === 'suspended') ctx.resume().catch(() => {});
   });
 
+  Module.astroResumeAudio = resumeAudio;
+
   const releasePointerLock = () => {
     if (document.pointerLockElement === Module.canvas) {
       try { document.exitPointerLock?.(); } catch (_) {}

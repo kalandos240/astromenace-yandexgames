@@ -78,6 +78,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     button.addEventListener('pointerdown', e => {
       e.preventDefault(); e.stopPropagation();
       if (!ready() || !mission || paused) return;
+      Module.astroResumeAudio?.();
       if (name === 'pause') { release(); call('AstroMenaceAndroidGameBack'); return; }
       button.setPointerCapture(e.pointerId);
       pointers.add(e.pointerId);
@@ -119,6 +120,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
       const y = Math.max(0,Math.min(1,(e.clientY - rect.top) / rect.height));
       if (e.type === 'pointerdown' && menuPointer === null) {
         menuPointer = e.pointerId; canvas.setPointerCapture(e.pointerId);
+        Module.astroResumeAudio?.();
         call('AstroMenaceWebMenuPointer',[x,y,0],['number','number','number']);
         Module.yandexMaybeShowAd?.('mobile-menu-interaction');
       } else if (e.pointerId === menuPointer) {
