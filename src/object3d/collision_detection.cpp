@@ -111,6 +111,15 @@ bool CheckMeshSphereCollisionDetection(const cObject3D &Object1, const cObject3D
 bool CheckHitBBHitBBCollisionDetection(const cObject3D &Object1, const cObject3D &Object2,
                                        int &Object1PieceNum, int &Object2PieceNum)
 {
+    float TMPOldInvRotationMat[9];
+    memcpy(TMPOldInvRotationMat, Object1.CurrentRotationMat, 9 * sizeof(Object1.CurrentRotationMat[0]));
+    vw_Matrix33InverseRotate(TMPOldInvRotationMat);
+
+    float matB[9];
+    memcpy(matB, Object2.CurrentRotationMat, 9 * sizeof(Object2.CurrentRotationMat[0]));
+    vw_Matrix33Mult(matB, TMPOldInvRotationMat);
+
+
     for (unsigned int i = 0; i < Object1.Chunks.size(); i++) {
         for (unsigned int j = 0; j < Object2.Chunks.size(); j++) {
             float Distance2 = (Object1.Location.x + Object1.HitBB[i].Location.x -
@@ -129,14 +138,6 @@ bool CheckHitBBHitBBCollisionDetection(const cObject3D &Object1, const cObject3D
             if (Distance2 > Object2.HitBB[j].Radius2 + Object1.HitBB[i].Radius2) {
                 continue;
             }
-
-            float TMPOldInvRotationMat[9];
-            memcpy(TMPOldInvRotationMat, Object1.CurrentRotationMat, 9 * sizeof(Object1.CurrentRotationMat[0]));
-            vw_Matrix33InverseRotate(TMPOldInvRotationMat);
-
-            float matB[9];
-            memcpy(matB, Object2.CurrentRotationMat, 9 * sizeof(Object2.CurrentRotationMat[0]));
-            vw_Matrix33Mult(matB, TMPOldInvRotationMat);
 
             sVECTOR3D vPosB = (Object2.Location + Object2.HitBB[j].Location) -
                               (Object1.Location + Object1.HitBB[i].Location);
@@ -584,3 +585,4 @@ bool CheckHitBBMeshCollisionDetection(const cObject3D &Object1, const cObject3D 
 
 } // astromenace namespace
 } // viewizard namespace
+

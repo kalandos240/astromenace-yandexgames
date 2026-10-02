@@ -37,6 +37,8 @@
 #include "../light/light.h"
 #include "particle_system.h"
 #include <cstring>
+#include <algorithm>
+#include <vector>
 
 namespace viewizard {
 
@@ -573,9 +575,9 @@ void cParticleSystem::Draw(GLtexture &CurrentTexture)
     }
 
     // TRIANGLES * (RI_3f_XYZ + RI_2f_TEX + RI_4f_COLOR) * ParticlesCount
-    unsigned int tmpDrawBufferSize = 6 * (3 + 2 + 4) * ParticlesCountInList;
+    unsigned int tmpDrawBufferSize = 4 * (3 + 2 + 4) * ParticlesCountInList;
     if (tmpDrawBufferSize > DrawBufferSize) {
-        DrawBufferSize = tmpDrawBufferSize;
+        DrawBufferSize = std::max(tmpDrawBufferSize, std::max(256u * 36u, DrawBufferSize + DrawBufferSize / 2));
         DrawBuffer.reset(new float[DrawBufferSize]);
     }
     DrawBufferCurrentPosition = 0;
@@ -621,21 +623,13 @@ void cParticleSystem::Draw(GLtexture &CurrentTexture)
                             1.0f, 0.0f);
 
             //second triangle
-            AddToDrawBuffer(tmpParticle.Location.x + tmpAngle1.x,
-                            tmpParticle.Location.y + tmpAngle1.y,
-                            tmpParticle.Location.z + tmpAngle1.z,
-                            tmpParticle.Color, tmpParticle.Alpha,
-                            1.0f, 0.0f);
+
             AddToDrawBuffer(tmpParticle.Location.x + tmpAngle4.x,
                             tmpParticle.Location.y + tmpAngle4.y,
                             tmpParticle.Location.z + tmpAngle4.z,
                             tmpParticle.Color, tmpParticle.Alpha,
                             1.0f, 1.0f);
-            AddToDrawBuffer(tmpParticle.Location.x + tmpAngle3.x,
-                            tmpParticle.Location.y + tmpAngle3.y,
-                            tmpParticle.Location.z + tmpAngle3.z,
-                            tmpParticle.Color, tmpParticle.Alpha,
-                            0.0f, 1.0f);
+
         }
     } else {
         // shader will care about particle rotation
@@ -654,15 +648,11 @@ void cParticleSystem::Draw(GLtexture &CurrentTexture)
                             3.0f, tmpParticle.Size);
 
             //second triangle
-            AddToDrawBuffer(tmpParticle.Location.x, tmpParticle.Location.y, tmpParticle.Location.z,
-                            tmpParticle.Color,  tmpParticle.Alpha,
-                            3.0f, tmpParticle.Size);
+
             AddToDrawBuffer(tmpParticle.Location.x, tmpParticle.Location.y, tmpParticle.Location.z,
                             tmpParticle.Color, tmpParticle.Alpha,
                             4.0f, tmpParticle.Size);
-            AddToDrawBuffer(tmpParticle.Location.x, tmpParticle.Location.y, tmpParticle.Location.z,
-                            tmpParticle.Color, tmpParticle.Alpha,
-                            1.0f, tmpParticle.Size);
+
         }
     }
 
@@ -678,8 +668,21 @@ void cParticleSystem::Draw(GLtexture &CurrentTexture)
         vw_SetTextureBlend(true, eTextureBlendFactor::SRC_ALPHA, eTextureBlendFactor::ONE);
     }
 
+    // Reuse one index pattern across all systems; winding and alpha order are unchanged.
+    static std::vector<unsigned int> Indices;
+    const size_t Required = static_cast<size_t>(ParticlesCountInList) * 6;
+    if (Indices.size() < Required) {
+        const size_t OldParticles = Indices.size() / 6;
+        const size_t Capacity = std::max(Required, std::max(size_t{256 * 6}, Indices.size() + Indices.size() / 2));
+        Indices.resize((Capacity / 6 + 1) * 6);
+        for (size_t i = OldParticles; i < Indices.size() / 6; ++i) {
+            const unsigned int Base = static_cast<unsigned int>(i * 4);
+            const unsigned int Pattern[6]{Base, Base + 1, Base + 2, Base + 2, Base + 3, Base};
+            std::copy(Pattern, Pattern + 6, Indices.begin() + i * 6);
+        }
+    }
     vw_Draw3D(ePrimitiveType::TRIANGLES, 6 * ParticlesCountInList, RI_3f_XYZ | RI_4f_COLOR | RI_1_TEX,
-              DrawBuffer.get(), 9 * sizeof(DrawBuffer.get()[0]));
+              DrawBuffer.get(), 9 * sizeof(DrawBuffer.get()[0]), 0, 0, Indices.data());
 
     vw_SetTextureBlend(true, eTextureBlendFactor::ONE, eTextureBlendFactor::ZERO);
 }
@@ -995,3 +998,4 @@ void vw_UpdateAllParticleSystems(float Time)
 }
 
 } // viewizard namespace
+

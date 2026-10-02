@@ -3,7 +3,7 @@ name: Build AstroMenace Fast Offline WebAssembly
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [fix/defeat-particles-v6]
     paths:
       - 'scripts/enable_gl4es_offline.py'
       - 'web/yandex-offline-pre.js'
@@ -19,10 +19,10 @@ on:
       - '.github/workflows/build-web-offline.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: astromenace-fast-offline-build
+  group: astromenace-v6-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -33,27 +33,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Publish running marker
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p web
-          cat > web/OFFLINE_BUILD_STATUS.md <<'EOF'
-          # Fast offline web build
-
-          - Status: **RUNNING**
-          - Run ID: ${{ github.run_id }}
-          - Commit: ${{ github.sha }}
-          EOF
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add web/OFFLINE_BUILD_STATUS.md
-          if ! git diff --cached --quiet; then
-            git commit -m 'Mark fast offline WebAssembly build running [skip ci]'
-            git pull --rebase origin main
-            git push origin HEAD:main
-          fi
 
       - name: Prepare complete optimized RU EN game data
         id: gamedata
@@ -228,7 +207,7 @@ jobs:
           # installed by yandex-offline-pre.js from gamedata.js before main().
           em++ "${SOURCES[@]}" web/web_glu_compat.cpp \
             -std=c++11 -O3 -flto -fno-exceptions -fno-rtti \
-            -DASTROMENACE_WEB_ASYNC_STARTUP=1 \
+            -DASTROMENACE_WEB_ASYNC_STARTUP=1 -DASTROMENACE_WEB_SMOKE_TEST=1 \
             -I/tmp/gl4es/include -I. -Isrc \
             /tmp/gl4es/lib/libGL.a \
             -sUSE_SDL=2 \
@@ -249,6 +228,8 @@ jobs:
             --pre-js web/yandex-offline-pre.js \
             -o dist/index.js \
             2>&1 | tee web/OFFLINE_BUILD_LOG.txt
+
+          python3 scripts/apply_v6_runtime.py
 
           # Encode the already-compressed VFS into manageable base64 chunks. A
           # chunk array avoids constructing one enormous source string at runtime.
@@ -349,6 +330,22 @@ jobs:
           print('Offline/Yandex CSP shell audit: PASS')
           PY
 
+      - name: Verify defeat buttons in a real browser
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+          node scripts/test_v6_browser.cjs | tee dist/V6_BROWSER_TEST.txt
+
+      - name: Build production engine without test hooks
+        shell: bash
+        run: |
+          set -euo pipefail
+          source /tmp/emsdk/emsdk_env.sh
+          bash scripts/build_v6_engine.sh
+          python3 scripts/apply_v6_runtime.py
+
       - name: Upload fast offline Yandex build
         uses: actions/upload-artifact@v4
         with:
@@ -358,54 +355,3 @@ jobs:
           compression-level: 9
           retention-days: 90
 
-      - name: Publish success marker
-        if: success()
-        shell: bash
-        run: |
-          set -euo pipefail
-          git reset --hard HEAD
-          cat > web/OFFLINE_BUILD_STATUS.md <<'EOF'
-          # Fast offline web build
-
-          - Status: **SUCCESS**
-          - Run ID: ${{ github.run_id }}
-          - Commit: ${{ github.sha }}
-          - Complete RU/EN VFS bytes: **${{ steps.gamedata.outputs.raw_bytes }}**
-          - Gzip VFS bytes: **${{ steps.gamedata.outputs.gzip_bytes }}**
-          - Uncompressed dist bytes: **${{ steps.build.outputs.total_bytes }}**
-          - Engine `index.js` bytes: **${{ steps.build.outputs.js_bytes }}**
-          - Compressed `gamedata.js` bytes: **${{ steps.build.outputs.gamedata_js_bytes }}**
-          - Separate `.data`: **NO**
-          - Separate `.wasm`: **NO**
-          - Direct `file://` packaging: **YES**
-          - Complete RU/EN VFS: **YES**
-          - Interstitial after successful mission: **YES**
-          EOF
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add web/OFFLINE_BUILD_STATUS.md
-          if ! git diff --cached --quiet; then
-            git commit -m 'Update fast offline WebAssembly build status [skip ci]'
-            git pull --rebase origin main
-            git push origin HEAD:main
-          fi
-
-      - name: Publish failure marker
-        if: failure()
-        shell: bash
-        run: |
-          set +e
-          git reset --hard HEAD
-          cat > web/OFFLINE_BUILD_STATUS.md <<'EOF'
-          # Fast offline web build
-
-          - Status: **FAILED**
-          - Run ID: ${{ github.run_id }}
-          - Commit: ${{ github.sha }}
-          EOF
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add web/OFFLINE_BUILD_STATUS.md
-          git commit -m 'Mark fast offline WebAssembly build failed [skip ci]' || true
-          git pull --rebase origin main || true
-          git push origin HEAD:main || true

@@ -351,8 +351,10 @@ void InitDialogBoxes();
 void SetCurrentDialogBox(eDialogBox DialogBox);
 bool isDialogBoxDrawing();
 void DrawDialogBox();
+void CloseDialog();
 
 } // astromenace namespace
 } // viewizard namespace
 
 #endif // GAME_H
+

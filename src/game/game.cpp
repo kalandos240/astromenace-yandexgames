@@ -376,7 +376,9 @@ void ExitGame(eCommand Command)
     // Android/WebView must not wait in the desktop fade-out state after
     // confirming QUIT from the paused game. Clean up immediately and queue
     // the normal main-menu transition for this same rendered frame.
-    if (Command == eCommand::SWITCH_FROM_GAME_TO_MAIN_MENU) {
+    if (Command == eCommand::SWITCH_FROM_GAME_TO_MAIN_MENU ||
+        (PlayerFighter.expired() && (Command == eCommand::SWITCH_FROM_MENU_TO_GAME ||
+                                    Command == eCommand::SWITCH_FROM_GAME_TO_MISSION_MENU))) {
         GameExitCommand = eCommand::DO_NOTHING;
         NeedOffGame = false;
         NeedOnGame = false;
@@ -384,7 +386,7 @@ void ExitGame(eCommand Command)
         NeedShowGameMenu = false;
         NeedHideGameMenu = false;
         RealExitGame();
-        cCommand::GetInstance().Set(eCommand::SWITCH_FROM_GAME_TO_MAIN_MENU);
+        cCommand::GetInstance().Set(Command);
         return;
     }
 #endif
@@ -436,6 +438,11 @@ extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceAndroidSmokeStartMission()
     CurrentMission = 0;
     MissionListInit();
     cCommand::GetInstance().Set(eCommand::SWITCH_FROM_MENU_TO_GAME);
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceWebSmokeDefeat()
+{
+    if (auto Fighter = PlayerFighter.lock()) Fighter->ArmorCurrentStatus = 0.0f;
 }
 
 extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceAndroidSmokeQuitToMainMenu()
@@ -1064,3 +1071,4 @@ void DrawGame()
 
 } // astromenace namespace
 } // viewizard namespace
+
