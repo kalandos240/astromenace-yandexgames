@@ -1,0 +1,30 @@
+name: Diagnose V7 browser stress
+on:
+  push:
+    branches: [fix/mobile-batching-v7]
+    paths: ['.github/workflows/diagnose-v7.yml','scripts/diagnose_v7_browser.cjs']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: v7-browser-comparison-debug
+          run-id: 37014392117
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+          node scripts/diagnose_v7_browser.cjs | tee V7_DIAGNOSTIC.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v7-stress-diagnostic
+          path: |
+            V7_DIAGNOSTIC.txt
+            dist/V7_STRESS.png
+            dist-baseline/V7_STRESS.png
