@@ -73,6 +73,13 @@ const server = http.createServer((req,res) => {
         await page.screenshot({path:path.join(output,`${name}-quit-menu.png`)});
         assert.equal(await page.evaluate(()=>Module.yandexGameplayRequested),false);
         assert.equal(await page.locator('#mobile-controls').isVisible(),false);
+        await page.evaluate(() => Module.yandexSyncSave(true));
+        const saved = await page.evaluate(() => Object.fromEntries(FS.readdir('/persistent').filter(n => n !== '.' && n !== '..').map(n => [n, Array.from(FS.readFile('/persistent/' + n))])));
+        assert.ok(Object.keys(saved).length > 0, 'Pilot save files exist');
+        await page.reload();
+        await page.waitForFunction(() => Module.yandexGameReadySent, {}, {timeout:180000});
+        const restored = await page.evaluate(() => Object.fromEntries(FS.readdir('/persistent').filter(n => n !== '.' && n !== '..').map(n => [n, Array.from(FS.readFile('/persistent/' + n))])));
+        for (const [file, bytes] of Object.entries(saved)) assert.deepEqual(restored[file], bytes, 'Save survives page reload: ' + file);
         assert.deepEqual(errors,[]);
         fs.writeFileSync(path.join(output,`${name}-result.json`),JSON.stringify({passed:true,events:await page.evaluate(()=>__sdkEvents)},null,2));
         console.log(`${name}: PASS`);
