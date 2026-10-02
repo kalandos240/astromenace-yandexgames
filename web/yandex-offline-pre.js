@@ -725,6 +725,16 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     if (Module.yandexGameReadySent) syncSave(false);
   }, SAVE_INTERVAL_MS);
 
+  window.addEventListener('blur', () => {
+    setGameplayApiRunning(false);
+    releasePointerLock();
+    pauseAudio();
+    syncSave(true);
+  });
+  window.addEventListener('focus', () => {
+    if (!Module.yandexPlatformPaused && !Module.yandexAdInProgress && !document.hidden) resumeAudio();
+  });
+
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       setGameplayApiRunning(false);

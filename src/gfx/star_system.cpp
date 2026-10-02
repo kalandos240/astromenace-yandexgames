@@ -38,6 +38,7 @@ In order to show movement and more 'live' space, star system render "space dust"
 3. Close space dust. This layer rendered with highest speed, after all 3D objects.
 */
 
+#include "../web_mobile.h"
 #include "../config/config.h"
 #include "../assets/texture.h"
 #include "../object3d/space_object/space_object.h"
