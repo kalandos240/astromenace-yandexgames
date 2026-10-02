@@ -608,6 +608,13 @@ extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceAndroidHostPause()
     // WebView can process focus loss and gain in the same frame after resume.
     // Pause directly and idempotently; focus gain must not resume the mission.
     if (MenuStatus != eMenuStatus::GAME) return;
+    // Defeat already has its own buttons. Focus loss (including ads) must not
+    // place the living-player pause menu over those buttons.
+    if (PlayerFighter.expired()) {
+        SetShowGameCursor(true);
+        AstroMenaceAndroidPauseMenuState(1);
+        return;
+    }
     GameMenu = true;
     NeedShowGameMenu = true;
     NeedHideGameMenu = false;

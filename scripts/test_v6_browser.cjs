@@ -25,7 +25,10 @@ const assert = require('assert');
         const point=await page.evaluate(restart=>{const c=Module.canvas,r=c.getBoundingClientRect(),v=c.width/c.height<1.4?1024:1228;return {x:r.left+(v/2+(restart?130:-130))/v*r.width,y:r.top+466/768*r.height};},restart);
         if(mobile)await page.touchscreen.tap(point.x,point.y);else await page.mouse.click(point.x,point.y);
       };
-      await start();await defeat();await click(true);
+      await start();await defeat();
+      await page.evaluate(()=>{window.dispatchEvent(new Event('blur'));window.dispatchEvent(new Event('focus'));});
+      assert.equal(await state(),1,'Focus loss must preserve defeat screen');
+      await click(true);
       await page.waitForFunction(()=> (Module.ccall('AstroMenaceWebGameState','number',[],[]) & 3)===3,null,{timeout:30000});
       assert.equal((await state())&3,3);console.log((mobile?'Mobile':'Desktop')+': defeat -> RESTART -> living player PASS');
       if(mobile){await page.setViewportSize({width:900,height:600});await page.waitForTimeout(600);}
