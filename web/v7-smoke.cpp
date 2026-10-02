@@ -50,6 +50,20 @@ extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceWebStressSpawn()
 }
 extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceWebStressAnimate()
 {
+    const float Time = vw_GetTimeThread(1);
+    // Create fresh geometry after the frozen particle measurement so this
+    // assertion cannot silently observe explosions that have already expired.
+    ChangeGameConfig().UseGLSL120 = false;
+    for (int i = 0; i < 8; ++i) {
+        auto Weak = CreateAlienSpaceFighter(1);
+        if (auto Ship = Weak.lock()) {
+            Ship->TimeLastUpdate = Time;
+            Ship->SetLocation(sVECTOR3D{(i - 3.5f) * 8.0f, 0.0f, 10.0f});
+            CreateSpaceExplosion(*Ship, 2, Ship->Location, 0.0f, -1);
+        }
+        ReleaseSpaceShip(Weak);
+    }
+    for (int Step = 1; Step <= 10; ++Step) UpdateAllExplosion(Time + Step * 0.05f);
     cGameSpeed::GetInstance().SetThreadSpeed(GameConfig().GameSpeed);
 }
 #endif
