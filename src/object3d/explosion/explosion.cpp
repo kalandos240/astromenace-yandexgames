@@ -629,7 +629,11 @@ bool cExplosion::Update(float Time)
 
                     bool RebuildVAO = false;
                     const GLsizeiptr Bytes = tmpChunk.VertexQuantity * tmpChunk.VertexStride * sizeof(float);
-                    if (!vw_UpdateBufferObject(eBufferObject::Vertex, Bytes, tmpChunk.VertexArray.get(), tmpChunk.VBO)) {
+                    // gl4es caches converted arrays per VAO; invalidate this mesh cache on update.
+                    if (tmpChunk.VAO) vw_BindVAO(tmpChunk.VAO);
+                    const bool Updated = vw_UpdateBufferObject(eBufferObject::Vertex, Bytes, tmpChunk.VertexArray.get(), tmpChunk.VBO);
+                    if (tmpChunk.VAO) vw_BindVAO(0);
+                    if (!Updated) {
                         if (tmpChunk.VBO) vw_DeleteBufferObject(tmpChunk.VBO);
                         if (!vw_BuildBufferObject(eBufferObject::Vertex, Bytes, tmpChunk.VertexArray.get(),
                                                   tmpChunk.VBO, eBufferObjectUsage::STREAM)) tmpChunk.VBO = 0;
