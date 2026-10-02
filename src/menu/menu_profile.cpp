@@ -270,10 +270,10 @@ void ProfileInputText()
 
 
 
+    }
+
     int X1 = GameConfig().InternalWidth / 2 - 372;
     int Y1 = 230;
-
-    }
 
     // draw input's blinking cursor
     int Size = vw_TextWidthUTF32(NewProfileName);
