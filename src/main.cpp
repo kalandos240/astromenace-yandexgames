@@ -287,6 +287,9 @@ extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceWebMenuPointer(double X, double 
 static void LoopIteration()
 {
     SDL_Event event;
+#ifdef __EMSCRIPTEN__
+    bool LeftPressed = false, RightPressed = false, LeftDoublePressed = false;
+#endif
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
         case SDL_QUIT: // close window by ALT+F4 or click on window's 'close' button
@@ -306,6 +309,12 @@ static void LoopIteration()
             vw_ChangeWheelStatus(-event.wheel.y);
             break;
         case SDL_MOUSEBUTTONDOWN:
+#ifdef __EMSCRIPTEN__
+            vw_SetMousePos(event.button.x, event.button.y);
+            LeftPressed |= event.button.button == SDL_BUTTON_LEFT;
+            RightPressed |= event.button.button == SDL_BUTTON_RIGHT;
+            LeftDoublePressed |= event.button.button == SDL_BUTTON_LEFT && event.button.clicks == 2;
+#endif
             vw_SetMouseButtonStatus(event.button.button, true);
             if (event.button.button == SDL_BUTTON_LEFT) {
                 vw_SetMouseLeftClick(true);
@@ -373,6 +382,11 @@ static void LoopIteration()
     }
 
 #ifdef __EMSCRIPTEN__
+    // Preserve short desktop clicks whose press and release arrive together
+    // between two slow frames. Held-button state is tracked separately.
+    if (LeftPressed) vw_SetMouseLeftClick(true);
+    if (RightPressed) vw_SetMouseRightClick(true);
+    if (LeftDoublePressed) vw_SetMouseLeftDoubleClick(true);
     if (WebMenuPointerPending) {
         WebMenuPointerPending = false;
         vw_SetMouseButtonStatus(SDL_BUTTON_LEFT, !NeedPause && WebMenuButtonDown);
@@ -398,7 +412,9 @@ static void LoopIteration()
         JoystickEmulateMouseMovement(vw_GetTimeThread(0));
         Loop_Proc();
 #ifdef __EMSCRIPTEN__
-        if (AstroMenaceWebIsMobile()) vw_SetMouseLeftClick(false);
+        vw_SetMouseLeftClick(false);
+        vw_SetMouseRightClick(false);
+        vw_SetMouseLeftDoubleClick(false);
 #endif
         AudioLoop();
         return;
@@ -410,7 +426,7 @@ static void LoopIteration()
     }
 
     // pause, so, player doesn't lose anything
-    if ((MenuStatus == eMenuStatus::GAME) && (GameContentTransp < 1.0f)) {
+    if ((MenuStatus == eMenuStatus::GAME) && !PlayerFighter.expired() && (GameContentTransp < 1.0f)) {
         NeedShowGameMenu = true;
         NeedHideGameMenu = false;
         GameContentTransp = 1.0f;
