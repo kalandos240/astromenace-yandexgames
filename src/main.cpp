@@ -377,8 +377,10 @@ static void LoopIteration()
         WebMenuPointerPending = false;
         vw_SetMouseButtonStatus(SDL_BUTTON_LEFT, !NeedPause && WebMenuButtonDown);
         if (!NeedPause) {
-            vw_SetMousePos(static_cast<int>(WebMenuPointerX * GameConfig().Width),
-                           static_cast<int>(WebMenuPointerY * GameConfig().Height));
+            float ViewportWidth = 0.0f, ViewportHeight = 0.0f;
+            vw_GetViewport(nullptr, nullptr, &ViewportWidth, &ViewportHeight);
+            vw_SetMousePos(static_cast<int>(WebMenuPointerX * ViewportWidth),
+                           static_cast<int>(WebMenuPointerY * ViewportHeight));
             CurrentKeyboardSelectMenuElement = 0;
             if (WebMenuClickPending) vw_SetMouseLeftClick(true);
         }

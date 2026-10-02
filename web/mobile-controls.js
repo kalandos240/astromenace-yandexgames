@@ -5,6 +5,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   Module.astroMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
     (navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
   Module.astroHostSuspended = false;
+  Module.astroMissionActive = false;
   let mission = false, paused = false, profile = false;
   const held = new Map();
   const canvas = document.getElementById('canvas');
@@ -65,7 +66,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     update();
   };
   globalThis.AndroidHost = {
-    gameplayState(active) { mission = !!active; if (!mission) paused = false; gameplay(); },
+    gameplayState(active) { mission = !!active; Module.astroMissionActive = mission; if (!mission) paused = false; gameplay(); },
     pauseMenuState(visible) { const next = !!visible; if (paused !== next) { paused = next; gameplay(); } else update(); },
     profileInputMode(enabled) { profile = !!enabled; update(); },
   };

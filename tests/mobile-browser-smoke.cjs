@@ -84,6 +84,7 @@ const server = http.createServer((req,res) => {
         if(mobile)await page.locator('.mobile-button.pause').tap();else { await page.keyboard.down('Escape'); await page.waitForTimeout(120); await page.keyboard.up('Escape'); }
         await page.waitForFunction(()=>!Module.yandexGameplayRequested);
         await tap(.5,.73);await tap(.42,.604); // Quit confirmation.
+        await page.waitForFunction(() => !Module.astroMissionActive, {}, {timeout:15000});
         await page.waitForTimeout(2500);
         await page.screenshot({path:path.join(output,`${name}-quit-menu.png`)});
         assert.equal(await page.evaluate(()=>Module.yandexGameplayRequested),false);
