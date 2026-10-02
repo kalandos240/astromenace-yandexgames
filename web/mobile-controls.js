@@ -106,11 +106,19 @@ var Module = typeof Module !== 'undefined' ? Module : {};
       e.stopImmediatePropagation();
     }
   }, true);
-  const blockGameplayTouch = e => {
-    if (Module.astroMobile && mission && !paused) { e.preventDefault(); e.stopImmediatePropagation(); }
+  const routeCanvasTouch = e => {
+    if (!Module.astroMobile) return;
+    if (e.type === 'pointerup' && (!mission || paused) && ready()) {
+      const rect = canvas.getBoundingClientRect();
+      call('AstroMenaceWebMenuTap', [(e.clientX - rect.left) / rect.width, (e.clientY - rect.top) / rect.height], ['number','number']);
+      Module.yandexMaybeShowAd?.('mobile-menu-interaction');
+    }
+    // Mobile menus use one latched native tap; SDL's compatibility mouse
+    // events can otherwise cancel a short touch before the next frame.
+    e.preventDefault(); e.stopImmediatePropagation();
   };
   for (const ev of ['pointerdown','pointermove','pointerup','touchstart','touchmove','touchend','mousedown','mousemove','mouseup','click'])
-    canvas.addEventListener(ev, blockGameplayTouch, {capture:true, passive:false});
+    canvas.addEventListener(ev, routeCanvasTouch, {capture:true, passive:false});
   const suspend = () => {
     Module.astroHostSuspended = true; release();
     if (mission) call('AstroMenaceAndroidHostPause');

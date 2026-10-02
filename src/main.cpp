@@ -267,6 +267,19 @@ static void LogGameAndLibsVersion()
 static bool NeedPause{false};
 static bool TimeThreadsPaused{false};
 
+#ifdef __EMSCRIPTEN__
+static bool WebMenuTapPending = false;
+static double WebMenuTapX = 0.0, WebMenuTapY = 0.0;
+extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceWebMenuTap(double X, double Y)
+{
+    if (!AstroMenaceWebIsMobile() || X < 0.0 || X > 1.0 || Y < 0.0 || Y > 1.0) return;
+    if (MenuStatus == eMenuStatus::GAME && GameContentTransp < 0.99f && !isDialogBoxDrawing()) return;
+    WebMenuTapX = X;
+    WebMenuTapY = Y;
+    WebMenuTapPending = true;
+}
+#endif
+
 static void LoopIteration()
 {
     SDL_Event event;
@@ -355,6 +368,18 @@ static void LoopIteration()
         }
     }
 
+#ifdef __EMSCRIPTEN__
+    if (WebMenuTapPending) {
+        WebMenuTapPending = false;
+        if (!NeedPause) {
+            vw_SetMousePos(static_cast<int>(WebMenuTapX * GameConfig().Width),
+                           static_cast<int>(WebMenuTapY * GameConfig().Height));
+            CurrentKeyboardSelectMenuElement = 0;
+            vw_SetMouseLeftClick(true);
+        }
+    }
+#endif
+
     if (!NeedPause) {
 #ifdef __EMSCRIPTEN__
         if (TimeThreadsPaused) {
@@ -364,6 +389,9 @@ static void LoopIteration()
 #endif
         JoystickEmulateMouseMovement(vw_GetTimeThread(0));
         Loop_Proc();
+#ifdef __EMSCRIPTEN__
+        if (AstroMenaceWebIsMobile()) vw_SetMouseLeftClick(false);
+#endif
         AudioLoop();
         return;
     }
