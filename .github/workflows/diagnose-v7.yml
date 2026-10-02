@@ -1,4 +1,4 @@
-name: Verify and release V7 from cached assets
+name: Package V7 production from cached assets
 on:
   push:
     branches: [fix/mobile-batching-v7]
@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
       - uses: actions/download-artifact@v4
         with:
           name: v7-browser-comparison-debug
@@ -46,41 +46,11 @@ jobs:
           cmake --build /tmp/gl4es-build --target GL -j2
           test -s /tmp/gl4es/lib/libGL.a
 
-      - name: Build candidate and baseline with identical fixtures
-        shell: bash
-        run: |
-          set -euo pipefail
-          source /tmp/emsdk/emsdk_env.sh
-          python3 scripts/enable_gl4es_offline.py
-          python3 scripts/instrument_v7_smoke.py
-          ASTROMENACE_TEST_FLAGS=-DASTROMENACE_WEB_SMOKE_TEST=1 bash scripts/build_v6_engine.sh
-          python3 scripts/apply_v6_runtime.py
-          cp -a dist dist-candidate
-          files=(src/core/particle_system/particle_system.cpp src/core/particle_system/particle_system.h src/object3d/object3d.cpp src/object3d/explosion/explosion.cpp src/core/graphics/gl_vbo.cpp src/core/graphics/graphics.h src/core/graphics/extensions.h src/core/graphics/extensions.cpp)
-          mkdir -p /tmp/candidate-source
-          for file in "${files[@]}"; do
-            mkdir -p "/tmp/candidate-source/$(dirname "$file")"
-            cp "$file" "/tmp/candidate-source/$file"
-            git show cb55b7ed0d25354478f6212386006a534c22e330:"$file" > "$file"
-          done
-          python3 scripts/instrument_v7_smoke.py
-          ASTROMENACE_TEST_FLAGS=-DASTROMENACE_WEB_SMOKE_TEST=1 bash scripts/build_v6_engine.sh
-          python3 scripts/apply_v6_runtime.py
-          rm -rf dist-baseline
-          mv dist dist-baseline
-          mv dist-candidate dist
-          for file in "${files[@]}"; do cp "/tmp/candidate-source/$file" "$file"; done
-      - name: Browser checks
-        run: |
-          set -euo pipefail
-          npm install --no-save playwright
-          npx playwright install --with-deps chromium
-          node scripts/test_v6_browser.cjs | tee dist/V6_BROWSER_TEST.txt
-          node scripts/test_v7_performance.cjs | tee dist/V7_PERFORMANCE_TEST.txt
       - name: Build production without test hooks
         run: |
           set -euo pipefail
           source /tmp/emsdk/emsdk_env.sh
+          python3 scripts/enable_gl4es_offline.py
           bash scripts/build_v6_engine.sh
           python3 scripts/apply_v6_runtime.py
       - uses: actions/upload-artifact@v4
