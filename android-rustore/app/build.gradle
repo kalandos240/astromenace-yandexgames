@@ -5,7 +5,7 @@ plugins {
 def keystorePath = System.getenv('ASTROMENACE_KEYSTORE_PATH')
 def hasReleaseSigning = keystorePath != null && !keystorePath.isBlank()
 def yandexInterstitialAdUnitId =
-        System.getenv('YANDEX_INTERSTITIAL_AD_UNIT_ID') ?: ''
+        System.getenv('YANDEX_INTERSTITIAL_AD_UNIT_ID') ?: 'R-M-20155535-1'
 
 android {
     namespace 'com.kalandos240.astromenace'
@@ -20,8 +20,8 @@ android {
         applicationId 'com.kalandos240.astromenace'
         minSdk 26
         targetSdk 36
-        versionCode 7
-        versionName '1.0.7'
+        versionCode 8
+        versionName '1.0.8'
         resValue 'string', 'yandex_interstitial_ad_unit_id', yandexInterstitialAdUnitId
     }
 
@@ -40,6 +40,8 @@ android {
         debug {
             applicationIdSuffix '.debug'
             versionNameSuffix '-debug'
+            // Automated emulator checks must never request production ads.
+            resValue 'string', 'yandex_interstitial_ad_unit_id', ''
         }
         release {
             minifyEnabled false

@@ -11,9 +11,9 @@ Android backgrounding releases held controls, pauses timers/audio and flushes lo
 ## Build and signing
 
 - Android 8+ (`minSdk 26`), `compileSdk 36`, `targetSdk 36`, Java 17.
-- Version 1.0.7, versionCode 7, package `com.kalandos240.astromenace`.
+- Version 1.0.8, versionCode 8, package `com.kalandos240.astromenace`.
 - Internet/network-state permissions support optional Yandex Mobile Ads; the Yandex Games SDK is disabled.
-- No demo ad unit ships by default. Set `YANDEX_INTERSTITIAL_AD_UNIT_ID` to a production unit to enable ads.
+- Release uses the owner's interstitial unit `R-M-20155535-1`; `YANDEX_INTERSTITIAL_AD_UNIT_ID` can override it. Debug builds disable ads to prevent automated production impressions. Ads require the app to be activated in the Yandex partner account; offline play remains available when ads cannot load.
 - Release self-test intent is disabled with `BuildConfig.DEBUG`.
 
 `.github/workflows/build-rustore-android.yml` downloads the verified offline resources, rebuilds the Android-specific WebAssembly engine, converts its VFS to a direct asset, builds a debug APK and runs emulator regressions. Release APK/AAB are built only after those pass.
