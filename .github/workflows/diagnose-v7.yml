@@ -14,26 +14,21 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: v7-browser-comparison-debug
-          run-id: 37014392117
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/download-artifact@v4
-        with:
-          name: v7-stress-diagnostic
-          run-id: 37020669651
+          run-id: 37024443285
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - run: |
           set -euo pipefail
           npm install --no-save playwright terser
-          npx terser dist/index.js -o /tmp/compact.js
-          mv /tmp/compact.js dist/index.js
           npx playwright install --with-deps chromium
-          node scripts/diagnose_v7_browser.cjs | tee V7_DIAGNOSTIC.txt
+          node scripts/test_v6_browser.cjs | tee V6_BROWSER_TEST.txt
+          node scripts/test_v7_performance.cjs | tee V7_DIAGNOSTIC.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: v7-stress-diagnostic
           path: |
-            dist/index.js
+            dist/V7_PERFORMANCE.json
+            V6_BROWSER_TEST.txt
             V7_DIAGNOSTIC.txt
             dist/V7_STRESS.png
             dist-baseline/V7_STRESS.png
