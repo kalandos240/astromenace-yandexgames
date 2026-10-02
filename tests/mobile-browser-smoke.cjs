@@ -49,7 +49,13 @@ const server = http.createServer((req,res) => {
         await tap(.80,.91);
         if(!mobile)await tap(.68,.83); // Desktop shortcut hint.
         await page.waitForFunction(()=>Module.yandexGameplayRequested,{},{timeout:30000});
-        await page.waitForTimeout(2500);
+        await page.waitForTimeout(mobile ? 2500 : 250);
+        if (!mobile) {
+          await page.keyboard.down('ArrowRight'); await page.keyboard.down('z');
+          await page.waitForTimeout(800);
+          await page.screenshot({path:path.join(output,'desktop-flight.png')});
+          await page.keyboard.up('z'); await page.keyboard.up('ArrowRight');
+        }
         assert.equal(await page.evaluate(() => { Module.yandexNextAdAt = Date.now() - 1; return Module.yandexMaybeShowAd('test-active-mission'); }), false, 'No ad during gameplay');
         assert.equal(await page.evaluate(() => __sdkEvents.includes('ad')), false);
         if(mobile) {
@@ -63,6 +69,7 @@ const server = http.createServer((req,res) => {
           await page.locator('.mobile-button.pause').tap();
         } else { await page.keyboard.down('Escape'); await page.waitForTimeout(120); await page.keyboard.up('Escape'); }
         await page.waitForFunction(()=>!Module.yandexGameplayRequested);
+        await page.screenshot({path:path.join(output,`${name}-first-pause.png`)});
         await page.evaluate(() => Module.yandexMaybeShowAd('test-pause'));
         assert.equal(await page.evaluate(() => __sdkEvents.includes('ad')), true, 'Ad at safe pause');
         await tap(.5,.338); // Resume.
