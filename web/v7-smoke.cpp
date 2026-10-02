@@ -15,7 +15,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceWebStressSpawn()
     const int Parts = EM_ASM_INT({ return Module.astroStressParts || 7; });
     std::srand(731);
     cGameSpeed::GetInstance().SetThreadSpeed(0.0f);
-    if (auto Player = PlayerFighter.lock()) Player->ArmorCurrentStatus = 10000000.0f;
+    if (auto Player = PlayerFighter.lock()) Player->ArmorInitialStatus = Player->ArmorCurrentStatus = 10000000.0f;
     if (Parts & 1) for (int i = 0; i < 24; ++i) {
         auto Weak = CreateAlienSpaceFighter(1);
         if (auto Ship = Weak.lock()) {
