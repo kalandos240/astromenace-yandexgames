@@ -75,6 +75,15 @@ float Blinking{1.0f};
 } // unnamed namespace
 
 
+static float ClampHUDProgress(float Status)
+{
+    if (!std::isfinite(Status) || Status <= 0.0f) {
+        return 0.0f;
+    }
+    return Status < 1.0f ? Status : 1.0f;
+}
+
+
 /*
  * Init head-up display particle systems.
  * Make sure we re-init all particle systems data all the time in order to avoid
@@ -199,7 +208,7 @@ static void UpdateHUDParticleSystems(std::weak_ptr<cSpaceShip> &SpaceShip, float
                 1 + static_cast<unsigned>(49 * EnergyStatus);
         }
 
-        float tmpArmorPercentage = sharedSpaceShip->ArmorCurrentStatus / sharedSpaceShip->ArmorInitialStatus;
+        float tmpArmorPercentage = ClampHUDProgress(sharedSpaceShip->ArmorCurrentStatus / sharedSpaceShip->ArmorInitialStatus);
         bool tmpLowArmor = (sharedSpaceShip->ArmorCurrentStatus < sharedSpaceShip->ArmorInitialStatus / 10.0f);
 
         auto BlinkingOnLowArmor = [&] (std::weak_ptr<cParticleSystem2D> &ParticleSystem) {
@@ -540,9 +549,9 @@ static void ResizeHUDText()
  */
 static void InitHUDProgressBars(std::weak_ptr<cSpaceShip> &SpaceShip, float EnergyStatus)
 {
-    CurrentDrawEnergyStatus = EnergyStatus;
+    CurrentDrawEnergyStatus = ClampHUDProgress(EnergyStatus);
     if (auto sharedSpaceShip = SpaceShip.lock()) {
-        CurrentDrawArmorStatus = sharedSpaceShip->ArmorCurrentStatus / sharedSpaceShip->ArmorInitialStatus;
+        CurrentDrawArmorStatus = ClampHUDProgress(sharedSpaceShip->ArmorCurrentStatus / sharedSpaceShip->ArmorInitialStatus);
     }
 
     constexpr unsigned tmpHash = constexpr_hash_djb2a("game/game_panel_el.tga");
@@ -568,6 +577,11 @@ static void UpdateHUDProgressBars(std::weak_ptr<cSpaceShip> &SpaceShip, float En
         EnergyStatus = 0.0f;
     }
 
+    EnergyStatus = ClampHUDProgress(EnergyStatus);
+    ArmorStatus = ClampHUDProgress(ArmorStatus);
+    CurrentDrawEnergyStatus = ClampHUDProgress(CurrentDrawEnergyStatus);
+    CurrentDrawArmorStatus = ClampHUDProgress(CurrentDrawArmorStatus);
+
     // in case of armor and energy progress bars we provide animation,
     // looks much better then instant progress bar status changes
     auto ProgressBarAnimation = [TimeDelta] (float Status, float &CurrentDrawStatus, float AnimationSpeed) {
@@ -589,6 +603,7 @@ static void UpdateHUDProgressBars(std::weak_ptr<cSpaceShip> &SpaceShip, float En
     int LastFilledEnergySegment = static_cast<int>(ceil(CurrentDrawEnergyStatus * ProgressBarSegmentCount));
     int LastFilledArmorSegment = static_cast<int>(ceil(CurrentDrawArmorStatus * ProgressBarSegmentCount));
 
+    ProgressBarDrawSegments = 0;
     if (LastFilledArmorSegment + LastFilledEnergySegment <= 0) {
         return;
     }
