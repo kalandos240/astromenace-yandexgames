@@ -12,17 +12,18 @@ using namespace viewizard;
 using namespace viewizard::astromenace;
 extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceWebStressSpawn()
 {
+    const int Parts = EM_ASM_INT({ return Module.astroStressParts || 7; });
     std::srand(731);
     cGameSpeed::GetInstance().SetThreadSpeed(0.0f);
     if (auto Player = PlayerFighter.lock()) Player->ArmorCurrentStatus = 10000000.0f;
-    for (int i = 0; i < 24; ++i) {
+    if (Parts & 1) for (int i = 0; i < 24; ++i) {
         auto Weak = CreateAlienSpaceFighter(1);
         if (auto Ship = Weak.lock()) {
             Ship->SetLocation(sVECTOR3D{(i % 8 - 3.5f) * 12.0f, 0.0f, 20.0f + (i / 8) * 20.0f});
             Ship->ArmorCurrentStatus = 1000000.0f;
         }
     }
-    for (int i = 0; i < 8; ++i) {
+    if (Parts & 2) for (int i = 0; i < 8; ++i) {
         auto Weak = CreateAlienSpaceFighter(1);
         if (auto Ship = Weak.lock()) {
             Ship->SetLocation(sVECTOR3D{(i - 3.5f) * 8.0f, 0.0f, 10.0f});
@@ -31,7 +32,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceWebStressSpawn()
         ReleaseSpaceShip(Weak);
     }
     const auto Texture = GetPreloadedTextureAsset(hash_djb2a("gfx/flare1.tga"));
-    for (int i = 0; i < 120; ++i) {
+    if (Parts & 4) for (int i = 0; i < 120; ++i) {
         auto Weak = vw_CreateParticleSystem();
         if (auto System = Weak.lock()) {
             System->SetStartLocation(sVECTOR3D{(i % 12 - 5.5f) * 5.0f, 0.0f, 5.0f + (i / 12) * 6.0f});
