@@ -1,23 +1,23 @@
 Cloning into '/tmp/emsdk'...
-Resolving SDK alias 'latest' to '6.0.6'
-Resolving SDK version '6.0.6' to 'sdk-releases-833aa203ba2283fc2b6adb504a79a3a0d692df81-64bit'
-Installing SDK 'sdk-releases-833aa203ba2283fc2b6adb504a79a3a0d692df81-64bit'..
+Resolving SDK alias 'latest' to '6.0.10'
+Resolving SDK version '6.0.10' to 'sdk-releases-666337b525e673e769121856d175f6f52b8ead64-64bit'
+Installing SDK 'sdk-releases-666337b525e673e769121856d175f6f52b8ead64-64bit'..
 Installing tool 'node-24.19.0-64bit'..
 Downloading: /tmp/emsdk/downloads/node-v24.19.0-linux-x64.tar.xz from https://storage.googleapis.com/webassembly/emscripten-releases-builds/deps/node-v24.19.0-linux-x64.tar.xz, 31633904 Bytes
  [----------------------------------------------------------------------------]
 Unpacking '/tmp/emsdk/downloads/node-v24.19.0-linux-x64.tar.xz' to '/tmp/emsdk/node/24.19.0_64bit'
 Done installing tool 'node-24.19.0-64bit'.
-Installing tool 'releases-833aa203ba2283fc2b6adb504a79a3a0d692df81-64bit'..
-Downloading: /tmp/emsdk/downloads/833aa203ba2283fc2b6adb504a79a3a0d692df81-wasm-binaries.tar.xz from https://storage.googleapis.com/webassembly/emscripten-releases-builds/linux/833aa203ba2283fc2b6adb504a79a3a0d692df81/wasm-binaries.tar.xz, 301475060 Bytes
+Installing tool 'releases-666337b525e673e769121856d175f6f52b8ead64-64bit'..
+Downloading: /tmp/emsdk/downloads/666337b525e673e769121856d175f6f52b8ead64-wasm-binaries.tar.xz from https://storage.googleapis.com/webassembly/emscripten-releases-builds/linux/666337b525e673e769121856d175f6f52b8ead64/wasm-binaries.tar.xz, 299612332 Bytes
  [----------------------------------------------------------------------------]
-Unpacking '/tmp/emsdk/downloads/833aa203ba2283fc2b6adb504a79a3a0d692df81-wasm-binaries.tar.xz' to '/tmp/emsdk/upstream'
-Done installing tool 'releases-833aa203ba2283fc2b6adb504a79a3a0d692df81-64bit'.
-Done installing SDK 'sdk-releases-833aa203ba2283fc2b6adb504a79a3a0d692df81-64bit'.
-Resolving SDK alias 'latest' to '6.0.6'
-Resolving SDK version '6.0.6' to 'sdk-releases-833aa203ba2283fc2b6adb504a79a3a0d692df81-64bit'
+Unpacking '/tmp/emsdk/downloads/666337b525e673e769121856d175f6f52b8ead64-wasm-binaries.tar.xz' to '/tmp/emsdk/upstream'
+Done installing tool 'releases-666337b525e673e769121856d175f6f52b8ead64-64bit'.
+Done installing SDK 'sdk-releases-666337b525e673e769121856d175f6f52b8ead64-64bit'.
+Resolving SDK alias 'latest' to '6.0.10'
+Resolving SDK version '6.0.10' to 'sdk-releases-666337b525e673e769121856d175f6f52b8ead64-64bit'
 Setting the following tools as active:
    node-24.19.0-64bit
-   releases-833aa203ba2283fc2b6adb504a79a3a0d692df81-64bit
+   releases-666337b525e673e769121856d175f6f52b8ead64-64bit
 
 Next steps:
 - To conveniently access emsdk tools from the command line,
@@ -62,7 +62,7 @@ emcmake: cmake -S /tmp/gl4es -B /tmp/gl4es-build -DCMAKE_BUILD_TYPE=Release -DNO
 -- Performing Test SUPPORTS_UNWIND_TABLES
 -- Performing Test SUPPORTS_UNWIND_TABLES - Success
 -- Not on Linux: building without GLX support.
--- Configuring done (2.9s)
+-- Configuring done (2.8s)
 -- Generating done (0.0s)
 -- Build files have been written to: /tmp/gl4es-build
 [  1%] Building C object src/CMakeFiles/GL.dir/gl/arbconverter.c.o
@@ -87,7 +87,6 @@ emcmake: cmake -S /tmp/gl4es -B /tmp/gl4es-build -DCMAKE_BUILD_TYPE=Release -DNO
 [ 28%] Building C object src/CMakeFiles/GL.dir/gl/fpe.c.o
 [ 30%] Building C object src/CMakeFiles/GL.dir/gl/fpe_cache.c.o
 [ 31%] Building C object src/CMakeFiles/GL.dir/gl/fpe_shader.c.o
-[ 32%] Building C object src/CMakeFiles/GL.dir/gl/framebuffers.c.o
 /tmp/gl4es/src/gl/fpe_shader.c:913:21: warning: logical not is only applied to the left hand side of this bitwise operator [-Wlogical-not-parentheses]
   913 |             if(t && !need->need_texs&(1<<i))
       |                     ^               ~
@@ -99,9 +98,11 @@ emcmake: cmake -S /tmp/gl4es -B /tmp/gl4es-build -DCMAKE_BUILD_TYPE=Release -DNO
   913 |             if(t && !need->need_texs&(1<<i))
       |                     ^               
       |                     (               )
+[ 32%] Building C object src/CMakeFiles/GL.dir/gl/framebuffers.c.o
 1 warning generated.
 [ 34%] Building C object src/CMakeFiles/GL.dir/gl/gl_lookup.c.o
 [ 35%] Building C object src/CMakeFiles/GL.dir/gl/getter.c.o
+[ 37%] Building C object src/CMakeFiles/GL.dir/gl/gl4es.c.o
 /tmp/gl4es/src/gl/getter.c:878:45: warning: implicit conversion from 'long' to 'GLfloat' (aka 'float') changes value from 2147483647 to 2147483648 [-Wimplicit-const-int-float-conversion]
   878 |             params[0] = glstate->depth.Near*2147483647l;
       |                                            ~^~~~~~~~~~~
@@ -109,7 +110,6 @@ emcmake: cmake -S /tmp/gl4es -B /tmp/gl4es-build -DCMAKE_BUILD_TYPE=Release -DNO
   879 |             params[1] = glstate->depth.Far*2147483647l;
       |                                           ~^~~~~~~~~~~
 2 warnings generated.
-[ 37%] Building C object src/CMakeFiles/GL.dir/gl/gl4es.c.o
 [ 38%] Building C object src/CMakeFiles/GL.dir/gl/glstate.c.o
 [ 40%] Building C object src/CMakeFiles/GL.dir/gl/hint.c.o
 [ 41%] Building C object src/CMakeFiles/GL.dir/gl/init.c.o
@@ -149,8 +149,8 @@ emcmake: cmake -S /tmp/gl4es -B /tmp/gl4es-build -DCMAKE_BUILD_TYPE=Release -DNO
 <built-in>:61:21: note: expanded from macro '__INT_MAX__'
    61 | #define __INT_MAX__ 2147483647
       |                     ^~~~~~~~~~
-[ 68%] Building C object src/CMakeFiles/GL.dir/gl/samplers.c.o
 2 warnings generated.
+[ 68%] Building C object src/CMakeFiles/GL.dir/gl/samplers.c.o
 [ 70%] Building C object src/CMakeFiles/GL.dir/gl/shader.c.o
 [ 71%] Building C object src/CMakeFiles/GL.dir/gl/shaderconv.c.o
 [ 72%] Building C object src/CMakeFiles/GL.dir/gl/shader_hacks.c.o
@@ -174,5 +174,5 @@ emcmake: cmake -S /tmp/gl4es -B /tmp/gl4es-build -DCMAKE_BUILD_TYPE=Release -DNO
 [ 98%] Building C object src/CMakeFiles/GL.dir/glx/hardext.c.o
 [100%] Linking C static library /tmp/gl4es/lib/libGL.a
 [100%] Built target GL
--rw-r--r-- 1 runner runner 1.9M Aug 11 14:59 /tmp/gl4es/lib/libGL.a
-emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.6 (ce75e06884093bcefb86a6b8fd56a5d62a4cc245)
+-rw-r--r-- 1 runner runner 1.9M Oct  2 06:31 /tmp/gl4es/lib/libGL.a
+emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.10 (d6c521a7f05449857c76bd99e396895583cf2083)
