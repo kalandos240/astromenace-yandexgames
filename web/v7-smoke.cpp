@@ -13,6 +13,9 @@ using namespace viewizard::astromenace;
 extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceWebStressSpawn()
 {
     const int Parts = EM_ASM_INT({ return Module.astroStressParts || 7; });
+    // Exercise the CPU explosion fallback whose geometry buffers animate.
+    // Particle rendering keeps its mission-initialized shader configuration.
+    ChangeGameConfig().UseGLSL120 = false;
     std::srand(731);
     cGameSpeed::GetInstance().SetThreadSpeed(0.0f);
     if (auto Player = PlayerFighter.lock()) Player->ArmorInitialStatus = Player->ArmorCurrentStatus = 10000000.0f;
