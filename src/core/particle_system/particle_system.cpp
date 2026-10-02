@@ -568,19 +568,87 @@ static inline void AddToDrawBuffer(float CoordX, float CoordY, float CoordZ,
 /*
  * Draw all particles.
  */
+namespace {
+bool ParticleBatchActive{false};
+GLtexture ParticleBatchTexture{0}, ParticleBoundTexture{0};
+bool ParticleBatchBlend{false};
+unsigned ParticleDrawCalls{0}, ParticleVisibleCount{0};
+
+void FlushParticleBatch()
+{
+    const unsigned Count = DrawBufferCurrentPosition / 36;
+    if (!Count) return;
+    if (ParticleBoundTexture != ParticleBatchTexture) {
+        vw_BindTexture(0, ParticleBatchTexture);
+        ParticleBoundTexture = ParticleBatchTexture;
+    }
+    vw_SetTextureBlend(true, eTextureBlendFactor::SRC_ALPHA,
+                      ParticleBatchBlend ? eTextureBlendFactor::ONE_MINUS_SRC_ALPHA : eTextureBlendFactor::ONE);
+    static std::vector<unsigned int> Indices;
+    const size_t Required = static_cast<size_t>(Count) * 6;
+    if (Indices.size() < Required) {
+        const size_t OldParticles = Indices.size() / 6;
+        const size_t Capacity = std::max(Required, std::max(size_t{256 * 6}, Indices.size() + Indices.size() / 2));
+        Indices.resize((Capacity / 6 + 1) * 6);
+        for (size_t i = OldParticles; i < Indices.size() / 6; ++i) {
+            const unsigned Base = static_cast<unsigned>(i * 4);
+            const unsigned Pattern[6]{Base, Base + 1, Base + 2, Base + 2, Base + 3, Base};
+            std::copy(Pattern, Pattern + 6, Indices.begin() + i * 6);
+        }
+    }
+    vw_Draw3D(ePrimitiveType::TRIANGLES, 6 * Count, RI_3f_XYZ | RI_4f_COLOR | RI_1_TEX,
+              DrawBuffer.get(), 9 * sizeof(float), 0, 0, Indices.data());
+    ++ParticleDrawCalls;
+    ParticleVisibleCount += Count;
+    DrawBufferCurrentPosition = 0;
+}
+void BeginParticleBatch()
+{
+    ParticleBatchActive = true;
+    DrawBufferCurrentPosition = 0;
+    ParticleBoundTexture = 0;
+    ParticleDrawCalls = ParticleVisibleCount = 0;
+}
+void EndParticleBatch()
+{
+    FlushParticleBatch();
+    ParticleBatchActive = false;
+    vw_SetTextureBlend(true, eTextureBlendFactor::ONE, eTextureBlendFactor::ZERO);
+}
+} // unnamed namespace
+
+#if defined(ASTROMENACE_WEB_SMOKE_TEST)
+void cParticleSystem::SmokeEmitParticles(unsigned int Quantity)
+{
+    EmitParticles(Quantity, 0.0f);
+    CalculateAABB();
+}
+#endif
+
 void cParticleSystem::Draw(GLtexture &CurrentTexture)
 {
     if (!vw_BoxInFrustum(AABB[6], AABB[0]) || ParticlesList.empty()) {
         return;
     }
 
+    if (!ParticleBatchActive) ParticleBoundTexture = 0;
+
+    if (DrawBufferCurrentPosition && (ParticleBatchTexture != Texture || ParticleBatchBlend != TextureBlend ||
+        DrawBufferCurrentPosition / 36 + ParticlesCountInList > 8192)) FlushParticleBatch();
+    if (!DrawBufferCurrentPosition) {
+        ParticleBatchTexture = Texture;
+        ParticleBatchBlend = TextureBlend;
+    }
+    CurrentTexture = Texture;
+
     // TRIANGLES * (RI_3f_XYZ + RI_2f_TEX + RI_4f_COLOR) * ParticlesCount
-    unsigned int tmpDrawBufferSize = 4 * (3 + 2 + 4) * ParticlesCountInList;
+    unsigned int tmpDrawBufferSize = DrawBufferCurrentPosition + 36 * ParticlesCountInList;
     if (tmpDrawBufferSize > DrawBufferSize) {
         DrawBufferSize = std::max(tmpDrawBufferSize, std::max(256u * 36u, DrawBufferSize + DrawBufferSize / 2));
-        DrawBuffer.reset(new float[DrawBufferSize]);
+        std::unique_ptr<float[]> NewBuffer{new float[DrawBufferSize]};
+        if (DrawBufferCurrentPosition) std::copy_n(DrawBuffer.get(), DrawBufferCurrentPosition, NewBuffer.get());
+        DrawBuffer.swap(NewBuffer);
     }
-    DrawBufferCurrentPosition = 0;
 
     // without shaders, we need manually rotate each particle to camera
     if (!ParticleSystemUseGLSL) {
@@ -656,35 +724,10 @@ void cParticleSystem::Draw(GLtexture &CurrentTexture)
         }
     }
 
-    // if we already setup this texture in previous rendered particle system, no need to change it
-    if (CurrentTexture != Texture) {
-        vw_BindTexture(0, Texture);
-        CurrentTexture = Texture;
+    if (!ParticleBatchActive) {
+        FlushParticleBatch();
+        vw_SetTextureBlend(true, eTextureBlendFactor::ONE, eTextureBlendFactor::ZERO);
     }
-
-    if (TextureBlend) {
-        vw_SetTextureBlend(true, eTextureBlendFactor::SRC_ALPHA, eTextureBlendFactor::ONE_MINUS_SRC_ALPHA);
-    } else {
-        vw_SetTextureBlend(true, eTextureBlendFactor::SRC_ALPHA, eTextureBlendFactor::ONE);
-    }
-
-    // Reuse one index pattern across all systems; winding and alpha order are unchanged.
-    static std::vector<unsigned int> Indices;
-    const size_t Required = static_cast<size_t>(ParticlesCountInList) * 6;
-    if (Indices.size() < Required) {
-        const size_t OldParticles = Indices.size() / 6;
-        const size_t Capacity = std::max(Required, std::max(size_t{256 * 6}, Indices.size() + Indices.size() / 2));
-        Indices.resize((Capacity / 6 + 1) * 6);
-        for (size_t i = OldParticles; i < Indices.size() / 6; ++i) {
-            const unsigned int Base = static_cast<unsigned int>(i * 4);
-            const unsigned int Pattern[6]{Base, Base + 1, Base + 2, Base + 2, Base + 3, Base};
-            std::copy(Pattern, Pattern + 6, Indices.begin() + i * 6);
-        }
-    }
-    vw_Draw3D(ePrimitiveType::TRIANGLES, 6 * ParticlesCountInList, RI_3f_XYZ | RI_4f_COLOR | RI_1_TEX,
-              DrawBuffer.get(), 9 * sizeof(DrawBuffer.get()[0]), 0, 0, Indices.data());
-
-    vw_SetTextureBlend(true, eTextureBlendFactor::ONE, eTextureBlendFactor::ZERO);
 }
 
 /*
@@ -903,6 +946,7 @@ void vw_ReleaseParticleSystem(std::weak_ptr<cParticleSystem> &ParticleSystem)
 void vw_ReleaseAllParticleSystems()
 {
     ParticleSystemsList.clear();
+    particle_memory::ReleaseIdle();
 
     ParticleSystemUseGLSL = false;
     ParticleSystemQuality = 1.0f;
@@ -928,10 +972,13 @@ void vw_DrawAllParticleSystems()
         vw_Uniform3f(UniformLocationCameraPoint, CurrentCameraLocation.x, CurrentCameraLocation.y, CurrentCameraLocation.z);
     }
     glDepthMask(GL_FALSE);
+    BeginParticleBatch();
 
     for (auto &tmpParticleSystems : ParticleSystemsList) {
         tmpParticleSystems->Draw(CurrentTexture);
     }
+
+    EndParticleBatch();
 
     // reset rendering states
     glDepthMask(GL_TRUE);
@@ -965,12 +1012,15 @@ void vw_DrawParticleSystems(std::vector<std::weak_ptr<cParticleSystem>> &DrawPar
                      CurrentCameraLocation.x, CurrentCameraLocation.y, CurrentCameraLocation.z);
     }
     glDepthMask(GL_FALSE);
+    BeginParticleBatch();
 
     for (auto &tmpParticleSystem : DrawParticleSystem) {
         if (auto sharedParticleSystem = tmpParticleSystem.lock()) {
             sharedParticleSystem->Draw(CurrentTexture);
         }
     }
+
+    EndParticleBatch();
 
     // reset rendering states
     glDepthMask(GL_TRUE);
@@ -999,3 +1049,9 @@ void vw_UpdateAllParticleSystems(float Time)
 
 } // viewizard namespace
 
+
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_WEB_SMOKE_TEST)
+#include <emscripten.h>
+extern "C" EMSCRIPTEN_KEEPALIVE unsigned AstroMenaceWebParticleDrawCalls() { return viewizard::ParticleDrawCalls; }
+extern "C" EMSCRIPTEN_KEEPALIVE unsigned AstroMenaceWebParticleVisibleCount() { return viewizard::ParticleVisibleCount; }
+#endif

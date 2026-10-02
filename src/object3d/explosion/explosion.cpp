@@ -627,28 +627,23 @@ bool cExplosion::Update(float Time)
                         Count++;
                     }
 
-                    if (tmpChunk.VBO) {
-                        vw_DeleteBufferObject(tmpChunk.VBO);
+                    bool RebuildVAO = false;
+                    const GLsizeiptr Bytes = tmpChunk.VertexQuantity * tmpChunk.VertexStride * sizeof(float);
+                    if (!vw_UpdateBufferObject(eBufferObject::Vertex, Bytes, tmpChunk.VertexArray.get(), tmpChunk.VBO)) {
+                        if (tmpChunk.VBO) vw_DeleteBufferObject(tmpChunk.VBO);
+                        if (!vw_BuildBufferObject(eBufferObject::Vertex, Bytes, tmpChunk.VertexArray.get(),
+                                                  tmpChunk.VBO, eBufferObjectUsage::STREAM)) tmpChunk.VBO = 0;
+                        RebuildVAO = true;
                     }
-                    if (!vw_BuildBufferObject(eBufferObject::Vertex, tmpChunk.VertexQuantity * tmpChunk.VertexStride * sizeof(float),
-                                              tmpChunk.VertexArray.get(), tmpChunk.VBO)) {
-                        tmpChunk.VBO = 0;
-                    }
-
-                    if (!tmpChunk.IBO) {
+                    if (!tmpChunk.IBO && tmpChunk.IndexArray) {
                         if (!vw_BuildBufferObject(eBufferObject::Index, tmpChunk.VertexQuantity * sizeof(unsigned),
-                                                  tmpChunk.IndexArray.get(), tmpChunk.IBO)) {
-                            tmpChunk.IBO = 0;
-                        }
+                                                  tmpChunk.IndexArray.get(), tmpChunk.IBO)) tmpChunk.IBO = 0;
+                        RebuildVAO = true;
                     }
-
-                    if (tmpChunk.VAO) {
-                        vw_DeleteVAO(tmpChunk.VAO);
-                    }
-                    if (!vw_BuildVAO(tmpChunk.VAO, tmpChunk.VertexFormat,
-                                     tmpChunk.VertexStride * sizeof(float),
-                                     tmpChunk.VBO, tmpChunk.IBO)) {
-                        tmpChunk.VAO = 0;
+                    if (RebuildVAO || !tmpChunk.VAO) {
+                        if (tmpChunk.VAO) vw_DeleteVAO(tmpChunk.VAO);
+                        if (!vw_BuildVAO(tmpChunk.VAO, tmpChunk.VertexFormat,
+                                         tmpChunk.VertexStride * sizeof(float), tmpChunk.VBO, tmpChunk.IBO)) tmpChunk.VAO = 0;
                     }
                 }
             }
@@ -714,3 +709,4 @@ bool cExplosion::Update(float Time)
 
 } // astromenace namespace
 } // viewizard namespace
+

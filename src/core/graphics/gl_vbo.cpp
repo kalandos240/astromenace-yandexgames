@@ -68,6 +68,15 @@ bool vw_BuildBufferObject(eBufferObject target, GLsizeiptr size, const GLvoid *d
     return true;
 }
 
+bool vw_UpdateBufferObject(eBufferObject target, GLsizeiptr size, const GLvoid *data, GLuint buffer)
+{
+    if (!buffer || !data || !pfn_glBindBuffer || !pfn_glBufferSubData) return false;
+    pfn_glBindBuffer(static_cast<GLenum>(target), buffer);
+    pfn_glBufferSubData(static_cast<GLenum>(target), 0, size, data);
+    pfn_glBindBuffer(static_cast<GLenum>(target), 0);
+    return true;
+}
+
 /*
  * Bind buffer object.
  */
@@ -94,3 +103,4 @@ void vw_DeleteBufferObject(GLuint &buffer)
 }
 
 } // viewizard namespace
+

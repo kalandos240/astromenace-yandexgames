@@ -50,6 +50,7 @@ extern PFNGLDELETEBUFFERSPROC pfn_glDeleteBuffers;
 extern PFNGLGENBUFFERSPROC pfn_glGenBuffers;
 extern PFNGLISBUFFERPROC pfn_glIsBuffer;
 extern PFNGLBUFFERDATAPROC pfn_glBufferData;
+extern PFNGLBUFFERSUBDATAPROC pfn_glBufferSubData;
 
 // OpenGL 2.0 (only what we need or would need in future)
 extern PFNGLATTACHSHADERPROC pfn_glAttachShader;
@@ -141,3 +142,4 @@ bool Initialize_GL_NV_framebuffer_multisample_coverage();
 } // viewizard namespace
 
 #endif // CORE_GRAPHICS_EXTENSION_H
+

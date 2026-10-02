@@ -31,6 +31,7 @@
 #define CORE_PARTICLESYSTEM_PARTICLESYSTEM_H
 
 #include "../base.h"
+#include "particle_allocator.h"
 #include "../math/math.h"
 #include "../graphics/graphics.h"
 
@@ -84,6 +85,9 @@ class cParticleSystem {
     friend std::weak_ptr<cParticleSystem> vw_CreateParticleSystem();
 
 public:
+#if defined(ASTROMENACE_WEB_SMOKE_TEST)
+    void SmokeEmitParticles(unsigned int Quantity);
+#endif
     // Update all particles.
     bool Update(float Time);
     // Draw all particles.
@@ -231,7 +235,7 @@ private:
                       sVECTOR3D{-1000000.0f, 1000000.0f, -1000000.0f}};
 
     // particles
-    std::forward_list<cParticle> ParticlesList{};
+    std::forward_list<cParticle, ParticleAllocator<cParticle>> ParticlesList{};
     // we could use std::list with size(), but we don't need doubly-linked list here
     unsigned int ParticlesCountInList{0};
 
@@ -268,3 +272,4 @@ void vw_UpdateAllParticleSystems(float Time);
 } // viewizard namespace
 
 #endif // CORE_PARTICLESYSTEM_PARTICLESYSTEM_H
+

@@ -523,6 +523,14 @@ void cObject3D::Draw(bool VertexOnlyPass, bool ShadowMap)
         return;
     }
 
+    if (!VertexOnlyPass && !vw_BoxInFrustum(Location + AABB[6], Location + AABB[0])) {
+        if (DeleteAfterLeaveScene == eDeleteAfterLeaveScene::showed) {
+            DeleteAfterLeaveScene = eDeleteAfterLeaveScene::need_delete;
+        }
+        return;
+    }
+
+
     bool NeedOnePieceDraw{false};
     if (PromptDrawDist2 >= 0.0f) {
         sVECTOR3D CurrentCameraLocation;
@@ -611,12 +619,6 @@ void cObject3D::Draw(bool VertexOnlyPass, bool ShadowMap)
         return;
     }
 
-    if (!vw_BoxInFrustum(Location + AABB[6], Location + AABB[0])) {
-        if (DeleteAfterLeaveScene == eDeleteAfterLeaveScene::showed) {
-            DeleteAfterLeaveScene = eDeleteAfterLeaveScene::need_delete;
-        }
-        return;
-    }
 
     if (DeleteAfterLeaveScene == eDeleteAfterLeaveScene::enabled) {
         DeleteAfterLeaveScene = eDeleteAfterLeaveScene::showed;
@@ -1080,3 +1082,4 @@ bool cObject3D::Update([[gnu::unused, maybe_unused]] float Time)
 
 } // astromenace namespace
 } // viewizard namespace
+

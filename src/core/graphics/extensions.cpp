@@ -41,6 +41,7 @@ PFNGLDELETEBUFFERSPROC pfn_glDeleteBuffers{nullptr};
 PFNGLGENBUFFERSPROC pfn_glGenBuffers{nullptr};
 PFNGLISBUFFERPROC pfn_glIsBuffer{nullptr};
 PFNGLBUFFERDATAPROC pfn_glBufferData{nullptr};
+PFNGLBUFFERSUBDATAPROC pfn_glBufferSubData{nullptr};
 
 // OpenGL 2.0 (only what we need or would need in future)
 PFNGLATTACHSHADERPROC pfn_glAttachShader{nullptr};
@@ -151,6 +152,7 @@ bool Initialize_OpenGL_1_5()
     pfn_glGenBuffers = reinterpret_cast<PFNGLGENBUFFERSPROC>(SDL_GL_GetProcAddress("glGenBuffers"));
     pfn_glIsBuffer = reinterpret_cast<PFNGLISBUFFERPROC>(SDL_GL_GetProcAddress("glIsBuffer"));
     pfn_glBufferData = reinterpret_cast<PFNGLBUFFERDATAPROC>(SDL_GL_GetProcAddress("glBufferData"));
+    pfn_glBufferSubData = reinterpret_cast<PFNGLBUFFERSUBDATAPROC>(SDL_GL_GetProcAddress("glBufferSubData"));
 
     if (!pfn_glBindBuffer
         || !pfn_glDeleteBuffers
@@ -435,3 +437,4 @@ bool Initialize_GL_NV_framebuffer_multisample_coverage()
 }
 
 } // viewizard namespace
+

@@ -691,7 +691,22 @@ void DrawGame()
 
 
     // render 3D objets
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_WEB_SMOKE_TEST)
+    const double ProfileDrawStart = emscripten_get_now();
+#endif
     DrawAllObject3D(eDrawType::GAME);
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_WEB_SMOKE_TEST)
+    EM_ASM({
+        if (Module.astroPerfCollect) {
+            const Now = performance.now();
+            (Module.astroPerfSamples ||= []).push({drawMs: $0, gapMs: Now - (Module.astroPerfLast || Now),
+                particles: Module.ccall('AstroMenaceWebParticleVisibleCount', 'number', [], []),
+                particleDraws: Module.ccall('AstroMenaceWebParticleDrawCalls', 'number', [], [])});
+            Module.astroPerfLast = Now;
+        }
+    }, emscripten_get_now() - ProfileDrawStart);
+#endif
+
 
 
     // update 3D objects data + particle systems data

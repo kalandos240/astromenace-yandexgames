@@ -3,7 +3,7 @@ name: Build AstroMenace Fast Offline WebAssembly
 on:
   workflow_dispatch:
   push:
-    branches: [fix/defeat-particles-v6]
+    branches: [fix/mobile-batching-v7]
     paths:
       - 'scripts/enable_gl4es_offline.py'
       - 'web/yandex-offline-pre.js'
@@ -22,7 +22,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: astromenace-v6-${{ github.ref }}
+  group: astromenace-v7-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -167,6 +167,7 @@ jobs:
           mkdir -p dist
 
           python3 scripts/enable_gl4es_offline.py
+          python3 scripts/instrument_v7_smoke.py
 
           # Moderation regression audit.
           python3 - <<'PY'
@@ -205,7 +206,7 @@ jobs:
           # SINGLE_FILE embeds the WebAssembly module into index.js. Game data is
           # intentionally not passed through --preload-file/--embed-file: it is
           # installed by yandex-offline-pre.js from gamedata.js before main().
-          em++ "${SOURCES[@]}" web/web_glu_compat.cpp \
+          em++ "${SOURCES[@]}" web/web_glu_compat.cpp web/v7-smoke.cpp \
             -std=c++11 -O3 -flto -fno-exceptions -fno-rtti \
             -DASTROMENACE_WEB_ASYNC_STARTUP=1 -DASTROMENACE_WEB_SMOKE_TEST=1 \
             -I/tmp/gl4es/include -I. -Isrc \
@@ -330,6 +331,26 @@ jobs:
           print('Offline/Yandex CSP shell audit: PASS')
           PY
 
+      - name: Build V6 baseline for the identical stress scene
+        shell: bash
+        run: |
+          set -euo pipefail
+          source /tmp/emsdk/emsdk_env.sh
+          files=(src/core/particle_system/particle_system.cpp src/core/particle_system/particle_system.h src/object3d/object3d.cpp src/object3d/explosion/explosion.cpp src/core/graphics/gl_vbo.cpp src/core/graphics/graphics.h src/core/graphics/extensions.h src/core/graphics/extensions.cpp)
+          mkdir -p /tmp/v7-candidate-source
+          cp -a dist dist-candidate
+          for file in "${files[@]}"; do
+            mkdir -p "/tmp/v7-candidate-source/$(dirname "$file")"
+            cp "$file" "/tmp/v7-candidate-source/$file"
+            git show cb55b7ed0d25354478f6212386006a534c22e330:"$file" > "$file"
+          done
+          python3 scripts/instrument_v7_smoke.py
+          ASTROMENACE_TEST_FLAGS=-DASTROMENACE_WEB_SMOKE_TEST=1 bash scripts/build_v6_engine.sh
+          python3 scripts/apply_v6_runtime.py
+          mv dist dist-baseline
+          mv dist-candidate dist
+          for file in "${files[@]}"; do cp "/tmp/v7-candidate-source/$file" "$file"; done
+
       - name: Verify defeat buttons in a real browser
         shell: bash
         run: |
@@ -337,6 +358,7 @@ jobs:
           npm install --no-save playwright
           npx playwright install --with-deps chromium
           node scripts/test_v6_browser.cjs | tee dist/V6_BROWSER_TEST.txt
+          node scripts/test_v7_performance.cjs | tee dist/V7_PERFORMANCE_TEST.txt
 
       - name: Build production engine without test hooks
         shell: bash

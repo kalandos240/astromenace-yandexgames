@@ -538,6 +538,8 @@ void vw_MaterialV(eMaterialParameter pname, const GLfloat *param);
 // Build buffer object (size in bytes).
 bool vw_BuildBufferObject(eBufferObject target, GLsizeiptr size, const GLvoid *data,
                           GLuint &buffer, eBufferObjectUsage usage = eBufferObjectUsage::STATIC);
+// Update an existing buffer of the same size without replacing its identity.
+bool vw_UpdateBufferObject(eBufferObject target, GLsizeiptr size, const GLvoid *data, GLuint buffer);
 // Bind buffer object.
 void vw_BindBufferObject(eBufferObject target, GLuint buffer);
 // Delete buffer object.
@@ -650,3 +652,4 @@ int vw_Screenshot(int Width, int Height, const std::string &FileName);
 } // viewizard namespace
 
 #endif // CORE_GRAPHICS_GRAPHICS_H
+

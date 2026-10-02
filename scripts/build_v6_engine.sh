@@ -1,8 +1,8 @@
 set -euo pipefail
 mapfile -t SOURCES < <(find src -type f -name "*.cpp" -print | sort)
-em++ "${SOURCES[@]}" web/web_glu_compat.cpp \
+em++ "${SOURCES[@]}" web/web_glu_compat.cpp web/v7-smoke.cpp \
   -std=c++11 -O3 -flto -fno-exceptions -fno-rtti \
-  -DASTROMENACE_WEB_ASYNC_STARTUP=1 \
+  -DASTROMENACE_WEB_ASYNC_STARTUP=1 ${ASTROMENACE_TEST_FLAGS:-} \
   -I/tmp/gl4es/include -I. -Isrc \
   /tmp/gl4es/lib/libGL.a \
   -sUSE_SDL=2 \
