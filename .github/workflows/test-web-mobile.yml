@@ -22,7 +22,7 @@ jobs:
       - name: Unpack built game
         run: |
           mkdir -p dist
-          unzip -q artifact/*.zip -d dist
+          cp -a artifact/. dist/
       - name: Install browser
         run: |
           npm install --no-save playwright@1.58.2
