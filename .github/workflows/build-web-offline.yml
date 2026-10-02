@@ -8,6 +8,9 @@ on:
       - 'scripts/enable_gl4es_offline.py'
       - 'web/yandex-offline-pre.js'
       - 'web/offline-shell.html'
+      - 'web/mobile-controls.js'
+      - 'src/**'
+      - 'web/astromenace.css'
       - 'src/menu/menu_credits.cpp'
       - 'src/menu/menu_conf_control.cpp'
       - 'src/menu/menu.cpp'
@@ -241,6 +244,8 @@ jobs:
             -sASYNCIFY=1 \
             -sASYNCIFY_STACK_SIZE=65536 \
             -sSINGLE_FILE=1 \
+            -sEXPORTED_RUNTIME_METHODS=ccall \
+            --pre-js web/mobile-controls.js \
             --pre-js web/yandex-offline-pre.js \
             -o dist/index.js \
             2>&1 | tee web/OFFLINE_BUILD_LOG.txt

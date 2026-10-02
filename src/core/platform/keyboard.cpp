@@ -27,6 +27,11 @@
 
 #include "../math/math.h"
 #include "SDL2/SDL.h"
+#include "../../web_mobile.h"
+#if defined(__EMSCRIPTEN__)
+#include <emscripten.h>
+#include <array>
+#endif
 
 namespace viewizard {
 
@@ -41,6 +46,23 @@ int KeyStateArraySize{0};
 // KeyStatus[N] == true  - we can get "real" key status
 // KeyStatus[N] == false - we locked "key released" manually by vw_SetKeyStatus() call
 std::vector<bool> KeyStatus{};
+#if defined(__EMSCRIPTEN__)
+std::array<bool, SDL_NUM_SCANCODES> AndroidHeldKeys{};
+std::array<bool, SDL_NUM_SCANCODES> AndroidKeyTaps{};
+int AndroidKey(int BrowserKey) {
+    switch (BrowserKey) {
+    case 13: return SDLK_RETURN;
+    case 27: return SDLK_ESCAPE;
+    case 37: return SDLK_LEFT;
+    case 38: return SDLK_UP;
+    case 39: return SDLK_RIGHT;
+    case 40: return SDLK_DOWN;
+    case 90: return SDLK_z;
+    case 88: return SDLK_x;
+    default: return SDLK_UNKNOWN;
+    }
+}
+#endif
 // unicode character for current pressed button
 std::u32string CurrentUnicodeChar{};
 
@@ -55,10 +77,33 @@ static void ResizeKeyStatus(unsigned int NeedStoreElement)
     // since we start from 0 (first element), in order to access
     // NeedStoreElement element, we need at least "NeedStoreElement + 1"
     // elements in KeyStatus array
-    if (KeyStatus.size() + 1 < NeedStoreElement) {
+    if (KeyStatus.size() <= NeedStoreElement) {
         KeyStatus.resize(NeedStoreElement + 1, true); // fill it with 'true' by default
     }
 }
+
+#if defined(__EMSCRIPTEN__)
+// Native touch buttons bypass DOM/SDL keyboard synthesis. WebView focus and
+// keyup timing must not make an Android control press disappear.
+extern "C" EMSCRIPTEN_KEEPALIVE int AstroMenaceAndroidSetKey(int BrowserKey, int Pressed) {
+    const int Key = AndroidKey(BrowserKey);
+    if (Key == SDLK_UNKNOWN) return 0;
+    const auto Scan = SDL_GetScancodeFromKey(Key);
+    ResizeKeyStatus(Scan);
+    AndroidHeldKeys[Scan] = Pressed != 0;
+    if (!Pressed) KeyStatus[Scan] = true;
+    return 1;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int AstroMenaceAndroidTapKey(int BrowserKey) {
+    const int Key = AndroidKey(BrowserKey);
+    if (Key == SDLK_UNKNOWN) return 0;
+    const auto Scan = SDL_GetScancodeFromKey(Key);
+    ResizeKeyStatus(Scan);
+    KeyStatus[Scan] = true;
+    AndroidKeyTaps[Scan] = true;
+    return 1;
+}
+#endif
 
 /*
  * Get key status (pressed or not).
@@ -67,6 +112,14 @@ bool vw_GetKeyStatus(int Key)
 {
     const uint8_t *KeyState = SDL_GetKeyboardState(&KeyStateArraySize);
     ResizeKeyStatus(SDL_GetScancodeFromKey(Key));
+#if defined(__EMSCRIPTEN__)
+    const auto Scan = SDL_GetScancodeFromKey(Key);
+    if (AndroidKeyTaps[Scan]) {
+        AndroidKeyTaps[Scan] = false;
+        return KeyStatus[Scan];
+    }
+    if (AndroidHeldKeys[Scan] && KeyStatus[Scan]) return true;
+#endif
     // handle "key down" only if KeyStatus[] also 'true', mean, we don't "key up"
     // it manually by vw_SetKeyStatus() call
     if (KeyState[SDL_GetScancodeFromKey(Key)] && KeyStatus[SDL_GetScancodeFromKey(Key)]) {

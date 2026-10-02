@@ -84,3 +84,19 @@ body {
     transform: rotate(360deg);
   }
 }
+
+/* Native-style RuStore controls, positioned over the actual render surface. */
+#mobile-stage { position: fixed; z-index: 4; pointer-events: none; }
+#mobile-stage[hidden], #mobile-controls[hidden], #mobile-profile-name[hidden] { display: none; }
+#mobile-controls { position: absolute; inset: 0; pointer-events: none; }
+.mobile-button { position: absolute; pointer-events: auto; touch-action: none; border: 2px solid #829bb7; border-radius: 22%; background: rgba(15,27,45,.32); color: #e2e7ed; font: 500 clamp(14px,3vh,28px) Arial,sans-serif; padding: 0; width: 7.2%; height: 16%; -webkit-tap-highlight-color: transparent; }
+.mobile-button.pressed { background: rgba(100,150,210,.42); }
+.mobile-button.up { left: 10%; bottom: 39%; }
+.mobile-button.left { left: 2.3%; bottom: 22%; }
+.mobile-button.right { left: 17.6%; bottom: 22%; }
+.mobile-button.down { left: 10%; bottom: 5%; }
+.mobile-button.fire1 { right: 13.5%; bottom: 7%; width: 11%; height: 18%; }
+.mobile-button.fire2 { right: 2.3%; bottom: 31%; width: 10%; height: 17%; }
+.mobile-button.pause { left: 2%; top: 4%; width: 5.6%; height: 13%; }
+#mobile-profile-name { position: absolute; left: 18%; top: 28.5%; width: 54%; height: 6.5%; box-sizing: border-box; pointer-events: auto; opacity: .01; border: 0; font-size: 16px; color: transparent; background: transparent; }
+body.mobile #canvas { cursor: none; }

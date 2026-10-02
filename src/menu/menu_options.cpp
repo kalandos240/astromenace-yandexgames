@@ -43,6 +43,7 @@
 #include "../command.h"
 #include "../game.h" // FIXME "game.h" should be replaced by individual headers
 #include "SDL2/SDL.h"
+#include "../web_mobile.h"
 #include <algorithm>
 
 // NOTE switch to nested namespace definition (namespace A::B::C { ... }) (since C++17)
@@ -224,6 +225,7 @@ void OptionsMenu(float ContentTransp, float &ButtonTransp1, float &LastButtonUpd
 
 
 
+if (!AstroMenaceWebIsMobile()) {
     Y1 += Prir1;
     vw_DrawTextUTF32(X1, Y1, -280, 0, 1.0f, sRGBCOLOR{eRGBCOLOR::white}, ContentTransp, vw_GetTextUTF32("Full Screen"));
     if (DrawButton128_2(X1+300, Y1-6, vw_GetTextUTF32("Off"), ContentTransp, DetectWindowSizeArray().empty() || !Options_Fullscreen)
@@ -314,6 +316,9 @@ void OptionsMenu(float ContentTransp, float &ButtonTransp1, float &LastButtonUpd
 
 
 
+}
+
+
     Y1 += Prir1;
     vw_DrawTextUTF32(X1, Y1, -280, 0, 1.0f, sRGBCOLOR{eRGBCOLOR::white}, ContentTransp, vw_GetTextUTF32("Brightness"));
     if (DrawButton128_2(X1+300, Y1-6, vw_GetTextUTF32("Decrease"), ContentTransp, GameConfig().Brightness <= 1)) {
@@ -370,6 +375,7 @@ void OptionsMenu(float ContentTransp, float &ButtonTransp1, float &LastButtonUpd
 
 
     X = GameConfig().InternalWidth / 2 - 366;
+if (!AstroMenaceWebIsMobile()) {
     if (DrawButton200_2(X, Y+28, vw_GetTextUTF32("Advanced"), ContentTransp, false)) {
         if (MenuStatus == eMenuStatus::GAME) {
             SetOptionsMenu(eMenuStatus::OPTIONS_ADVANCED);
@@ -378,6 +384,9 @@ void OptionsMenu(float ContentTransp, float &ButtonTransp1, float &LastButtonUpd
             cCommand::GetInstance().Set(eCommand::SWITCH_TO_OPTIONS_ADVANCED);
         }
     }
+}
+
+
 
 
     X = GameConfig().InternalWidth / 2 - 100;
@@ -392,6 +401,7 @@ void OptionsMenu(float ContentTransp, float &ButtonTransp1, float &LastButtonUpd
 
 
     X = GameConfig().InternalWidth / 2 + 166;
+if (!AstroMenaceWebIsMobile()) {
     if (DrawButton200_2(X, Y+28, vw_GetTextUTF32("Config Controls"), ContentTransp, false)) {
         if (MenuStatus == eMenuStatus::GAME) {
             SetOptionsMenu(eMenuStatus::CONFCONTROL);
@@ -400,6 +410,9 @@ void OptionsMenu(float ContentTransp, float &ButtonTransp1, float &LastButtonUpd
             cCommand::GetInstance().Set(eCommand::SWITCH_TO_CONFCONTROL);
         }
     }
+}
+
+
 
 
 

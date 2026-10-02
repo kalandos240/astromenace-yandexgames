@@ -455,6 +455,9 @@ void WorkshopMenu()
 
     X = GameConfig().InternalWidth / 2 + 354;
     if (DrawButton128_2(X,Y, vw_GetTextUTF32("START"), MenuContentTransp, false)) {
+#if defined(__EMSCRIPTEN__)
+        if (AstroMenaceWebIsMobile()) ChangeGameConfig().NeedShowHint[4] = false;
+#endif
         if (GameConfig().NeedShowHint[4]) {
             SetCurrentDialogBox(eDialogBox::ShortkeyTipsAndTricks);
         } else {

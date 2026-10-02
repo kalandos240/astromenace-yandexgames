@@ -164,7 +164,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   };
 
   const tryPointerLock = () => {
-    if (!Module.yandexGameplayRequested || Module.yandexPlatformPaused || Module.yandexAdInProgress || document.hidden) return;
+    if (Module.astroMobile || !Module.yandexGameplayRequested || Module.yandexPlatformPaused || Module.yandexAdInProgress || document.hidden) return;
     if (!Module.canvas?.requestPointerLock || document.pointerLockElement === Module.canvas) return;
     try {
       const result = Module.canvas.requestPointerLock();
@@ -190,7 +190,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
 
   const showScheduledInterstitial = (reason) => {
     if (!Module.yandexGameReadySent || !adIsDue()) return false;
-    if (Module.yandexGameplayRequested || Module.yandexPlatformPaused || Module.yandexAdInProgress || document.hidden) return false;
+    if (Module.astroHostSuspended || Module.yandexGameplayRequested || Module.yandexPlatformPaused || Module.yandexAdInProgress || document.hidden) return false;
     if (typeof Module.yandexSDK?.adv?.showFullscreenAdv !== 'function') {
       armAdClock();
       return false;
@@ -664,6 +664,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     } catch (error) { console.warn('[Yandex] LoadingAPI.ready failed:', error); }
     setGameplayApiRunning(false);
     armAdClock();
+    Module.astroUpdateControls?.();
     initPlayerAfterGameReady();
   };
 

@@ -42,6 +42,18 @@
 #include "../game/camera.h"
 #include "../game.h" // FIXME "game.h" should be replaced by individual headers
 #include "SDL2/SDL.h"
+#include "../web_mobile.h"
+
+#if defined(__EMSCRIPTEN__)
+#include <emscripten.h>
+EM_JS(void, AstroMenaceAndroidProfileInputMode, (int Enabled), {
+    try {
+        if (globalThis.AndroidHost && typeof globalThis.AndroidHost.profileInputMode === "function") {
+            globalThis.AndroidHost.profileInputMode(!!Enabled);
+        }
+    } catch (_) {}
+});
+#endif
 
 // NOTE switch to nested namespace definition (namespace A::B::C { ... }) (since C++17)
 namespace viewizard {
@@ -106,6 +118,10 @@ float LastButton14UpdateTime = 0.0f;
 void InitMenu(eMenuStatus NewMenuStatus)
 {
     MenuStatus = NewMenuStatus;
+
+#if defined(__EMSCRIPTEN__)
+    AstroMenaceAndroidProfileInputMode(MenuStatus == eMenuStatus::PROFILE ? 1 : 0);
+#endif
 
     ShadowMap_SizeSetup(eShadowMapSetup::Menu);
 
@@ -178,15 +194,16 @@ void InitMenu(eMenuStatus NewMenuStatus)
     case 2:
         MenuScript->RunScript("script/menu3.xml", vw_GetTimeThread(0));
         break;
-    // just in case
     default:
         MenuScript->RunScript("script/menu1.xml", vw_GetTimeThread(0));
         break;
     }
     ChangeGameConfig().MenuScript++;
 
-    // scroll the script a bit, in order to see action on the whole screen
-    float Time1 = vw_GetTimeThread(0);
+    const float Time1 = vw_GetTimeThread(0);
+if (!AstroMenaceWebIsMobile()) {
+    // Android renders the original backdrop immediately and advances it on
+    // live frames, without blocking on thirty seconds of catch-up simulation.
     MenuScript->StartTime = Time1-30;
     MenuScript->TimeLastOp = Time1-30;
     for (float i=Time1-30; i<Time1; i+=1.0f) {
@@ -195,6 +212,7 @@ void InitMenu(eMenuStatus NewMenuStatus)
     }
     MenuScript->StartTime = Time1;
     MenuScript->TimeLastOp = Time1;
+}
 
 
 
@@ -354,6 +372,10 @@ void SetMenu2(eMenuStatus Menu)
 
     PrevMenu = MenuStatus;
     MenuStatus = Menu;
+
+#if defined(__EMSCRIPTEN__)
+    AstroMenaceAndroidProfileInputMode(MenuStatus == eMenuStatus::PROFILE ? 1 : 0);
+#endif
 
     float Time = vw_GetTimeThread(0);
     Button1Transp = 1.0f;
@@ -668,10 +690,9 @@ void MainMenu()
         PlayMusicTheme(eMusicTheme::CREDITS, 2000, 2000);
     }
 
-    Y = Y+Prir;
-    if (DrawButton384(X,Y, vw_GetTextUTF32("QUIT"), MenuContentTransp, Button6Transp, LastButton6UpdateTime)) {
-        SetCurrentDialogBox(eDialogBox::QuitFromGame);
-    }
+    // ASTROMENACE YANDEX MAIN MENU: QUIT REMOVED
+    // Browser games are closed using the platform/browser UI, so a desktop
+    // Quit command is intentionally omitted from the Yandex build.
 
 }
 

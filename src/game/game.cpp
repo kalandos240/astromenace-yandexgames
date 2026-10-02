@@ -45,8 +45,37 @@
 #include "../game/hud.h"
 #include "../game.h" // FIXME "game.h" should be replaced by individual headers
 #include "SDL2/SDL.h"
+#include "../web_mobile.h"
+
+#if defined(__EMSCRIPTEN__)
+#include <emscripten.h>
+EM_JS(void, AstroMenaceAndroidGameplayState, (int Active), {
+    try {
+        if (globalThis.AndroidHost && typeof globalThis.AndroidHost.gameplayState === "function") {
+            globalThis.AndroidHost.gameplayState(!!Active);
+        }
+    } catch (_) {}
+});
+EM_JS(void, AstroMenaceAndroidPauseMenuState, (int Visible), {
+    try {
+        if (globalThis.AndroidHost && typeof globalThis.AndroidHost.pauseMenuState === "function") {
+            globalThis.AndroidHost.pauseMenuState(!!Visible);
+        }
+    } catch (_) {}
+});
+EM_JS(void, AstroMenaceAndroidSmokeQuitTransitionPassed, (), {
+    try {
+        if (globalThis.AndroidHost && typeof globalThis.AndroidHost.smokeQuitToMenuPass === "function") {
+            globalThis.AndroidHost.smokeQuitToMenuPass();
+        }
+    } catch (_) {}
+});
+#endif
 #include <sstream>
 #include <iomanip>
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#endif
 
 // NOTE switch to nested namespace definition (namespace A::B::C { ... }) (since C++17)
 namespace viewizard {
@@ -163,6 +192,13 @@ bool NeedOffGame = false;
 
 
 
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_WEB_SMOKE_TEST)
+extern "C" EMSCRIPTEN_KEEPALIVE float AstroMenaceAndroidSmokePlayerX() {
+    if (auto Fighter = PlayerFighter.lock()) return Fighter->Location.x;
+    return 0.0f;
+}
+#endif
+
 //------------------------------------------------------------------------------------
 // game initialization
 //------------------------------------------------------------------------------------
@@ -185,6 +221,18 @@ void InitGame()
     GameUndestroyableWeapon = GameConfig().Profile[CurrentProfile].UndestroyableWeapon;
     GameWeaponTargetingMode = GameConfig().Profile[CurrentProfile].WeaponTargetingMode;
     GameSpaceShipControlMode = GameConfig().Profile[CurrentProfile].SpaceShipControlMode;
+
+#if defined(__EMSCRIPTEN__)
+    if (AstroMenaceWebIsMobile()) {
+        ChangeGameConfig().MouseControl = false;
+        ChangeGameConfig().KeyBoardLeft = SDLK_LEFT;
+        ChangeGameConfig().KeyBoardRight = SDLK_RIGHT;
+        ChangeGameConfig().KeyBoardUp = SDLK_UP;
+        ChangeGameConfig().KeyBoardDown = SDLK_DOWN;
+        ChangeGameConfig().KeyBoardPrimary = SDLK_z;
+        ChangeGameConfig().KeyBoardSecondary = SDLK_x;
+    }
+#endif
 
     GameEngineSystem = GameConfig().Profile[CurrentProfile].EngineSystem;
     // for sim ship control mode, we need limit ship movements to engine capabilities
@@ -303,6 +351,12 @@ void InitGame()
     LastGameOnOffUpdateTime = vw_GetTimeThread(0);
     GameBlackTransp = 1.0f;
     NeedOnGame = true;
+#if defined(__EMSCRIPTEN__)
+    // Show native controls only when assets, HUD and actual game state are ready.
+    // ASTROMENACE YANDEX GAMEPLAY API: host tracks mission and pause transitions.
+    AstroMenaceAndroidGameplayState(1);
+    AstroMenaceAndroidPauseMenuState(0);
+#endif
 }
 
 
@@ -314,8 +368,27 @@ void InitGame()
 //------------------------------------------------------------------------------------
 // Exit game
 //------------------------------------------------------------------------------------
+void RealExitGame();
+
 void ExitGame(eCommand Command)
 {
+#if defined(__EMSCRIPTEN__)
+    // Android/WebView must not wait in the desktop fade-out state after
+    // confirming QUIT from the paused game. Clean up immediately and queue
+    // the normal main-menu transition for this same rendered frame.
+    if (Command == eCommand::SWITCH_FROM_GAME_TO_MAIN_MENU) {
+        GameExitCommand = eCommand::DO_NOTHING;
+        NeedOffGame = false;
+        NeedOnGame = false;
+        GameMenu = false;
+        NeedShowGameMenu = false;
+        NeedHideGameMenu = false;
+        RealExitGame();
+        cCommand::GetInstance().Set(eCommand::SWITCH_FROM_GAME_TO_MAIN_MENU);
+        return;
+    }
+#endif
+
     GameExitCommand = Command;
     NeedOffGame = true;
     LastGameOnOffUpdateTime = vw_GetTimeThread(0);
@@ -332,6 +405,12 @@ void ExitGame(eCommand Command)
 }
 void RealExitGame()
 {
+#if defined(__EMSCRIPTEN__)
+    // Every mission transition must clear native gameplay state, including
+    // restart, completion and return to the workshop/mission list.
+    AstroMenaceAndroidGameplayState(0);
+    AstroMenaceAndroidPauseMenuState(0);
+#endif
     ReleaseSpaceShip(PlayerFighter);
 
     vw_ReleaseAllParticleSystems2D();
@@ -342,6 +421,30 @@ void RealExitGame()
     // release mouse control
     SDL_SetWindowGrab(reinterpret_cast<SDL_Window*>(vw_GetSDLWindow()), SDL_FALSE);
 }
+
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_WEB_SMOKE_TEST)
+extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceAndroidSmokeStartMission()
+{
+    if (MenuStatus == eMenuStatus::GAME) return;
+    InitDialogBoxes();
+    ChangeGameConfig().NeedShowHint[0] = false;
+    CurrentProfile = 0;
+    ChangeGameConfig().Profile[0] = sPilotProfile{};
+    ChangeGameConfig().Profile[0].Used = true;
+    ChangeGameConfig().Profile[0].Name[0] = 'T';
+    ChangeGameConfig().Profile[0].Name[1] = '\0';
+    CurrentMission = 0;
+    MissionListInit();
+    cCommand::GetInstance().Set(eCommand::SWITCH_FROM_MENU_TO_GAME);
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceAndroidSmokeQuitToMainMenu()
+{
+    ExitGame(eCommand::SWITCH_FROM_GAME_TO_MAIN_MENU);
+    cCommand::GetInstance().Proceed();
+    AstroMenaceAndroidSmokeQuitTransitionPassed();
+}
+#endif
 
 //------------------------------------------------------------------------------------
 // Exit game, save all data
@@ -405,6 +508,17 @@ void ExitGameWithSave(eCommand Command)
 
     ChangeGameConfig().Profile[CurrentProfile].LastMission = CurrentMission;
 
+    SaveXMLConfigFile();
+#ifdef __EMSCRIPTEN__
+    EM_ASM({
+        if (Module.yandexLevelComplete) {
+            Module.yandexLevelComplete();
+        } else if (Module.yandexSyncSave) {
+            Module.yandexSyncSave(true);
+        }
+    });
+#endif
+
     ExitGame(Command);
 }
 
@@ -432,11 +546,97 @@ void SetGameMissionComplete()
 
 
 
+// Shared menu transition for keyboard, mission results and native Android Back.
+static void ToggleGamePauseMenu()
+{
+    bool NeedPlaySfx = true;
+    if (GameMissionCompleteStatusShowDialog) {
+        if (GameMenu) {
+            NeedPlaySfx = false;
+        } else {
+            GameMenu = true;
+        }
+    } else {
+        GameMenu = !GameMenu;
+    }
+
+    if (GameMenu && (!GameMissionCompleteStatus || GameMissionCompleteStatusShowDialog)) {
+        NeedShowGameMenu = true;
+        NeedHideGameMenu = false;
+        if (NeedPlaySfx && vw_IsSoundAvailable(SoundShowHideMenu)) {
+            vw_StopSound(SoundShowHideMenu, 150);
+        }
+        if (NeedPlaySfx) {
+            SoundShowHideMenu = PlayMenuSFX(eMenuSFX::MissionShowMenu, 1.0f);
+        }
+        // reset mouse click, prevent miss clicking here
+        vw_GetMouseLeftClick(true);
+    } else if (!GameMenu && !GameMissionCompleteStatus) { // if menu with mission results are opened - don't allow close it
+        NeedShowGameMenu = false;
+        NeedHideGameMenu = true;
+        // set mouse position to last menu mouse position
+        SDL_WarpMouseInWindow(reinterpret_cast<SDL_Window*>(vw_GetSDLWindow()), LastMouseXR, LastMouseYR);
+
+        if (NeedPlaySfx && vw_IsSoundAvailable(SoundShowHideMenu)) {
+            vw_StopSound(SoundShowHideMenu, 150);
+        }
+        if (NeedPlaySfx) {
+            SoundShowHideMenu = PlayMenuSFX(eMenuSFX::MissionHideMenu, 1.0f);
+        }
+        SetShowGameCursor(false);
+    }
+
+    if (GameMissionCompleteStatus && !GameMissionCompleteStatusShowDialog) { // if displaying the mission results, only allow exit to the main menu
+        SetCurrentDialogBox(eDialogBox::QuiToMenuNoSave);
+    }
+    GameMissionCompleteStatusShowDialog = false;
+#if defined(__EMSCRIPTEN__)
+    AstroMenaceAndroidPauseMenuState(GameMenu || NeedShowGameMenu || GameContentTransp > 0.0f || PlayerFighter.expired() ? 1 : 0);
+#endif
+}
+
+#if defined(__EMSCRIPTEN__)
+extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceAndroidHostPause()
+{
+    // WebView can process focus loss and gain in the same frame after resume.
+    // Pause directly and idempotently; focus gain must not resume the mission.
+    if (MenuStatus != eMenuStatus::GAME) return;
+    GameMenu = true;
+    NeedShowGameMenu = true;
+    NeedHideGameMenu = false;
+    GameContentTransp = 1.0f;
+    cGameSpeed::GetInstance().SetThreadSpeed(0.0f);
+    SetShowGameCursor(true);
+    AstroMenaceAndroidPauseMenuState(1);
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE int AstroMenaceAndroidGameBack()
+{
+    if (MenuStatus != eMenuStatus::GAME || isDialogBoxDrawing()) return 0;
+    if (PlayerFighter.expired()) {
+        ExitGame(eCommand::SWITCH_FROM_GAME_TO_MAIN_MENU);
+        return 1;
+    }
+    ToggleGamePauseMenu();
+    return 1;
+}
+#endif
+
 //------------------------------------------------------------------------------------
 // draw game, main method
 //------------------------------------------------------------------------------------
 void DrawGame()
 {
+#if defined(__EMSCRIPTEN__)
+    // Report real menu transitions, including death/results dialogs and
+    // lifecycle pause. Native controls must never intercept menu touches.
+    static bool AndroidMenuWasVisible = false;
+    const bool AndroidMenuVisible = GameMenu || NeedShowGameMenu || GameContentTransp > 0.0f || PlayerFighter.expired();
+    if (AndroidMenuVisible != AndroidMenuWasVisible) {
+        AndroidMenuWasVisible = AndroidMenuVisible;
+        AstroMenaceAndroidPauseMenuState(AndroidMenuVisible ? 1 : 0);
+    }
+#endif
 
     float TimeDelta = vw_GetTimeThread(0) - CurrentTime;
     CurrentTime = vw_GetTimeThread(0);
@@ -804,47 +1004,7 @@ void DrawGame()
     if (!isDialogBoxDrawing()) {
         if (!PlayerFighter.expired()) {
             if (vw_GetKeyStatus(SDLK_ESCAPE) || GameMissionCompleteStatusShowDialog) {
-                bool NeedPlaySfx = true;
-                if (GameMissionCompleteStatusShowDialog) {
-                    if (GameMenu) {
-                        NeedPlaySfx = false;
-                    } else {
-                        GameMenu = true;
-                    }
-                } else {
-                    GameMenu = !GameMenu;
-                }
-
-                if (GameMenu && (!GameMissionCompleteStatus || GameMissionCompleteStatusShowDialog)) {
-                    NeedShowGameMenu = true;
-                    NeedHideGameMenu = false;
-                    if (NeedPlaySfx && vw_IsSoundAvailable(SoundShowHideMenu)) {
-                        vw_StopSound(SoundShowHideMenu, 150);
-                    }
-                    if (NeedPlaySfx) {
-                        SoundShowHideMenu = PlayMenuSFX(eMenuSFX::MissionShowMenu, 1.0f);
-                    }
-                    // reset mouse click, prevent miss clicking here
-                    vw_GetMouseLeftClick(true);
-                } else if (!GameMenu && !GameMissionCompleteStatus) { // if menu with mission results are opened - don't allow close it
-                    NeedShowGameMenu = false;
-                    NeedHideGameMenu = true;
-                    // set mouse position to last menu mouse position
-                    SDL_WarpMouseInWindow(reinterpret_cast<SDL_Window*>(vw_GetSDLWindow()), LastMouseXR, LastMouseYR);
-
-                    if (NeedPlaySfx && vw_IsSoundAvailable(SoundShowHideMenu)) {
-                        vw_StopSound(SoundShowHideMenu, 150);
-                    }
-                    if (NeedPlaySfx) {
-                        SoundShowHideMenu = PlayMenuSFX(eMenuSFX::MissionHideMenu, 1.0f);
-                    }
-                    SetShowGameCursor(false);
-                }
-
-                if (GameMissionCompleteStatus && !GameMissionCompleteStatusShowDialog) { // if displaying the mission results, only allow exit to the main menu
-                    SetCurrentDialogBox(eDialogBox::QuiToMenuNoSave);
-                }
-                GameMissionCompleteStatusShowDialog = false;
+                ToggleGamePauseMenu();
                 vw_SetKeyStatus(SDLK_ESCAPE, false);
             }
         }

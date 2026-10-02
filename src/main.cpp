@@ -47,6 +47,7 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+EM_JS(int, AstroMenaceWebIsMobile, (), { return Module.astroMobile ? 1 : 0; });
 
 EM_JS(int, AstroMenaceYandexLanguageIndex, (), {
     return Number.isInteger(Module.yandexLanguageIndex) ? Module.yandexLanguageIndex : 0;
@@ -508,6 +509,9 @@ int main(int argc, char *argv[])
 
     // should be called after vw_InitText(), since we need find language index numbers
     bool FirstStart = LoadXMLConfigFile(NeedResetConfig);
+#ifdef __EMSCRIPTEN__
+    if (AstroMenaceWebIsMobile()) ChangeGameConfig().NeedShowHint[4] = false;
+#endif
 #ifdef __EMSCRIPTEN__
     // Yandex Games requires automatic language detection through the SDK.
     const int YandexLanguageIndex = AstroMenaceYandexLanguageIndex();
