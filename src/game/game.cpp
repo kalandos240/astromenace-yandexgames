@@ -652,6 +652,11 @@ extern "C" EMSCRIPTEN_KEEPALIVE int AstroMenaceAndroidGameBack()
 //------------------------------------------------------------------------------------
 // draw game, main method
 //------------------------------------------------------------------------------------
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_WEB_SMOKE_TEST)
+extern "C" unsigned AstroMenaceWebParticleDrawCalls();
+extern "C" unsigned AstroMenaceWebParticleVisibleCount();
+#endif
+
 void DrawGame()
 {
 #if defined(__EMSCRIPTEN__)
@@ -700,11 +705,10 @@ void DrawGame()
         if (Module.astroPerfCollect) {
             const Now = performance.now();
             (Module.astroPerfSamples ||= []).push({drawMs: $0, gapMs: Now - (Module.astroPerfLast || Now),
-                particles: Module.ccall('AstroMenaceWebParticleVisibleCount', 'number', [], []),
-                particleDraws: Module.ccall('AstroMenaceWebParticleDrawCalls', 'number', [], [])});
+                particles: $1, particleDraws: $2});
             Module.astroPerfLast = Now;
         }
-    }, emscripten_get_now() - ProfileDrawStart);
+    }, emscripten_get_now() - ProfileDrawStart, AstroMenaceWebParticleVisibleCount(), AstroMenaceWebParticleDrawCalls());
 #endif
 
 

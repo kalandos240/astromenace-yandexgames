@@ -5,13 +5,13 @@ const server=http.createServer((req,res)=>{const file=path.join(process.cwd(),de
 const browser=await chromium.launch({args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});const results={};
 try{for(const build of ['dist-baseline','dist']){
  const context=await browser.newContext({viewport:{width:960,height:540},hasTouch:true,isMobile:true,userAgent:'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/130.0 Mobile Safari/537.36'});
- const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(String(e)));
+ const page=await context.newPage();const errors=[];page.on('pageerror',e=>{errors.push(String(e));console.log(build+' pageerror: '+String(e));});
  await page.goto('http://127.0.0.1:8081/'+build+'/index.html');await page.waitForFunction(()=>Module.yandexGameReadySent,null,{timeout:180000});
  await page.evaluate(()=>Module.ccall('AstroMenaceAndroidSmokeStartMission',null,[],[]));await page.waitForFunction(()=>(Module.ccall('AstroMenaceWebGameState','number',[],[])&3)===3);
  await page.evaluate(()=>Module.ccall('AstroMenaceWebStressSpawn',null,[],[]));
  await page.waitForTimeout(1000);
  await page.evaluate(()=>{Module.astroPerfSamples=[];Module.astroPerfCollect=true;Module.astroPerfLast=0;});
- await page.waitForFunction(()=>Module.astroPerfSamples.length>=100,null,{timeout:120000});
+ try { await page.waitForFunction(()=>Module.astroPerfSamples.length>=100,null,{timeout:30000}); } catch(e) { console.log('DIAGNOSTIC '+JSON.stringify(await page.evaluate(()=>({samples:Module.astroPerfSamples,collect:Module.astroPerfCollect,state:Module.ccall('AstroMenaceWebGameState','number',[],[]),particles:Module.ccall('AstroMenaceWebParticleVisibleCount','number',[],[])})))); console.log('ERRORS '+JSON.stringify(errors)); throw e; }
  const samples=await page.evaluate(()=>{Module.astroPerfCollect=false;return Module.astroPerfSamples.slice(15,95);});
  assert(samples.every(s=>s.particles>=7000),'Stress particles unexpectedly absent');
  const mean=k=>samples.reduce((a,s)=>a+s[k],0)/samples.length;

@@ -351,6 +351,16 @@ jobs:
           mv dist-candidate dist
           for file in "${files[@]}"; do cp "/tmp/v7-candidate-source/$file" "$file"; done
 
+      - name: Preserve browser comparison builds
+        uses: actions/upload-artifact@v4
+        with:
+          name: v7-browser-comparison-debug
+          path: |
+            dist/
+            dist-baseline/
+          compression-level: 9
+          retention-days: 3
+
       - name: Verify defeat buttons in a real browser
         shell: bash
         run: |
