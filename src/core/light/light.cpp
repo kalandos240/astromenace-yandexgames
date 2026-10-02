@@ -28,6 +28,8 @@
 #include "../graphics/graphics.h"
 #include "../math/math.h"
 #include "light.h"
+#include <algorithm>
+#include <vector>
 
 namespace viewizard {
 
@@ -46,8 +48,8 @@ std::unordered_multimap<eLightType, std::shared_ptr<cLight>, sEnumHash> LightsMa
  * Note, all attenuation-related calculations not involved in real rendering by OpenGL,
  * and need for internal use only in order to activate (via OpenGL) proper lights.
  */
-int vw_CalculateAllPointLightsAttenuation(const sVECTOR3D &Location, float Radius2,
-                                          std::multimap<float, cLight*> *AffectedLightsMap)
+template <typename Visitor>
+static int ForEachAffectedPointLight(const sVECTOR3D &Location, float Radius2, Visitor Visit)
 {
     int AffectedLightsCount{0};
 
@@ -74,14 +76,20 @@ int vw_CalculateAllPointLightsAttenuation(const sVECTOR3D &Location, float Radiu
 
             if (tmpAttenuation <= AttenuationLimit) {
                 AffectedLightsCount++;
-                if (AffectedLightsMap) {
-                    AffectedLightsMap->emplace(tmpAttenuation, tmpLight.second.get());
-                }
+                Visit(tmpAttenuation, tmpLight.second.get());
             }
         }
     }
 
     return AffectedLightsCount;
+}
+
+int vw_CalculateAllPointLightsAttenuation(const sVECTOR3D &Location, float Radius2,
+                                          std::multimap<float, cLight*> *AffectedLightsMap)
+{
+    return ForEachAffectedPointLight(Location, Radius2, [AffectedLightsMap](float Attenuation, cLight *Light) {
+        if (AffectedLightsMap) AffectedLightsMap->emplace(Attenuation, Light);
+    });
 }
 
 /*
@@ -107,9 +115,17 @@ void vw_CheckAndActivateAllLights(const sVECTOR3D &Location, float Radius2, int 
 
     // point lights
     if (PointLimit > 0) {
-        std::multimap<float, cLight*> AffectedLightsMap;
-        // call for std::map calculation with sorted by attenuation affected lights
-        vw_CalculateAllPointLightsAttenuation(Location, Radius2, &AffectedLightsMap);
+        // Retain contiguous storage instead of allocating a tree node for every
+        // explosion light, for every mesh. Stable ordering matches multimap ties.
+        static std::vector<std::pair<float, cLight*>> AffectedLightsMap;
+        AffectedLightsMap.clear();
+        ForEachAffectedPointLight(Location, Radius2, [](float Attenuation, cLight *Light) {
+            AffectedLightsMap.emplace_back(Attenuation, Light);
+        });
+        std::stable_sort(AffectedLightsMap.begin(), AffectedLightsMap.end(),
+                         [](const std::pair<float, cLight*> &A, const std::pair<float, cLight*> &B) {
+                             return A.first < B.first;
+                         });
 
         // enable lights with less attenuation first
         for (auto &tmpLight : AffectedLightsMap) {
@@ -279,3 +295,4 @@ void cLight::SetLocation(sVECTOR3D NewLocation)
 }
 
 } // viewizard namespace
+
