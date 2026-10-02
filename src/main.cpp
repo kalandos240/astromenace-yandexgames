@@ -268,16 +268,20 @@ static bool NeedPause{false};
 static bool TimeThreadsPaused{false};
 
 #ifdef __EMSCRIPTEN__
-static bool WebMenuTapPending = false;
-static double WebMenuTapX = 0.0, WebMenuTapY = 0.0;
-extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceWebMenuTap(double X, double Y)
+static bool WebMenuPointerPending = false, WebMenuClickPending = false, WebMenuButtonDown = false;
+static double WebMenuPointerX = 0.0, WebMenuPointerY = 0.0;
+extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceWebMenuPointer(double X, double Y, int Phase)
 {
     if (!AstroMenaceWebIsMobile() || X < 0.0 || X > 1.0 || Y < 0.0 || Y > 1.0) return;
-    if (MenuStatus == eMenuStatus::GAME && GameContentTransp < 0.99f && !isDialogBoxDrawing()) return;
-    WebMenuTapX = X;
-    WebMenuTapY = Y;
-    WebMenuTapPending = true;
+    if (Phase != 3 && MenuStatus == eMenuStatus::GAME && GameContentTransp < 0.99f && !isDialogBoxDrawing()) return;
+    WebMenuPointerX = X;
+    WebMenuPointerY = Y;
+    WebMenuPointerPending = true;
+    if (Phase == 0) { WebMenuButtonDown = true; WebMenuClickPending = true; }
+    if (Phase == 2 || Phase == 3) WebMenuButtonDown = false;
+    if (Phase == 3) WebMenuClickPending = false;
 }
+
 #endif
 
 static void LoopIteration()
@@ -369,14 +373,16 @@ static void LoopIteration()
     }
 
 #ifdef __EMSCRIPTEN__
-    if (WebMenuTapPending) {
-        WebMenuTapPending = false;
+    if (WebMenuPointerPending) {
+        WebMenuPointerPending = false;
+        vw_SetMouseButtonStatus(SDL_BUTTON_LEFT, !NeedPause && WebMenuButtonDown);
         if (!NeedPause) {
-            vw_SetMousePos(static_cast<int>(WebMenuTapX * GameConfig().Width),
-                           static_cast<int>(WebMenuTapY * GameConfig().Height));
+            vw_SetMousePos(static_cast<int>(WebMenuPointerX * GameConfig().Width),
+                           static_cast<int>(WebMenuPointerY * GameConfig().Height));
             CurrentKeyboardSelectMenuElement = 0;
-            vw_SetMouseLeftClick(true);
+            if (WebMenuClickPending) vw_SetMouseLeftClick(true);
         }
+        WebMenuClickPending = false;
     }
 #endif
 

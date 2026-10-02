@@ -106,21 +106,36 @@ var Module = typeof Module !== 'undefined' ? Module : {};
       e.stopImmediatePropagation();
     }
   }, true);
+  let menuPointer = null;
+  const endMenuPointer = () => {
+    if (menuPointer !== null) call('AstroMenaceWebMenuPointer', [0,0,3], ['number','number','number']);
+    menuPointer = null;
+  };
   const routeCanvasTouch = e => {
     if (!Module.astroMobile) return;
-    if (e.type === 'pointerup' && (!mission || paused) && ready()) {
+    if ((!mission || paused) && ready() && e.type.startsWith('pointer')) {
       const rect = canvas.getBoundingClientRect();
-      call('AstroMenaceWebMenuTap', [(e.clientX - rect.left) / rect.width, (e.clientY - rect.top) / rect.height], ['number','number']);
-      Module.yandexMaybeShowAd?.('mobile-menu-interaction');
+      const x = Math.max(0,Math.min(1,(e.clientX - rect.left) / rect.width));
+      const y = Math.max(0,Math.min(1,(e.clientY - rect.top) / rect.height));
+      if (e.type === 'pointerdown' && menuPointer === null) {
+        menuPointer = e.pointerId; canvas.setPointerCapture(e.pointerId);
+        call('AstroMenaceWebMenuPointer',[x,y,0],['number','number','number']);
+        Module.yandexMaybeShowAd?.('mobile-menu-interaction');
+      } else if (e.pointerId === menuPointer) {
+        const phase = e.type === 'pointerup' ? 2 : e.type === 'pointercancel' ? 3 : 1;
+        call('AstroMenaceWebMenuPointer',[x,y,phase],['number','number','number']);
+        if (phase >= 2) menuPointer = null;
+      }
     }
-    // Mobile menus use one latched native tap; SDL's compatibility mouse
-    // events can otherwise cancel a short touch before the next frame.
+    // Latched clicks survive quick taps; held pointer state supports workshop
+    // drag-and-drop without duplicate SDL compatibility mouse events.
     e.preventDefault(); e.stopImmediatePropagation();
   };
-  for (const ev of ['pointerdown','pointermove','pointerup','touchstart','touchmove','touchend','mousedown','mousemove','mouseup','click'])
+  for (const ev of ['pointerdown','pointermove','pointerup','pointercancel','touchstart','touchmove','touchend','mousedown','mousemove','mouseup','click'])
     canvas.addEventListener(ev, routeCanvasTouch, {capture:true, passive:false});
+  canvas.addEventListener('lostpointercapture', endMenuPointer);
   const suspend = () => {
-    Module.astroHostSuspended = true; release();
+    Module.astroHostSuspended = true; release(); endMenuPointer();
     if (mission) call('AstroMenaceAndroidHostPause');
     update();
   };
