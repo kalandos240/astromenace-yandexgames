@@ -30,6 +30,7 @@ const server = http.createServer((req,res) => {
         await page.screenshot({path:path.join(output,`${name}-menu.png`)});
         const tap=async(x,y)=>{const box=await page.locator('#canvas').boundingBox(); if(mobile)await page.touchscreen.tap(box.x+x*box.width,box.y+y*box.height);else await page.mouse.click(box.x+x*box.width,box.y+y*box.height);await page.waitForTimeout(2200);};
         await tap(.5,.26);
+        await tap(.68,.83); // Close first-run pilot help.
         await page.waitForFunction(()=>!document.getElementById('mobile-profile-name').hidden || !Module.astroMobile);
         if(mobile) {
           await page.locator('#mobile-profile-name').fill('Тест');
@@ -43,9 +44,9 @@ const server = http.createServer((req,res) => {
         await page.screenshot({path:path.join(output,`${name}-workshop.png`)});
         assert.equal(await page.locator('#mobile-profile-name').isVisible(),false);
         // Close first-run workshop tips if present, then start the mission.
-        await tap(.5,.72);
+        await tap(.68,.83);
         await tap(.80,.91);
-        if(!mobile)await tap(.5,.72); // Desktop shortcut hint.
+        if(!mobile)await tap(.68,.83); // Desktop shortcut hint.
         await page.waitForFunction(()=>Module.yandexGameplayRequested,{},{timeout:30000});
         await page.waitForTimeout(2500);
         assert.equal(await page.evaluate(() => { Module.yandexNextAdAt = Date.now() - 1; return Module.yandexMaybeShowAd('test-active-mission'); }), false, 'No ad during gameplay');
