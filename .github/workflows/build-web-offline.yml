@@ -6,6 +6,7 @@ on:
     branches: [fix/mobile-batching-v7]
     paths:
       - 'scripts/enable_gl4es_offline.py'
+      - 'scripts/test_v7_performance.cjs'
       - 'web/yandex-offline-pre.js'
       - 'web/offline-shell.html'
       - 'web/mobile-controls.js'
@@ -367,6 +368,7 @@ jobs:
           set -euo pipefail
           npm install --no-save playwright
           npx playwright install --with-deps chromium
+          set -o pipefail
           node scripts/test_v6_browser.cjs | tee dist/V6_BROWSER_TEST.txt
           node scripts/test_v7_performance.cjs | tee dist/V7_PERFORMANCE_TEST.txt
 
