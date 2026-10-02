@@ -1,0 +1,36 @@
+name: Test AstroMenace mobile and desktop browser
+on:
+  workflow_run:
+    workflows: [Build AstroMenace Fast Offline WebAssembly]
+    types: [completed]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  smoke:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: astromenace-yandexgames-fast-offline
+          path: artifact
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      - name: Unpack built game
+        run: |
+          mkdir -p dist
+          unzip -q artifact/*.zip -d dist
+      - name: Install browser
+        run: |
+          npm install --no-save playwright@1.58.2
+          npx playwright install --with-deps chromium
+      - name: Play actual mobile and desktop missions
+        run: node tests/mobile-browser-smoke.cjs dist
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: astromenace-browser-smoke
+          path: browser-smoke
