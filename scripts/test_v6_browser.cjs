@@ -20,7 +20,7 @@ const assert = require('assert');
       await page.waitForFunction(()=>Module.yandexGameReadySent && typeof Module.ccall==='function',null,{timeout:180000});
       const state=()=>page.evaluate(()=>Module.ccall('AstroMenaceWebGameState','number',[],[]));
       const start=async()=>{await page.evaluate(()=>Module.ccall('AstroMenaceAndroidSmokeStartMission',null,[],[]));await page.waitForFunction(()=> (Module.ccall('AstroMenaceWebGameState','number',[],[]) & 3)===3);};
-      const defeat=async()=>{await page.evaluate(()=>Module.ccall('AstroMenaceWebSmokeDefeat',null,[],[]));await page.waitForFunction(()=>Module.ccall('AstroMenaceWebGameState','number',[],[])===1);};
+      const defeat=async()=>{await page.evaluate(()=>Module.ccall('AstroMenaceWebSmokeDefeat',null,[],[]));await page.waitForFunction(()=>Module.ccall('AstroMenaceWebGameState','number',[],[])===1&&!Module.yandexGameplayRequested&&!document.pointerLockElement);};
       const click=async(restart)=>{
         const point=await page.evaluate(restart=>{const c=Module.canvas,r=c.getBoundingClientRect(),v=c.width/c.height<1.4?1024:1228;return {x:r.left+(v/2+(restart?130:-130))/v*r.width,y:r.top+466/768*r.height};},restart);
         if(mobile)await page.touchscreen.tap(point.x,point.y);else await page.mouse.click(point.x,point.y);
