@@ -1,5 +1,8 @@
 name: Test AstroMenace mobile and desktop browser
 on:
+  push:
+    branches: [main]
+    paths: ['tests/**', '.github/workflows/test-web-mobile.yml']
   workflow_run:
     workflows: [Build AstroMenace Fast Offline WebAssembly]
     types: [completed]
@@ -8,16 +11,30 @@ permissions:
   actions: read
 jobs:
   smoke:
-    if: github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Resolve successful build
+        id: build
+        uses: actions/github-script@v7
+        with:
+          script: |
+            let runId = context.payload.workflow_run?.id;
+            if (!runId) {
+              const runs = await github.rest.actions.listWorkflowRuns({owner: context.repo.owner, repo: context.repo.repo, workflow_id: 'build-web-offline.yml', status: 'success', branch: 'main', per_page: 1});
+              runId = runs.data.workflow_runs[0]?.id;
+            }
+            if (!runId) throw new Error('No successful game build found');
+            core.setOutput('run-id', String(runId));
       - uses: actions/download-artifact@v4
         with:
           name: astromenace-yandexgames-fast-offline
           path: artifact
-          run-id: ${{ github.event.workflow_run.id }}
+          run-id: ${{ steps.build.outputs.run-id }}
           github-token: ${{ github.token }}
       - name: Unpack built game
         run: |
