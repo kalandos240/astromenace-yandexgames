@@ -92,7 +92,9 @@ const server = http.createServer((req,res) => {
         await tap(.5,.338,650);
         if (!mobile) await page.keyboard.down('z');
         await page.waitForFunction(()=>Module.yandexGameplayRequested);
-        console.log(name, 'before final pause state', await page.evaluate(() => Module.ccall('AstroMenaceWebGameState','number',[],[])));
+        const gameState = await page.evaluate(() => Module.ccall('AstroMenaceWebGameState','number',[],[]));
+        console.log(name, 'before final pause state', gameState);
+        assert.equal(gameState & 3, 3, 'Live player remains in the mission before pause');
         if(mobile)await page.locator('.mobile-button.pause').tap();else { await page.keyboard.down('Escape'); await page.waitForTimeout(120); await page.keyboard.up('Escape'); }
         await page.waitForFunction(()=>!Module.yandexGameplayRequested);
         await page.waitForTimeout(1200); // Wait for the pause panel to finish its 0.5s fade.
