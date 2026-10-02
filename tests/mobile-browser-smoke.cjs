@@ -66,6 +66,16 @@ const server = http.createServer((req,res) => {
         assert.equal(await page.evaluate(() => __sdkEvents.includes('ad')), true, 'Ad at safe pause');
         await tap(.5,.338); // Resume.
         await page.waitForFunction(()=>Module.yandexGameplayRequested);
+        if (mobile) {
+          await page.setViewportSize({width:540,height:960});
+          await page.waitForFunction(() => !Module.yandexGameplayRequested);
+          assert.equal(await page.locator('#mobile-rotate').isVisible(), true);
+          await page.setViewportSize({width:960,height:540});
+          await page.waitForTimeout(500);
+          assert.equal(await page.evaluate(() => Module.yandexGameplayRequested), false, 'Rotation never resumes automatically');
+          await tap(.5,.338);
+          await page.waitForFunction(() => Module.yandexGameplayRequested);
+        }
         await page.evaluate(()=>{window.dispatchEvent(new Event('blur'));window.dispatchEvent(new Event('blur'));window.dispatchEvent(new Event('focus'));});
         await page.waitForTimeout(1000);
         assert.equal(await page.evaluate(()=>Module.yandexGameplayRequested),false);
