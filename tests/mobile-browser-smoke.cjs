@@ -29,7 +29,7 @@ const server = http.createServer((req,res) => {
         assert.equal(await page.evaluate(()=>Module.astroMobile),mobile);
         await page.evaluate(() => { const original = Module.ccall; globalThis.__pointerTrace = []; Module.ccall = (...a) => { if (a[0] === 'AstroMenaceWebMenuPointer') __pointerTrace.push(a[3]); return original(...a); }; });
         await page.screenshot({path:path.join(output,`${name}-menu.png`)});
-        const tap=async(x,y)=>{const box=await page.locator('#canvas').boundingBox(); if(mobile)await page.touchscreen.tap(box.x+x*box.width,box.y+y*box.height);else { await page.mouse.move(box.x+x*box.width,box.y+y*box.height); await page.mouse.down(); await page.waitForTimeout(120); await page.mouse.up(); }await page.waitForTimeout(2200);};
+        const tap=async(x,y,settle=2200)=>{const box=await page.locator('#canvas').boundingBox(); if(mobile)await page.touchscreen.tap(box.x+x*box.width,box.y+y*box.height);else { await page.mouse.move(box.x+x*box.width,box.y+y*box.height); await page.mouse.down(); await page.waitForTimeout(120); await page.mouse.up(); }await page.waitForTimeout(settle);};
         await tap(.5,.26);
         await tap(.68,.83); // Close first-run pilot help.
         await page.waitForFunction(()=>!document.getElementById('mobile-profile-name').hidden || !Module.astroMobile);
@@ -72,7 +72,7 @@ const server = http.createServer((req,res) => {
         await page.screenshot({path:path.join(output,`${name}-first-pause.png`)});
         await page.evaluate(() => Module.yandexMaybeShowAd('test-pause'));
         assert.equal(await page.evaluate(() => __sdkEvents.includes('ad')), true, 'Ad at safe pause');
-        await tap(.5,.338); // Resume.
+        await tap(.5,.338,650); // Resume.
         await page.waitForFunction(()=>Module.yandexGameplayRequested);
         if (mobile) {
           await page.setViewportSize({width:540,height:960});
@@ -81,13 +81,13 @@ const server = http.createServer((req,res) => {
           await page.setViewportSize({width:960,height:540});
           await page.waitForTimeout(500);
           assert.equal(await page.evaluate(() => Module.yandexGameplayRequested), false, 'Rotation never resumes automatically');
-          await tap(.5,.338);
+          await tap(.5,.338,650);
           await page.waitForFunction(() => Module.yandexGameplayRequested);
         }
         await page.evaluate(()=>{window.dispatchEvent(new Event('blur'));window.dispatchEvent(new Event('blur'));window.dispatchEvent(new Event('focus'));});
         await page.waitForTimeout(1000);
         assert.equal(await page.evaluate(()=>Module.yandexGameplayRequested),false);
-        await tap(.5,.338);
+        await tap(.5,.338,650);
         await page.waitForFunction(()=>Module.yandexGameplayRequested);
         if(mobile)await page.locator('.mobile-button.pause').tap();else { await page.keyboard.down('Escape'); await page.waitForTimeout(120); await page.keyboard.up('Escape'); }
         await page.waitForFunction(()=>!Module.yandexGameplayRequested);
