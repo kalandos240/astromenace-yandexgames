@@ -89,6 +89,8 @@ const server = http.createServer((req,res) => {
         await page.screenshot({path:path.join(output,`${name}-quit-menu.png`)});
         assert.equal(await page.evaluate(()=>Module.yandexGameplayRequested),false);
         assert.equal(await page.locator('#mobile-controls').isVisible(),false);
+        const sdkEvents = await page.evaluate(() => __sdkEvents.slice());
+        assert.ok(sdkEvents.includes('start') && sdkEvents.includes('stop') && sdkEvents.includes('ad'), 'SDK lifecycle and safe ad callbacks ran');
         await page.evaluate(() => Module.yandexSyncSave(true));
         const saved = await page.evaluate(() => Object.fromEntries(FS.readdir('/persistent').filter(n => n !== '.' && n !== '..').map(n => [n, Array.from(FS.readFile('/persistent/' + n))])));
         assert.ok(Object.keys(saved).length > 0, 'Pilot save files exist');
@@ -97,7 +99,7 @@ const server = http.createServer((req,res) => {
         const restored = await page.evaluate(() => Object.fromEntries(FS.readdir('/persistent').filter(n => n !== '.' && n !== '..').map(n => [n, Array.from(FS.readFile('/persistent/' + n))])));
         for (const [file, bytes] of Object.entries(saved)) assert.deepEqual(restored[file], bytes, 'Save survives page reload: ' + file);
         assert.deepEqual(errors,[]);
-        fs.writeFileSync(path.join(output,`${name}-result.json`),JSON.stringify({passed:true,events:await page.evaluate(()=>__sdkEvents)},null,2));
+        fs.writeFileSync(path.join(output,`${name}-result.json`),JSON.stringify({passed:true,events:sdkEvents,missionExited:true,saveRestored:true},null,2));
         console.log(`${name}: PASS`);
       } catch(e) {await page.screenshot({path:path.join(output,`${name}-failure.png`)});throw e;} finally {await context.close();}
     }
