@@ -28,7 +28,7 @@ const server = http.createServer((req,res) => {
         await page.waitForTimeout(2500);
         assert.equal(await page.evaluate(()=>Module.astroMobile),mobile);
         await page.screenshot({path:path.join(output,`${name}-menu.png`)});
-        const tap=async(x,y)=>{const box=await page.locator('#canvas').boundingBox(); if(mobile)await page.touchscreen.tap(box.x+x*box.width,box.y+y*box.height);else await page.mouse.click(box.x+x*box.width,box.y+y*box.height);await page.waitForTimeout(2200);};
+        const tap=async(x,y)=>{const box=await page.locator('#canvas').boundingBox(); if(mobile)await page.touchscreen.tap(box.x+x*box.width,box.y+y*box.height);else { await page.mouse.move(box.x+x*box.width,box.y+y*box.height); await page.mouse.down(); await page.waitForTimeout(120); await page.mouse.up(); }await page.waitForTimeout(2200);};
         await tap(.5,.26);
         await tap(.68,.83); // Close first-run pilot help.
         await page.waitForFunction(()=>!document.getElementById('mobile-profile-name').hidden || !Module.astroMobile);
@@ -60,7 +60,7 @@ const server = http.createServer((req,res) => {
           await page.screenshot({path:path.join(output,'mobile-flight.png')});
           await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
           await page.locator('.mobile-button.pause').tap();
-        } else await page.keyboard.press('Escape');
+        } else { await page.keyboard.down('Escape'); await page.waitForTimeout(120); await page.keyboard.up('Escape'); }
         await page.waitForFunction(()=>!Module.yandexGameplayRequested);
         await page.evaluate(() => Module.yandexMaybeShowAd('test-pause'));
         assert.equal(await page.evaluate(() => __sdkEvents.includes('ad')), true, 'Ad at safe pause');
@@ -71,7 +71,7 @@ const server = http.createServer((req,res) => {
         assert.equal(await page.evaluate(()=>Module.yandexGameplayRequested),false);
         await tap(.5,.338);
         await page.waitForFunction(()=>Module.yandexGameplayRequested);
-        if(mobile)await page.locator('.mobile-button.pause').tap();else await page.keyboard.press('Escape');
+        if(mobile)await page.locator('.mobile-button.pause').tap();else { await page.keyboard.down('Escape'); await page.waitForTimeout(120); await page.keyboard.up('Escape'); }
         await page.waitForFunction(()=>!Module.yandexGameplayRequested);
         await tap(.5,.73);await tap(.42,.604); // Quit confirmation.
         await page.waitForTimeout(2500);
