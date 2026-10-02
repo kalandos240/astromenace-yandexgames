@@ -27,6 +27,7 @@ const server = http.createServer((req,res) => {
         await page.waitForFunction(()=>globalThis.Module?.yandexGameReadySent,{},{timeout:180000});
         await page.waitForTimeout(2500);
         assert.equal(await page.evaluate(()=>Module.astroMobile),mobile);
+        await page.evaluate(() => { const original = Module.ccall; globalThis.__pointerTrace = []; Module.ccall = (...a) => { if (a[0] === 'AstroMenaceWebMenuPointer') __pointerTrace.push(a[3]); return original(...a); }; });
         await page.screenshot({path:path.join(output,`${name}-menu.png`)});
         const tap=async(x,y)=>{const box=await page.locator('#canvas').boundingBox(); if(mobile)await page.touchscreen.tap(box.x+x*box.width,box.y+y*box.height);else { await page.mouse.move(box.x+x*box.width,box.y+y*box.height); await page.mouse.down(); await page.waitForTimeout(120); await page.mouse.up(); }await page.waitForTimeout(2200);};
         await tap(.5,.26);
@@ -83,7 +84,11 @@ const server = http.createServer((req,res) => {
         await page.waitForFunction(()=>Module.yandexGameplayRequested);
         if(mobile)await page.locator('.mobile-button.pause').tap();else { await page.keyboard.down('Escape'); await page.waitForTimeout(120); await page.keyboard.up('Escape'); }
         await page.waitForFunction(()=>!Module.yandexGameplayRequested);
-        await tap(.5,.73);await tap(.42,.604); // Quit confirmation.
+        await page.screenshot({path:path.join(output,`${name}-before-quit.png`)});
+        await tap(.5,.73);
+        await page.screenshot({path:path.join(output,`${name}-quit-dialog.png`)});
+        await tap(.42,.604); // Quit confirmation.
+        console.log(name, 'pointer trace', await page.evaluate(() => __pointerTrace));
         await page.waitForFunction(() => !Module.astroMissionActive, {}, {timeout:15000});
         await page.waitForTimeout(2500);
         await page.screenshot({path:path.join(output,`${name}-quit-menu.png`)});
