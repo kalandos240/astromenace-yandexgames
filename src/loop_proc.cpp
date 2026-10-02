@@ -37,6 +37,9 @@
 #include "enum.h"
 #include "game.h" // FIXME "game.h" should be replaced by individual headers
 #include "SDL2/SDL.h"
+#ifdef __EMSCRIPTEN__
+extern "C" int AstroMenaceAndroidGameBack();
+#endif
 
 // NOTE switch to nested namespace definition (namespace A::B::C { ... }) (since C++17)
 namespace viewizard {
@@ -82,7 +85,18 @@ void Loop_Proc()
     vw_EndRendering();
 
     if (vw_GetKeyStatus(SDLK_ESCAPE)) {
+#ifdef __EMSCRIPTEN__
+        // A browser game navigates back; it cannot close a desktop application.
+        if (isDialogBoxDrawing()) {
+            CloseDialog();
+        } else if (MenuStatus == eMenuStatus::GAME) {
+            AstroMenaceAndroidGameBack();
+        } else if (MenuStatus != eMenuStatus::MAIN_MENU) {
+            cCommand::GetInstance().Set(eCommand::SWITCH_TO_MAIN_MENU);
+        }
+#else
         SetCurrentDialogBox(eDialogBox::QuitFromGame);
+#endif
         vw_SetKeyStatus(SDLK_ESCAPE, false);
     }
 

@@ -54,7 +54,7 @@ const server = http.createServer((req,res) => {
           await page.keyboard.down('ArrowRight'); await page.keyboard.down('z');
           await page.waitForTimeout(800);
           await page.screenshot({path:path.join(output,'desktop-flight.png')});
-          await page.keyboard.up('z'); await page.keyboard.up('ArrowRight');
+          await page.keyboard.up('ArrowRight');
         }
         assert.equal(await page.evaluate(() => { Module.yandexNextAdAt = Date.now() - 1; return Module.yandexMaybeShowAd('test-active-mission'); }), false, 'No ad during gameplay');
         assert.equal(await page.evaluate(() => __sdkEvents.includes('ad')), false);
@@ -72,7 +72,8 @@ const server = http.createServer((req,res) => {
         await page.screenshot({path:path.join(output,`${name}-first-pause.png`)});
         await page.evaluate(() => Module.yandexMaybeShowAd('test-pause'));
         assert.equal(await page.evaluate(() => __sdkEvents.includes('ad')), true, 'Ad at safe pause');
-        await tap(.5,.338,650); // Resume.
+        await tap(.5,.338,650);
+        if (!mobile) await page.keyboard.down('z'); // Resume.
         await page.waitForFunction(()=>Module.yandexGameplayRequested);
         if (mobile) {
           await page.setViewportSize({width:540,height:960});
@@ -82,13 +83,16 @@ const server = http.createServer((req,res) => {
           await page.waitForTimeout(500);
           assert.equal(await page.evaluate(() => Module.yandexGameplayRequested), false, 'Rotation never resumes automatically');
           await tap(.5,.338,650);
+        if (!mobile) await page.keyboard.down('z');
           await page.waitForFunction(() => Module.yandexGameplayRequested);
         }
         await page.evaluate(()=>{window.dispatchEvent(new Event('blur'));window.dispatchEvent(new Event('blur'));window.dispatchEvent(new Event('focus'));});
         await page.waitForTimeout(1000);
         assert.equal(await page.evaluate(()=>Module.yandexGameplayRequested),false);
         await tap(.5,.338,650);
+        if (!mobile) await page.keyboard.down('z');
         await page.waitForFunction(()=>Module.yandexGameplayRequested);
+        console.log(name, 'before final pause state', await page.evaluate(() => Module.ccall('AstroMenaceWebGameState','number',[],[])));
         if(mobile)await page.locator('.mobile-button.pause').tap();else { await page.keyboard.down('Escape'); await page.waitForTimeout(120); await page.keyboard.up('Escape'); }
         await page.waitForFunction(()=>!Module.yandexGameplayRequested);
         await page.waitForTimeout(1200); // Wait for the pause panel to finish its 0.5s fade.
@@ -102,6 +106,7 @@ const server = http.createServer((req,res) => {
         await page.screenshot({path:path.join(output,`${name}-quit-menu.png`)});
         assert.equal(await page.evaluate(()=>Module.yandexGameplayRequested),false);
         assert.equal(await page.locator('#mobile-controls').isVisible(),false);
+        if (!mobile) await page.keyboard.up('z');
         const sdkEvents = await page.evaluate(() => __sdkEvents.slice());
         assert.ok(sdkEvents.includes('start') && sdkEvents.includes('stop') && sdkEvents.includes('ad'), 'SDK lifecycle and safe ad callbacks ran');
         await page.evaluate(() => Module.yandexSyncSave(true));

@@ -610,6 +610,14 @@ extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceAndroidHostPause()
     AstroMenaceAndroidPauseMenuState(1);
 }
 
+// Read-only host state: mission, living player, pause menu, dialog, fully shown pause.
+extern "C" EMSCRIPTEN_KEEPALIVE int AstroMenaceWebGameState()
+{
+    if (MenuStatus != eMenuStatus::GAME) return 0;
+    return 1 | (!PlayerFighter.expired() ? 2 : 0) | (GameMenu ? 4 : 0)
+             | (isDialogBoxDrawing() ? 8 : 0) | (GameContentTransp >= 0.99f ? 16 : 0);
+}
+
 extern "C" EMSCRIPTEN_KEEPALIVE int AstroMenaceAndroidGameBack()
 {
     if (MenuStatus != eMenuStatus::GAME || isDialogBoxDrawing()) return 0;
