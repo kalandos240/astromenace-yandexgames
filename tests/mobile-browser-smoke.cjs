@@ -84,6 +84,7 @@ const server = http.createServer((req,res) => {
         await page.waitForFunction(()=>Module.yandexGameplayRequested);
         if(mobile)await page.locator('.mobile-button.pause').tap();else { await page.keyboard.down('Escape'); await page.waitForTimeout(120); await page.keyboard.up('Escape'); }
         await page.waitForFunction(()=>!Module.yandexGameplayRequested);
+        await page.waitForTimeout(1200); // Wait for the pause panel to finish its 0.5s fade.
         await page.screenshot({path:path.join(output,`${name}-before-quit.png`)});
         await tap(.5,.73);
         await page.screenshot({path:path.join(output,`${name}-quit-dialog.png`)});
