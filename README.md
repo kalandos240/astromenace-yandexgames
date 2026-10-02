@@ -4,7 +4,7 @@
 
 # AstroMenace for Yandex Games
 
-**A desktop-focused WebAssembly port of the open-source AstroMenace space shooter, adapted for Yandex Games.**
+**A desktop and mobile WebAssembly port of the open-source AstroMenace space shooter, adapted for Yandex Games.**
 
 [![Yandex Games](https://img.shields.io/badge/Yandex%20Games-port-ffcc00?style=for-the-badge&logo=yandex&logoColor=111111)](https://yandex.ru/games/)
 [![WebAssembly](https://img.shields.io/badge/WebAssembly-ready-654ff0?style=for-the-badge&logo=webassembly&logoColor=white)](https://webassembly.org/)
@@ -24,13 +24,13 @@
 
 AstroMenace is a classic 3D space scrolling shooter with ship upgrades, weapons, missions and large-scale space battles. This repository keeps the original gameplay while adapting the engine and runtime for modern browsers and the Yandex Games platform.
 
-The current Yandex build is designed primarily for **desktop browsers** with keyboard and mouse controls.
+The Yandex build supports desktop browsers and landscape mobile browsers. Mobile controls follow the RuStore version: four direction buttons, two weapon buttons and pause.
 
 ### Current Yandex/Web features
 
 - ⚙️ C++/SDL2 → **WebAssembly** via Emscripten
 - 🎮 OpenGL compatibility through **gl4es → WebGL**
-- 🖥️ desktop-oriented 1280×720 game surface with browser scaling
+- 🖥️ 1280×720 game surface with browser scaling
 - 🟨 official **Yandex Games SDK** initialization
 - ✅ `LoadingAPI.ready()` after the playable menu is ready
 - 🎯 `GameplayAPI.start()` / `GameplayAPI.stop()` around actual gameplay and pauses
@@ -57,7 +57,7 @@ AstroMenace includes missions, multiple player ships, weapon systems, upgrades, 
 
 ## 🎮 Controls
 
-The Yandex build currently targets **desktop** users.
+Desktop controls:
 
 | Action | Input |
 |---|---|
@@ -66,7 +66,7 @@ The Yandex build currently targets **desktop** users.
 | Pause / menu | `Esc` |
 | Mouse capture | Activated during gameplay; click the game area if the browser asks for interaction first |
 
-Mobile/touch controls are **not** currently part of the supported Yandex target.
+Mobile controls: on-screen arrows move the ship, АТАКА 1 / АТАКА 2 fire the weapons, and Ⅱ opens pause. Movement and firing can be held together. Touch input never steers the ship by dragging. The phone keyboard opens only in the pilot name field; landscape orientation is required. Focus loss pauses the mission and releases held buttons; resuming requires the RESUME button.
 
 ## 🌐 Localization
 
@@ -212,6 +212,6 @@ Full original credits remain available in the game and in [`AUTHORS.md`](./AUTHO
 
 Это браузерный WebAssembly-порт оригинальной open-source игры **AstroMenace** для Яндекс.Игр. Сама игра создана командой **Viewizard**; этот репозиторий содержит именно адаптацию под браузер и SDK Яндекс.Игр.
 
-В текущей версии есть RU/EN, автоматический выбор языка через SDK, облачные сохранения, GameplayAPI, захват курсора во время миссий, пауза звука при рекламе и полноэкранная реклама только в безопасных паузах. Целевая платформа текущей сборки — **ПК / desktop browser**.
+В текущей версии есть RU/EN, автоматический выбор языка через SDK, облачные сохранения, GameplayAPI, захват курсора во время миссий, пауза звука при рекламе и полноэкранная реклама только в безопасных паузах. Целевые платформы — **ПК и мобильные браузеры в горизонтальной ориентации**. Мобильное управление повторяет RuStore: стрелки, две атаки, пауза и системная клавиатура только для имени пилота.
 
 </details>

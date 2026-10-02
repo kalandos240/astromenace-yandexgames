@@ -48,6 +48,8 @@ const server = http.createServer((req,res) => {
         if(!mobile)await tap(.5,.72); // Desktop shortcut hint.
         await page.waitForFunction(()=>Module.yandexGameplayRequested,{},{timeout:30000});
         await page.waitForTimeout(2500);
+        assert.equal(await page.evaluate(() => { Module.yandexNextAdAt = Date.now() - 1; return Module.yandexMaybeShowAd('test-active-mission'); }), false, 'No ad during gameplay');
+        assert.equal(await page.evaluate(() => __sdkEvents.includes('ad')), false);
         if(mobile) {
           await page.waitForFunction(()=>!document.getElementById('mobile-controls').hidden);
           const client=await context.newCDPSession(page);
@@ -59,6 +61,8 @@ const server = http.createServer((req,res) => {
           await page.locator('.mobile-button.pause').tap();
         } else await page.keyboard.press('Escape');
         await page.waitForFunction(()=>!Module.yandexGameplayRequested);
+        await page.evaluate(() => Module.yandexMaybeShowAd('test-pause'));
+        assert.equal(await page.evaluate(() => __sdkEvents.includes('ad')), true, 'Ad at safe pause');
         await tap(.5,.338); // Resume.
         await page.waitForFunction(()=>Module.yandexGameplayRequested);
         await page.evaluate(()=>{window.dispatchEvent(new Event('blur'));window.dispatchEvent(new Event('blur'));window.dispatchEvent(new Event('focus'));});
