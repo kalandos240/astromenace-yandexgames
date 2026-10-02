@@ -24,6 +24,7 @@ try{for(const build of ['dist-baseline','dist']){
  const before=results['dist-baseline'],after=results.dist;
  assert(Math.abs(after.particles-before.particles)/before.particles<.05,'Particle amount changed');
  assert(after.particleDraws<before.particleDraws*.25,'Particle batching did not reduce calls');
+ assert(before.bufferCreates>0,'Baseline CPU explosion fixture did not animate geometry');
  assert(after.bufferUpdates>0,'Buffer update path did not run');
  assert(after.bufferCreates<before.bufferCreates*.5,'Explosion buffers still recreated');
  console.log('PASS: unchanged stress particle amount, >75% fewer particle draws, explosion buffers updated in place');
