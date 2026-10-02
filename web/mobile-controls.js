@@ -23,7 +23,9 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   input.enterKeyHint = 'done';
   input.hidden = true;
   stage.append(controls, input);
-  document.body.append(stage);
+  const rotateHint = document.createElement('div');
+  rotateHint.id = 'mobile-rotate'; rotateHint.hidden = true;
+  document.body.append(stage, rotateHint);
   if (Module.astroMobile) document.body.classList.add('mobile');
   const ready = () => Module.yandexGameReadySent && !Module.astroHostSuspended &&
     !Module.yandexPlatformPaused && !Module.yandexAdInProgress && !document.hidden;
@@ -39,7 +41,11 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   };
   Module.astroReleaseControls = release;
   const update = () => {
-    const visible = Module.astroMobile && mission && !paused && ready();
+    const portrait = Module.astroMobile && window.innerHeight > window.innerWidth;
+    rotateHint.hidden = !portrait || !Module.yandexGameReadySent;
+    rotateHint.textContent = Module.yandexLanguageIndex === 1 ? '↻ Поверните устройство горизонтально' : '↻ Rotate your device to landscape';
+    if (portrait && mission && !paused) call('AstroMenaceAndroidHostPause');
+    const visible = Module.astroMobile && mission && !paused && !portrait && ready();
     controls.hidden = !visible;
     input.hidden = !(Module.astroMobile && profile && !mission && ready());
     stage.hidden = controls.hidden && input.hidden;
@@ -94,6 +100,9 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   });
   input.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); input.blur(); } });
   input.addEventListener('keyup', e => e.stopPropagation());
+  for (const ev of ['keydown','keyup','keypress']) window.addEventListener(ev, e => {
+    if (e.target === input) e.stopImmediatePropagation();
+  }, true);
   const blockGameplayTouch = e => {
     if (Module.astroMobile && mission && !paused) { e.preventDefault(); e.stopImmediatePropagation(); }
   };

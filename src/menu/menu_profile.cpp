@@ -216,6 +216,8 @@ void DeleteRecord()
 //------------------------------------------------------------------------------------
 void ProfileInputText()
 {
+    // Mobile names are supplied by the browser IME bridge, never twice by SDL.
+    if (!AstroMenaceWebIsMobile()) {
     // <Ctrl>+<V> for copy text from clipboard.
     if ((vw_GetKeyStatus(SDLK_RCTRL) || vw_GetKeyStatus(SDLK_LCTRL)) && vw_GetKeyStatus(SDLK_v) && SDL_HasClipboardText() == SDL_TRUE) {
         char *tmpUTF8 = SDL_GetClipboardText();
@@ -270,6 +272,8 @@ void ProfileInputText()
 
     int X1 = GameConfig().InternalWidth / 2 - 372;
     int Y1 = 230;
+
+    }
 
     // draw input's blinking cursor
     int Size = vw_TextWidthUTF32(NewProfileName);
