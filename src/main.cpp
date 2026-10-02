@@ -382,6 +382,14 @@ static void LoopIteration()
     }
 
 #ifdef __EMSCRIPTEN__
+    // SDL focus notifications can arrive after a heavy frame and leave a stale
+    // pause flag. The current browser/platform lifecycle is authoritative.
+    NeedPause = EM_ASM_INT({
+        return document.hidden || Module.astroHostSuspended
+            || Module.yandexPlatformPaused || Module.yandexAdInProgress
+            || (typeof document.hasFocus === 'function' && !document.hasFocus()) ? 1 : 0;
+    }) != 0;
+
     // Preserve short desktop clicks whose press and release arrive together
     // between two slow frames. Held-button state is tracked separately.
     if (LeftPressed) vw_SetMouseLeftClick(true);
