@@ -174,12 +174,17 @@ void StarSystemInitByType(eDrawType DrawType)
             sharedSpace->CameraDistResize = 0.1f;
             sharedSpace->SetStartLocation(sVECTOR3D{-50.0f, 10.0f, -20.0f});
 
-            // emulate time flow, particles should fill the screen
+            // Desktop pre-fills twenty seconds of menu particles. In the
+            // Android/WebView build this synchronous simulation blocks the UI
+            // while returning from a mission and looks like a freeze. Let the
+            // same particles fill naturally over live frames instead.
+#if !defined(__EMSCRIPTEN__) || !defined(ASTROMENACE_ANDROID_BUILD)
             float Time = sharedSpace->TimeLastUpdate;
             for (float i = Time; i < (Time + 20); i += 1.0f) {
                 sharedSpace->Update(i);
             }
             sharedSpace->TimeLastUpdate = Time;
+#endif
         }
         break;
     case eDrawType::GAME:

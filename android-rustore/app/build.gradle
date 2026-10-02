@@ -1,0 +1,72 @@
+plugins {
+    id 'com.android.application'
+}
+
+def keystorePath = System.getenv('ASTROMENACE_KEYSTORE_PATH')
+def hasReleaseSigning = keystorePath != null && !keystorePath.isBlank()
+def yandexInterstitialAdUnitId =
+        System.getenv('YANDEX_INTERSTITIAL_AD_UNIT_ID') ?: 'R-M-20155535-1'
+
+android {
+    namespace 'com.kalandos240.astromenace'
+
+    buildFeatures {
+        resValues = true
+        buildConfig = true
+    }
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'com.kalandos240.astromenace'
+        minSdk 26
+        targetSdk 36
+        versionCode 8
+        versionName '1.0.8'
+        resValue 'string', 'yandex_interstitial_ad_unit_id', yandexInterstitialAdUnitId
+    }
+
+    if (hasReleaseSigning) {
+        signingConfigs {
+            release {
+                storeFile file(keystorePath)
+                storePassword System.getenv('ASTROMENACE_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ASTROMENACE_KEY_ALIAS')
+                keyPassword System.getenv('ASTROMENACE_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+            // Automated emulator checks must never request production ads.
+            resValue 'string', 'yandex_interstitial_ad_unit_id', ''
+        }
+        release {
+            minifyEnabled false
+            shrinkResources false
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    packaging {
+        resources {
+            excludes += ['/META-INF/{AL2.0,LGPL2.1}']
+        }
+    }
+}
+
+
+dependencies {
+    implementation "androidx.webkit:webkit:1.17.1"
+    implementation "com.yandex.android:mobileads:8.5.0"
+}

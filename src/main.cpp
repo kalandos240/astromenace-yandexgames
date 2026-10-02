@@ -93,6 +93,22 @@ void RecreateGameWindow()
  */
 static bool VideoConfig(bool FirstStart)
 {
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+    // Android owns the render target. Ignore stale desktop/browser width and
+    // height saved in config so SDL/WebGL really renders at the adaptive
+    // phone/tablet resolution selected by the native host.
+    const auto &AndroidRenderModes = DetectFullscreenSize();
+    if (AndroidRenderModes.empty()) {
+        std::cerr << __func__ << "(): Android render target is unavailable.\n";
+        return false;
+    }
+    ChangeGameConfig().DisplayIndex = 0;
+    ChangeGameConfig().Width = AndroidRenderModes.back().Width;
+    ChangeGameConfig().Height = AndroidRenderModes.back().Height;
+    ChangeGameConfig().Fullscreen = false;
+    return true;
+#endif
+
     // prevent out of range index usage
     if (GameConfig().DisplayIndex) {
         int tmpDisplaysCount = SDL_GetNumVideoDisplays();
@@ -508,6 +524,11 @@ int main(int argc, char *argv[])
 
     // should be called after vw_InitText(), since we need find language index numbers
     bool FirstStart = LoadXMLConfigFile(NeedResetConfig);
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+    // Android has dedicated on-screen controls; desktop shortcut hints such
+    // as F2/F5-F12, Esc, mouse and keyboard setup must never be surfaced.
+    ChangeGameConfig().NeedShowHint[4] = false;
+#endif
 #ifdef __EMSCRIPTEN__
     // Yandex Games requires automatic language detection through the SDK.
     const int YandexLanguageIndex = AstroMenaceYandexLanguageIndex();

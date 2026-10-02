@@ -1,0 +1,204 @@
+name: Build AstroMenace RuStore Android
+# Mobile validation: cursor, IME, and edge-to-edge fullscreen
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - rustore-mobile
+    paths:
+      - 'android-rustore/**'
+      - 'src/**'
+      - '.github/workflows/build-rustore-android.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+
+    steps:
+      - name: Checkout Android branch
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android SDK 36
+        shell: bash
+        run: |
+          set -e
+          set +o pipefail
+          yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-36" \
+            "build-tools;36.0.0"
+          set -o pipefail
+
+      - name: Preserve official Android APK signature verifier
+        shell: bash
+        run: |
+          mkdir -p "${RUNNER_TEMP}/astromenace-signing-tools"
+          cp "${ANDROID_HOME}/build-tools/36.0.0/lib/apksigner.jar" "${RUNNER_TEMP}/astromenace-signing-tools/"
+
+      - name: Upload official APK signing tool
+        uses: actions/upload-artifact@v4
+        with:
+          name: astromenace-rustore-signing-tools
+          path: ${{ runner.temp }}/astromenace-signing-tools/
+          if-no-files-found: error
+
+      - name: Set up Gradle 9.6
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.6.0'
+
+      - name: Download latest verified offline game artifact
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          GAME_DIR="${GITHUB_WORKSPACE}/android-rustore/app/src/main/assets/game"
+          rm -rf "${GAME_DIR}"
+          mkdir -p "${GAME_DIR}"
+
+          RUN_ID="$(gh run list \
+            --repo "${GITHUB_REPOSITORY}" \
+            --workflow build-web-offline.yml \
+            --branch main \
+            --status success \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')"
+
+          test -n "${RUN_ID}"
+          gh run download "${RUN_ID}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --name astromenace-yandexgames-fast-offline \
+            --dir "${GAME_DIR}"
+
+          test -s "${GAME_DIR}/index.html"
+          test -s "${GAME_DIR}/index.js"
+          test -s "${GAME_DIR}/gamedata.js"
+
+      - name: Build Android-tuned WebAssembly engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          GAME_DIR="${GITHUB_WORKSPACE}/android-rustore/app/src/main/assets/game"
+          bash android-rustore/tools/build_android_engine.sh "${GAME_DIR}"
+          test -s "${GAME_DIR}/index.js"
+
+      # Mobile runtime must not decode the 69 MB Base64 payload inside WebView.
+      - name: Convert browser Base64 payload to Android direct VFS
+        shell: bash
+        run: |
+          set -euo pipefail
+          GAME_DIR="${GITHUB_WORKSPACE}/android-rustore/app/src/main/assets/game"
+          python3 android-rustore/tools/prepare_android_game.py "${GAME_DIR}"
+          test -s "${GAME_DIR}/gamedata.vfs"
+          test ! -e "${GAME_DIR}/gamedata.js"
+          grep -q 'ASTROMENACE_ANDROID=true' "${GAME_DIR}/index.html"
+          grep -q 'Direct VFS installed' "${GAME_DIR}/index.js"
+          echo "Android game payload:"
+          du -sh "${GAME_DIR}"
+          ls -lh "${GAME_DIR}/gamedata.vfs" "${GAME_DIR}/index.js"
+
+      - name: Prepare optional RuStore release signing
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.RUSTORE_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [[ -n "${KEYSTORE_B64}" ]]; then
+            printf '%s' "${KEYSTORE_B64}" | base64 --decode > "${RUNNER_TEMP}/astromenace-rustore.jks"
+            echo "ASTROMENACE_KEYSTORE_PATH=${RUNNER_TEMP}/astromenace-rustore.jks" >> "${GITHUB_ENV}"
+          else
+            echo "No release keystore configured: release outputs will remain unsigned; debug APK stays installable."
+          fi
+
+      - name: Build debug APK for smoke test
+        working-directory: android-rustore
+        run: |
+          gradle --no-daemon --stacktrace :app:assembleDebug
+
+      - name: Verify packaged application and ad permissions
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="android-rustore/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "${APK}"
+          PERMISSIONS="$("${ANDROID_HOME}/build-tools/36.0.0/aapt" dump permissions "${APK}")"
+          printf '%s\n' "${PERMISSIONS}"
+          grep -q 'android.permission.INTERNET' <<<"${PERMISSIONS}"
+          grep -q 'android.permission.ACCESS_NETWORK_STATE' <<<"${PERMISSIONS}"
+          unzip -l "${APK}" | grep -q 'assets/game/gamedata.vfs'
+          if unzip -l "${APK}" | grep -q 'assets/game/gamedata.js'; then
+            echo "Legacy Base64 gamedata.js unexpectedly packaged" >&2
+            exit 1
+          fi
+          echo "APK + Yandex Mobile Ads permission audit: PASS."
+
+      - name: Enable KVM for emulator smoke test
+        shell: bash
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+
+      - name: Launch APK to real main menu in Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7
+          ram-size: 3072M
+          heap-size: 512M
+          disk-size: 6000M
+          disable-animations: true
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: sh android-rustore/tools/smoke_test.sh
+
+      - name: Upload emulator smoke diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: astromenace-rustore-smoke
+          path: android-rustore/smoke/
+          if-no-files-found: warn
+
+      - name: Build release APK and AAB after smoke passes
+        working-directory: android-rustore
+        env:
+          ASTROMENACE_KEYSTORE_PASSWORD: ${{ secrets.RUSTORE_KEYSTORE_PASSWORD }}
+          ASTROMENACE_KEY_ALIAS: ${{ secrets.RUSTORE_KEY_ALIAS }}
+          ASTROMENACE_KEY_PASSWORD: ${{ secrets.RUSTORE_KEY_PASSWORD }}
+          YANDEX_INTERSTITIAL_AD_UNIT_ID: ${{ secrets.YANDEX_INTERSTITIAL_AD_UNIT_ID }}
+        run: |
+          gradle --no-daemon --stacktrace \
+            :app:assembleRelease \
+            :app:bundleRelease
+
+      - name: Upload verified debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: astromenace-rustore-debug-apk
+          path: android-rustore/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Upload release outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: astromenace-rustore-release
+          path: |
+            android-rustore/app/build/outputs/apk/release/*.apk
+            android-rustore/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error

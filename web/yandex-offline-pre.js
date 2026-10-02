@@ -156,6 +156,16 @@ var Module = typeof Module !== 'undefined' ? Module : {};
   const resumeAudio = () => trackedAudioContexts.forEach((ctx) => {
     if (ctx?.state === 'suspended') ctx.resume().catch(() => {});
   });
+  Module.androidHostPause = () => {
+    Module.androidHostPaused = true;
+    pauseAudio();
+    window.dispatchEvent(new Event('blur'));
+  };
+  Module.androidHostResume = () => {
+    Module.androidHostPaused = false;
+    window.dispatchEvent(new Event('focus'));
+    resumeAudio();
+  };
 
   const releasePointerLock = () => {
     if (document.pointerLockElement === Module.canvas) {
@@ -730,7 +740,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
       releasePointerLock();
       pauseAudio();
       syncSave(true);
-    } else if (!Module.yandexPlatformPaused && !Module.yandexAdInProgress) {
+    } else if (!Module.yandexPlatformPaused && !Module.yandexAdInProgress && !Module.androidHostPaused) {
       resumeAudio();
       if (Module.yandexGameplayRequested) setGameplayApiRunning(true);
     }

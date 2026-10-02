@@ -45,6 +45,18 @@ In real, we allow any view size with aspect ratio from 5:4 (1.25) to 16:9 (1.77)
 #include "SDL2/SDL.h"
 #include <algorithm>
 
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+#include <emscripten.h>
+EM_JS(int, AstroMenaceAndroidRenderWidth, (), {
+    const value = Number(globalThis.ASTROMENACE_ANDROID_RENDER_WIDTH || 1280);
+    return Number.isFinite(value) ? Math.max(1280, Math.min(1920, Math.round(value))) : 1280;
+});
+EM_JS(int, AstroMenaceAndroidRenderHeight, (), {
+    const value = Number(globalThis.ASTROMENACE_ANDROID_RENDER_HEIGHT || 720);
+    return Number.isFinite(value) ? Math.max(720, Math.min(1080, Math.round(value))) : 720;
+});
+#endif
+
 // NOTE switch to nested namespace definition (namespace A::B::C { ... }) (since C++17)
 namespace viewizard {
 namespace astromenace {
@@ -119,6 +131,11 @@ static bool AllowedAspectRatio(const sViewSize &ViewSize)
  */
 static bool GetDisplaySize(sViewSize &ViewSize)
 {
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+    ViewSize.Width = AstroMenaceAndroidRenderWidth();
+    ViewSize.Height = AstroMenaceAndroidRenderHeight();
+    return true;
+#endif
     SDL_Rect DisplayBounds;
     if (SDL_GetDisplayBounds(DisplayIndex, &DisplayBounds) == 0) {
         ViewSize.Width = DisplayBounds.w;
@@ -169,6 +186,9 @@ const std::vector<sViewSize> &DetectFullscreenSize()
  */
 static bool GetDisplayUsableSize(sViewSize &ViewSize)
 {
+#if defined(__EMSCRIPTEN__) && defined(ASTROMENACE_ANDROID_BUILD)
+    return GetDisplaySize(ViewSize);
+#endif
     SDL_Rect DisplayUsableBounds;
     if (SDL_GetDisplayUsableBounds(DisplayIndex, &DisplayUsableBounds) == 0) {
         ViewSize.Width = DisplayUsableBounds.w;
