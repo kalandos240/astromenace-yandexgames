@@ -48,7 +48,10 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-EM_JS(int, AstroMenaceWebIsMobile, (), { return Module.astroMobile ? 1 : 0; });
+extern "C" int AstroMenaceWebIsMobile()
+{
+    return EM_ASM_INT({ return Module.astroMobile ? 1 : 0; });
+}
 
 EM_JS(int, AstroMenaceYandexLanguageIndex, (), {
     return Number.isInteger(Module.yandexLanguageIndex) ? Module.yandexLanguageIndex : 0;
