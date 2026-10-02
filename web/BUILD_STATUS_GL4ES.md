@@ -1,6 +1,5 @@
 # Web build status (gl4es)
 
-- Status: **FAILED (AstroMenace Emscripten link/package audit)**
-- Run ID: `36977089401`
-- Packed VFS bytes: **66190956**
-- See `web/BUILD_LOG_GL4ES.txt`.
+- Status: **RUNNING**
+- Run ID: `36978524642`
+- Commit: `b899e325596429a085307d861c3dce88b3447ee3`
