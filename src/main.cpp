@@ -272,7 +272,7 @@ static bool WebMenuPointerPending = false, WebMenuClickPending = false, WebMenuB
 static double WebMenuPointerX = 0.0, WebMenuPointerY = 0.0;
 extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceWebMenuPointer(double X, double Y, int Phase)
 {
-    if (!AstroMenaceWebIsMobile() || X < 0.0 || X > 1.0 || Y < 0.0 || Y > 1.0) return;
+    if (X < 0.0 || X > 1.0 || Y < 0.0 || Y > 1.0) return;
     if (Phase != 3 && MenuStatus == eMenuStatus::GAME && GameContentTransp < 0.99f && !PlayerFighter.expired() && !isDialogBoxDrawing()) return;
     WebMenuPointerX = X;
     WebMenuPointerY = Y;

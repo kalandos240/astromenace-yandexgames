@@ -440,6 +440,11 @@ extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceAndroidSmokeStartMission()
     cCommand::GetInstance().Set(eCommand::SWITCH_FROM_MENU_TO_GAME);
 }
 
+extern "C" EMSCRIPTEN_KEEPALIVE int AstroMenaceWebSmokeMainMenu()
+{
+    return MenuStatus == eMenuStatus::MAIN_MENU ? 1 : 0;
+}
+
 extern "C" EMSCRIPTEN_KEEPALIVE void AstroMenaceWebSmokeDefeat()
 {
     if (auto Fighter = PlayerFighter.lock()) Fighter->ArmorCurrentStatus = 0.0f;

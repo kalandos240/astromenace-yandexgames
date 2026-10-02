@@ -33,8 +33,8 @@ const assert = require('assert');
       assert.equal((await state())&3,3);console.log((mobile?'Mobile':'Desktop')+': defeat -> RESTART -> living player PASS');
       if(mobile){await page.setViewportSize({width:900,height:600});await page.waitForTimeout(600);}
       await defeat();await click(false);
-      await page.waitForFunction(()=>Module.ccall('AstroMenaceWebGameState','number',[],[])===0,null,{timeout:30000});
-      console.log((mobile?'Mobile resized':'Desktop')+': defeat -> QUIT -> main menu PASS');
+      await page.waitForFunction(()=>Module.ccall('AstroMenaceWebSmokeMainMenu','number',[],[])===1,null,{timeout:4000});
+      console.log((mobile?'Mobile resized':'Desktop')+': defeat -> QUIT -> main menu within 4 seconds PASS');
       assert.deepEqual(errors,[]);await context.close();
     }
   } finally {await browser.close();server.close();}
